@@ -95,6 +95,30 @@ function doGet(e) {
         }
       });
       json = JSON.stringify([...blocked]);
+    } else if (e.parameter.view === 'chat') {
+      const messages = [];
+      const deletes = [];
+      rows.slice(1).forEach(r => {
+        const type = String(r[1]);
+        const raw = String(r[3] || '');
+        if (type === 'chat') {
+          try {
+            const p = JSON.parse(raw);
+            if (p && p.id) messages.push(p);
+          } catch (x) { /* skip malformed */ }
+        } else if (type === 'delete_msg') {
+          try {
+            const p = JSON.parse(raw);
+            if (p && p.id) deletes.push(p.id);
+          } catch (x) { /* skip malformed */ }
+        }
+      });
+      const byId = new Map();
+      messages.forEach(m => { if (!deletes.includes(m.id)) byId.set(m.id, m); });
+      const list = [...byId.values()].sort((a, b) => new Date(a.date) - new Date(b.date));
+      const last = parseInt(e.parameter.last) || 0;
+      const page = last ? list.filter(m => new Date(m.date).getTime() > last).slice(-100) : list.slice(-200);
+      json = JSON.stringify({ messages: page, deletes });
     } else {
       json = JSON.stringify(rows);
     }

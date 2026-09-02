@@ -471,6 +471,7 @@ const chatReplyCancel = document.getElementById('chat-reply-cancel');
 
 let nickname = localStorage.getItem(STORAGE_NICK) || '';
 let chatData = JSON.parse(localStorage.getItem(STORAGE_CHAT) || '[]');
+let chatLast = 0;
 let replyTo = null;
 
 function hashColor(str) {
@@ -623,6 +624,43 @@ function loadBlocked() {
   script.src = `${url}?callback=${cb}&view=blocks&token=${encodeURIComponent(API_TOKEN)}`;
   script.onerror = () => { delete window[cb]; };
   document.body.appendChild(script);
+}
+
+function updateChatLast() {
+  chatLast = chatData.length ? Math.max(...chatData.map(m => new Date(m.date).getTime())) : 0;
+}
+
+function loadChatFromSheets() {
+  const url = GAS_LOG_URL();
+  if (!url) return;
+  updateChatLast();
+  const cb = 'amareaChat_' + Math.random().toString(36).slice(2, 9);
+  window[cb] = (res) => {
+    if (!res || !Array.isArray(res.messages)) { delete window[cb]; return; }
+    const byId = new Map(chatData.map(m => [m.id, m]));
+    let changed = false;
+    res.messages.forEach(m => {
+      if (m && m.id && !byId.has(m.id)) {
+        byId.set(m.id, m);
+        changed = true;
+      }
+    });
+    if (res.deletes) res.deletes.forEach(id => {
+      if (byId.has(id)) { byId.delete(id); changed = true; }
+    });
+    if (changed) {
+      chatData = [...byId.values()].sort((a, b) => new Date(a.date) - new Date(b.date));
+      if (chatData.length > 200) chatData = chatData.slice(-200);
+      pruneChat();
+      localStorage.setItem(STORAGE_CHAT, JSON.stringify(chatData));
+      renderChat();
+    }
+    delete window[cb];
+  };
+  const script = document.createElement('script');
+  script.src = `${url}?callback=${cb}&view=chat&last=${chatLast}&token=${encodeURIComponent(API_TOKEN)}`;
+  script.onerror = () => { delete window[cb]; };
+  document.head.appendChild(script);
 }
 
 // === JOIN FORM ===
@@ -1154,6 +1192,8 @@ initAuth();
 loadTracks();
 renderRadar();
 loadBlocked();
+loadChatFromSheets();
+setInterval(loadChatFromSheets, 5000);
 initMedia();
 updateMixerUI();
 if (currentUser && currentUser.role === 'admin') renderAdmin();
