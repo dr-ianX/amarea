@@ -24,7 +24,8 @@ const caboNews = [
 let currentUser = JSON.parse(localStorage.getItem(STORAGE_CURRENT) || 'null');
 let radarFilter = 'dj';
 
-const GAS_LOG_URL = () => localStorage.getItem(STORAGE_GAS) || '';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycby64726s5X6Kjlu-xu5Hx0AnlA8AhBBQEhZCxJjzA8QCTyaF352DjG_qBgamNwgK7PJ/exec';
+const GAS_LOG_URL = () => localStorage.getItem(STORAGE_GAS) || GAS_URL;
 
 function logToSheet(type, payload) {
   const url = GAS_LOG_URL();

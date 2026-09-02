@@ -111,6 +111,7 @@
   <script>
     const STORAGE_CURRENT = 'amarea_current_v1';
     const STORAGE_GAS = 'amarea_gas_url';
+    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycby64726s5X6Kjlu-xu5Hx0AnlA8AhBBQEhZCxJjzA8QCTyaF352DjG_qBgamNwgK7PJ/exec';
 
     const loginView = document.getElementById('login-view');
     const panelView = document.getElementById('panel-view');
@@ -129,15 +130,14 @@
       loginView.classList.add('hidden');
       panelView.classList.remove('hidden');
       authBox.innerHTML = `<span class="text-amarea-cyan">${currentUser.username}</span> · <a href="index.html" class="hover:text-white underline">Volver al sitio</a>`;
-      const gasUrl = localStorage.getItem(STORAGE_GAS);
+      let gasUrl = localStorage.getItem(STORAGE_GAS);
       if (!gasUrl) {
-        configView.classList.remove('hidden');
-        dashboardView.classList.add('hidden');
-      } else {
-        configView.classList.add('hidden');
-        dashboardView.classList.remove('hidden');
-        loadDashboard(gasUrl);
+        gasUrl = DEFAULT_GAS_URL;
+        localStorage.setItem(STORAGE_GAS, gasUrl);
       }
+      configView.classList.add('hidden');
+      dashboardView.classList.remove('hidden');
+      loadDashboard(gasUrl);
     }
 
     function login(username, password) {
