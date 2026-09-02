@@ -1,0 +1,10 @@
+services:
+  - type: static
+    name: amarea-landing
+    env: static
+    buildCommand: ""
+    staticPublishPath: .
+    routes:
+      - type: rewrite
+        source: /.*
+        destination: /index.html

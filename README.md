@@ -1,0 +1,42 @@
+# AMAREA Landing
+
+Landing page de AMAREA — fiestas inmersivas, música electrónica y experiencias en San José del Cabo, Baja California Sur.
+
+## Características
+
+- Diseño contemporáneo, minimalista y nocturno.
+- Pestañas: Inicio, Experiencia, Residentes, Eventos, Música, Comunidad y Contacto.
+- Chat de comunidad persistente en `localStorage`.
+- Reproductor de sets con visualizador; la música no inicia sola.
+- Carpeta `/musica` para que deposites tus sets manualmente.
+- Despliegue estático gratuito en Render.
+
+## Stack
+
+- HTML5
+- Tailwind CSS (CDN)
+- JavaScript vanilla
+- Web Audio API (visualizador)
+
+## Estructura
+
+- `index.html` — estructura de la landing
+- `styles.css` — estilos, efectos y animaciones
+- `app.js` — tabs, chat, música, visualizador y partículas
+- `musica/tracks.json` — lista de sets
+- `musica/` — archivos de audio
+
+## Despliegue en Render
+
+1. Crea un repositorio en GitHub.
+2. Sube la carpeta `amarea-landing` (o el contenido directo si es repo propio).
+3. En [render.com](https://render.com) elige **New → Static Site**.
+4. Conecta el repo y usa:
+   - **Build Command:** (vacío)
+   - **Publish directory:** `.`
+
+Render generará una URL tipo `https://amarea-landing.onrender.com`.
+
+## Nota sobre redes sociales
+
+Las redes enlazadas son ejemplos basados en la investigación pública disponible. Actualízalas con los enlaces oficiales reales cuando los tengas.

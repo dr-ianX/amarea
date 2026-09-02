@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AMAREA — Experiencias nocturnas · San José del Cabo</title>
+  <meta name="description" content="AMAREA: fiestas, música electrónica y experiencias inmersivas en San José del Cabo. DJs residentes, eventos y comunidad.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Space Grotesk', 'sans-serif'],
+            mono: ['Orbitron', 'sans-serif']
+          },
+          colors: {
+            amarea: {
+              black: '#030305',
+              coal: '#0a0a0f',
+              ink: '#111118',
+              pink: '#ff006e',
+              cyan: '#00f0ff',
+              violet: '#7000ff',
+              gold: '#f2c94c',
+              fire: '#ff6b35',
+              white: '#f6f6f7'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-amarea-black text-amarea-white font-sans antialiased overflow-x-hidden selection:bg-amarea-pink selection:text-white">
+  <canvas id="dust" class="fixed inset-0 w-full h-full pointer-events-none z-0"></canvas>
+  <div class="grain fixed inset-0 pointer-events-none z-50"></div>
+
+  <nav id="nav" class="fixed top-0 left-0 right-0 z-40 transition-all duration-500">
+    <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      <a href="#" class="tab-link text-2xl font-mono font-black tracking-widest gradient-text" data-tab="inicio">AMAREA</a>
+      <button id="menu-btn" class="md:hidden text-amarea-white" aria-label="Menu">☰</button>
+      <div id="nav-links" class="hidden md:flex items-center gap-8 text-xs font-display font-medium tracking-[0.2em] uppercase">
+        <a href="#" class="tab-link hover:text-amarea-pink transition-colors" data-tab="experiencia">Experiencia</a>
+        <a href="#" class="tab-link hover:text-amarea-cyan transition-colors" data-tab="residentes">Residentes</a>
+        <a href="#" class="tab-link hover:text-amarea-gold transition-colors" data-tab="eventos">Eventos</a>
+        <a href="#" class="tab-link hover:text-amarea-violet transition-colors" data-tab="musica">Música</a>
+        <a href="#" class="tab-link hover:text-amarea-pink transition-colors" data-tab="comunidad">Comunidad</a>
+        <a href="#" class="tab-link hover:text-amarea-cyan transition-colors" data-tab="contacto">Contacto</a>
+      </div>
+    </div>
+    <div id="mobile-menu" class="md:hidden hidden bg-amarea-ink/95 backdrop-blur-xl border-b border-white/5 px-6 py-6">
+      <div class="flex flex-col gap-4 text-sm font-display font-medium tracking-[0.15em] uppercase">
+        <a href="#" class="tab-link" data-tab="experiencia">Experiencia</a>
+        <a href="#" class="tab-link" data-tab="residentes">Residentes</a>
+        <a href="#" class="tab-link" data-tab="eventos">Eventos</a>
+        <a href="#" class="tab-link" data-tab="musica">Música</a>
+        <a href="#" class="tab-link" data-tab="comunidad">Comunidad</a>
+        <a href="#" class="tab-link" data-tab="contacto">Contacto</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="relative z-10 min-h-screen pt-20">
+    <!-- INICIO -->
+    <section id="inicio" class="tab-section active min-h-[90vh] flex flex-col justify-center items-center px-6 text-center">
+      <p class="text-xs font-display font-medium tracking-[0.35em] text-amarea-cyan/80 mb-6 uppercase">San José del Cabo · Baja California Sur</p>
+      <h1 class="hero-title text-[15vw] md:text-[12vw] leading-[0.85] font-mono font-black tracking-tighter mb-8">
+        <span class="block gradient-text">AMAREA</span>
+        <span class="block text-[6vw] md:text-[3.5vw] font-display font-light tracking-[0.15em] text-white/70 mt-2">LA NOCHE NOS UNE</span>
+      </h1>
+      <p class="max-w-2xl text-lg md:text-xl font-light text-white/60 leading-relaxed mb-10">
+        Fiestas inmersivas, música electrónica y experiencias que no se explican: se sienten. Desde el desierto de Los Cabos para el mundo.
+      </p>
+      <div class="flex flex-wrap gap-4 justify-center">
+        <button class="tab-cta px-8 py-3 rounded-full border border-amarea-pink/50 bg-amarea-pink/10 text-amarea-pink font-display font-medium uppercase tracking-widest hover:bg-amarea-pink hover:text-black transition-all duration-300" data-tab="eventos">Próximos eventos</button>
+        <button class="tab-cta px-8 py-3 rounded-full border border-white/10 hover:border-amarea-cyan hover:text-amarea-cyan font-display font-medium uppercase tracking-widest transition-all duration-300" data-tab="musica">Escuchar mixes</button>
+      </div>
+    </section>
+
+    <!-- EXPERIENCIA -->
+    <section id="experiencia" class="tab-section px-6 py-24 md:py-32 max-w-6xl mx-auto">
+      <div class="grid md:grid-cols-2 gap-16 items-center">
+        <div>
+          <p class="text-amarea-gold text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Filosofía</p>
+          <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8">El sonido<br><span class="gradient-text">como ritual</span></h2>
+          <p class="text-white/60 text-lg leading-relaxed mb-6">
+            AMAREA no es un evento. Es un punto de encuentro donde la intuición, la energía local y el diseño sonoro se convierten en algo físico.
+          </p>
+          <p class="text-white/60 text-lg leading-relaxed mb-8">
+            No creemos en la noche por defecto. Creemos en el detalle, la sorpresa y el flujo. Cada fiesta es una edición irrepetible, construida en torno a residentes, escultura sonora y un público que sabe escuchar.
+          </p>
+          <div class="flex gap-8 text-sm font-display font-medium tracking-widest uppercase">
+            <span class="text-amarea-cyan">DJs residentes</span>
+            <span class="text-amarea-pink">Experiencias inmersivas</span>
+            <span class="text-amarea-gold">San José del Cabo</span>
+          </div>
+        </div>
+        <div class="relative aspect-[4/5] rounded-3xl overflow-hidden border border-white/5 bg-amarea-ink/50 neon-box">
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="vinyl w-64 h-64 rounded-full border-4 border-amarea-ink bg-black relative shadow-2xl" id="vinyl-hero">
+              <div class="absolute inset-4 rounded-full border border-white/10"></div>
+              <div class="absolute inset-12 rounded-full border border-white/10"></div>
+              <div class="absolute top-1/2 left-1/2 w-16 h-16 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amarea-pink"></div>
+            </div>
+          </div>
+          <div class="absolute bottom-6 left-6 right-6">
+            <p class="text-xs font-display tracking-widest text-white/40 uppercase mb-1">Próximo capítulo</p>
+            <p class="text-2xl font-mono font-bold text-amarea-cyan">CRANIA · SAN JOSÉ DEL CABO</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESIDENTES -->
+    <section id="residentes" class="tab-section px-6 py-24 md:py-32 max-w-6xl mx-auto">
+      <p class="text-amarea-violet text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Residentes</p>
+      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-16">Los que <span class="gradient-text">habitan</span><br>la noche</h2>
+      <div id="residents-grid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+    </section>
+
+    <!-- EVENTOS -->
+    <section id="eventos" class="tab-section px-6 py-24 md:py-32 max-w-6xl mx-auto">
+      <p class="text-amarea-fire text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Calendario</p>
+      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-16">Próximas <span class="gradient-text">editions</span></h2>
+      <div id="events-list" class="space-y-6"></div>
+    </section>
+
+    <!-- MÚSICA -->
+    <section id="musica" class="tab-section px-6 py-24 md:py-32 max-w-6xl mx-auto">
+      <p class="text-amarea-cyan text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Archivo sonoro</p>
+      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8">Mixes & <span class="gradient-text">fiestas</span></h2>
+      <p class="text-white/50 max-w-xl mb-10">Selecciona un set. La música nunca comienza sola: tú activas el sonido.</p>
+      <div class="grid lg:grid-cols-[1fr,360px] gap-10">
+        <div id="track-list" class="space-y-3"></div>
+        <div class="sticky top-28 h-fit rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 neon-box">
+          <canvas id="visualizer" width="320" height="120" class="w-full h-32 rounded-xl bg-black/40 mb-6"></canvas>
+          <div id="now-playing" class="text-center mb-4">
+            <p class="text-xs text-white/40 uppercase tracking-widest mb-1">Ahora suena</p>
+            <h3 id="current-track" class="text-xl font-display font-bold text-white truncate">—</h3>
+            <p id="current-artist" class="text-sm text-white/50">Selecciona un track</p>
+          </div>
+          <div class="flex justify-center gap-6 items-center mb-4">
+            <button id="prev-btn" class="text-white/60 hover:text-amarea-cyan transition">«</button>
+            <button id="play-btn" class="w-14 h-14 rounded-full bg-amarea-pink text-black font-bold text-xl hover:scale-110 transition flex items-center justify-center">▶</button>
+            <button id="next-btn" class="text-white/60 hover:text-amarea-cyan transition">»</button>
+          </div>
+          <input id="progress" type="range" min="0" max="100" value="0" class="w-full mb-3 accent-amarea-cyan opacity-50 hover:opacity-100 transition">
+          <div class="flex justify-between text-xs text-white/30 font-mono">
+            <span id="time-current">0:00</span>
+            <span id="time-total">0:00</span>
+          </div>
+          <p class="text-[10px] text-white/30 text-center mt-4 uppercase tracking-widest">No autoplay · actívalo tú</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMUNIDAD -->
+    <section id="comunidad" class="tab-section px-6 py-24 md:py-32 max-w-4xl mx-auto">
+      <p class="text-amarea-pink text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Comunidad</p>
+      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8">El <span class="gradient-text">chat</span> de la tribu</h2>
+      <p class="text-white/50 mb-8">Conecta con otros asistentes, comparte momentos y entérate de lo que viene.</p>
+      <div class="rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 h-[520px] flex flex-col neon-box">
+        <div class="flex gap-3 mb-4">
+          <input id="chat-nick" type="text" placeholder="Tu nombre" maxlength="20" class="bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm focus:border-amarea-pink outline-none w-40">
+          <button id="set-nick" class="px-4 py-2 text-xs font-display font-bold uppercase tracking-widest rounded-xl border border-white/10 hover:border-amarea-pink transition">Entrar</button>
+        </div>
+        <div id="chat-messages" class="flex-1 overflow-y-auto space-y-3 pr-2 mb-4"></div>
+        <div class="flex gap-3">
+          <input id="chat-input" type="text" placeholder="Escribe un mensaje..." maxlength="240" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-cyan outline-none" disabled>
+          <button id="chat-send" class="px-6 py-3 rounded-xl bg-amarea-cyan/10 text-amarea-cyan font-display font-bold uppercase tracking-widest text-xs hover:bg-amarea-cyan hover:text-black transition" disabled>Enviar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACTO -->
+    <section id="contacto" class="tab-section px-6 py-24 md:py-32 max-w-4xl mx-auto text-center">
+      <p class="text-amarea-gold text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Conexión</p>
+      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8">Hagamos <span class="gradient-text">magia</span></h2>
+      <p class="text-white/60 text-lg mb-10 max-w-2xl mx-auto">Producción de eventos, residencias, colaboraciones y experiencias inmersivas. Escríbenos o únete a la lista.</p>
+      <div class="flex flex-wrap justify-center gap-6 mb-12 text-sm font-display font-medium tracking-widest uppercase">
+        <a href="https://instagram.com/amareaoficial" target="_blank" rel="noopener" class="hover:text-amarea-pink transition">Instagram</a>
+        <a href="https://instagram.com/craniareclaim" target="_blank" rel="noopener" class="hover:text-amarea-cyan transition">Crania</a>
+        <a href="mailto:hello@amarea.mx" class="hover:text-amarea-gold transition">hello@amarea.mx</a>
+      </div>
+      <form id="join-form" class="max-w-md mx-auto flex gap-3 mb-12">
+        <input id="join-email" type="email" placeholder="tu@email.com" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-cyan outline-none" required>
+        <button type="submit" class="px-6 py-3 rounded-xl bg-amarea-pink text-black font-display font-bold uppercase tracking-widest text-xs hover:bg-white transition">Unirme</button>
+      </form>
+      <p id="join-msg" class="text-sm text-amarea-cyan hidden mb-8">Bienvenido a la comunidad AMAREA.</p>
+      <p class="text-xs text-white/20 uppercase tracking-[0.3em]">San José del Cabo · Baja California Sur · México</p>
+    </section>
+
+    <footer class="px-6 py-12 border-t border-white/5 text-center">
+      <p class="text-2xl font-mono font-black tracking-widest gradient-text mb-2">AMAREA</p>
+      <p class="text-xs text-white/20 uppercase tracking-widest">Hecho con purpurina, desierto y buena vibra · 2026</p>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

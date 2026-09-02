@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "tracks": [
+    {
+      "title": "AMAREA — Sunset set en el desierto",
+      "artist": "Akir B",
+      "src": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+      "duration": "1:12:04"
+    },
+    {
+      "title": "AMAREA — CRANIA closing night",
+      "artist": "Lua Mora",
+      "src": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+      "duration": "1:05:00"
+    },
+    {
+      "title": "AMAREA — Playa privada afters",
+      "artist": "Simbionte",
+      "src": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+      "duration": "0:58:30"
+    }
+  ]
+}
