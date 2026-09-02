@@ -7,6 +7,7 @@ const STORAGE_USERS = 'amarea_users_v1';
 const STORAGE_BRIEFS = 'amarea_briefs_v1';
 const STORAGE_CURRENT = 'amarea_current_v1';
 const STORAGE_DRAFT = 'amarea_draft_v1';
+const STORAGE_GAS = 'amarea_gas_url';
 
 const djNews = [
   { title: 'Residente Akir B estrena set en CRANIA', date: '2026-02-01', tag: 'Residente', summary: 'Un viaje de techno oscuro y disco lunar grabado en vivo durante la última edición AMAREA.' },
@@ -22,6 +23,19 @@ const caboNews = [
 
 let currentUser = JSON.parse(localStorage.getItem(STORAGE_CURRENT) || 'null');
 let radarFilter = 'dj';
+
+const GAS_LOG_URL = () => localStorage.getItem(STORAGE_GAS) || '';
+
+function logToSheet(type, payload) {
+  const url = GAS_LOG_URL();
+  if (!url) return;
+  const body = JSON.stringify({
+    type,
+    username: currentUser?.username || nickname || 'guest',
+    payload
+  });
+  fetch(url, { method: 'POST', body, mode: 'no-cors' }).catch(() => {});
+}
 
 const residents = [
   { name: 'Akir B', role: 'DJ · Techno / Dark Disco', vibe: 'Sets profundos, texturas desérticas.' },
@@ -351,6 +365,7 @@ function addMessage(text) {
   chatData.push(msg);
   if (chatData.length > 100) chatData = chatData.slice(-100);
   localStorage.setItem(STORAGE_CHAT, JSON.stringify(chatData));
+  logToSheet('chat', msg);
   renderChat();
 }
 
@@ -390,6 +405,7 @@ joinForm?.addEventListener('submit', (e) => {
     const list = JSON.parse(localStorage.getItem(STORAGE_JOIN) || '[]');
     list.push({ email, date: new Date().toISOString() });
     localStorage.setItem(STORAGE_JOIN, JSON.stringify(list));
+    logToSheet('join', { email, date: new Date().toISOString() });
     joinMsg.classList.remove('hidden');
     joinForm.reset();
     setTimeout(() => joinMsg.classList.add('hidden'), 5000);
@@ -454,6 +470,7 @@ function login(username, password) {
     currentUser = { username: found.username, role: found.role };
     saveCurrent();
     updateAuthUI();
+    logToSheet('login', { username: found.username, role: found.role });
     closeAuth();
     return true;
   }
@@ -468,6 +485,7 @@ function register(username, password) {
   currentUser = { username, role: 'cliente' };
   saveCurrent();
   updateAuthUI();
+  logToSheet('register', { username, role: 'cliente' });
   closeAuth();
   return true;
 }
@@ -691,6 +709,7 @@ briefForm?.addEventListener('submit', (e) => {
   const list = getBriefs();
   list.push(submission);
   setBriefs(list);
+  logToSheet('cuestionario', submission);
   localStorage.removeItem(draftKey());
   answers = {};
   currentStep = 0;

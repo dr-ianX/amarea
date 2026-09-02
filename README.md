@@ -54,6 +54,21 @@ En la versión estática todo se guarda en el navegador con `localStorage`:
 - El admin puede ver solo las respuestas enviadas **desde ese mismo dispositivo/navegador**.
 - Si quieres que los 4 integrantes respondan desde sus propios dispositivos y tú veas todo desde el tuyo, se requiere un backend + base de datos (p. ej. Supabase, Firebase o una API en Render).
 
+## Conectar métricas a Google Sheets
+
+1. Crea una hoja de cálculo en Google Sheets vacía.
+2. Abre **Extensión → Apps Script** y pega el contenido de `gas/LogToSheet.gs`.
+3. Guarda el proyecto (`Ctrl+S`).
+4. Ve a **Implementar → Nuevo implementación → Aplicación web**.
+5. Configura:
+   - **Ejecutar la aplicación como:** tu cuenta.
+   - **Acceder a la aplicación web:** Cualquiera, incluso anónimo.
+6. Copia la URL de la aplicación web.
+7. Abre `https://tu-sitio/privado.html` e inicia sesión como `admin`.
+8. Pega la URL del Apps Script en el campo de configuración.
+
+Desde ese momento, chat, registros, logins y cuestionarios se registrarán en la hoja de cálculo. El panel `privado.html` muestra el aviso de privacidad y un dashboard interno exclusivo para el admin.
+
 ## Nota sobre redes sociales
 
 Las redes enlazadas son ejemplos basados en la investigación pública disponible. Actualízalas con los enlaces oficiales reales cuando los tengas.

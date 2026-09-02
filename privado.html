@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AMAREA — Panel privado</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'amarea-cyan': '#00f0ff',
+            'amarea-pink': '#ff00aa',
+            'amarea-fire': '#ff4d00',
+            'amarea-gold': '#ffd700',
+          },
+          fontFamily: {
+            'display': ['"Space Grotesk"', 'sans-serif'],
+            'mono': ['"Space Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body { background: #050505; color: #fff; font-family: 'Space Grotesk', sans-serif; }
+    .grain { position: fixed; inset: 0; opacity: 0.06; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"); }
+    .neon { text-shadow: 0 0 12px currentColor; }
+  </style>
+</head>
+<body class="min-h-screen relative overflow-x-hidden">
+  <div class="grain"></div>
+
+  <main class="relative z-10 max-w-6xl mx-auto px-6 py-10">
+    <header class="mb-10 border-b border-white/10 pb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-display font-bold tracking-tight text-amarea-cyan neon">AMAREA</h1>
+        <p class="text-xs font-mono uppercase tracking-widest text-white/40 mt-1">Panel privado · Métricas internas</p>
+      </div>
+      <div id="auth-box" class="text-sm text-white/60"></div>
+    </header>
+
+    <section id="login-view" class="hidden max-w-md mx-auto bg-white/[0.03] border border-white/10 rounded-2xl p-8">
+      <h2 class="text-xl font-display font-bold text-white mb-4">Acceso restringido</h2>
+      <p class="text-sm text-white/50 mb-6">Solo el administrador puede ver este panel.</p>
+      <form id="login-form" class="space-y-4">
+        <input type="text" id="login-user" placeholder="Usuario" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-amarea-cyan outline-none" />
+        <input type="password" id="login-pass" placeholder="Contraseña" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-amarea-cyan outline-none" />
+        <button type="submit" class="w-full px-5 py-3 rounded-xl border border-amarea-cyan/30 text-amarea-cyan hover:bg-amarea-cyan/10 text-sm font-display font-bold uppercase tracking-widest transition">Entrar</button>
+      </form>
+      <p id="login-error" class="hidden mt-4 text-amarea-fire text-sm"></p>
+    </section>
+
+    <section id="panel-view" class="hidden">
+      <section class="mb-10">
+        <h2 class="text-lg font-display font-bold text-white mb-3">Aviso de privacidad y uso interno</h2>
+        <p class="text-[10px] leading-relaxed text-white/40 uppercase tracking-wider max-w-4xl">
+          La información recopilada en este panel es exclusiva para uso interno de AMAREA.
+          No se venden, comparten, comercializan ni exponen datos personales a terceros ni al público.
+          Toda la información se almacena en una hoja de cálculo privada controlada por el administrador,
+          con acceso limitado, sin fines publicitarios ni de lucro directo.
+          Los visitantes conservan el derecho a solicitar la eliminación de sus datos.
+          Los datos son anónimos o semi-anónimos y se utilizan únicamente para métricas internas,
+          mejora de experiencia y seguimiento del proyecto. Al continuar, aceptas estos términos.
+        </p>
+      </section>
+
+      <section id="config-view" class="mb-10 hidden">
+        <h2 class="text-lg font-display font-bold text-white mb-3">Configurar Google Apps Script</h2>
+        <p class="text-sm text-white/50 mb-4">Pega la URL de la aplicación web de Google Apps Script para empezar a recibir métricas.</p>
+        <div class="flex flex-col md:flex-row gap-3 max-w-2xl">
+          <input type="text" id="gas-url" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-amarea-pink outline-none" />
+          <button id="save-gas" class="px-5 py-3 rounded-xl border border-amarea-pink/30 text-amarea-pink hover:bg-amarea-pink/10 text-sm font-display font-bold uppercase tracking-widest transition">Guardar URL</button>
+        </div>
+      </section>
+
+      <section id="dashboard-view" class="hidden">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-lg font-display font-bold text-white">Métricas</h2>
+          <a id="sheet-link" href="#" target="_blank" rel="noopener" class="text-xs text-amarea-cyan hover:text-white transition font-display uppercase tracking-widest">Abrir hoja de cálculo</a>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="stats">
+          <div class="p-4 rounded-2xl border border-white/10 bg-white/[0.02]">
+            <p class="text-[10px] font-mono uppercase tracking-widest text-white/40">Total</p>
+            <p class="text-2xl font-display font-bold text-amarea-cyan" id="stat-total">0</p>
+          </div>
+        </div>
+
+        <div class="bg-white/[0.02] border border-white/10 rounded-2xl overflow-hidden">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-white/5 text-white/50 text-[10px] font-mono uppercase tracking-widest">
+              <tr>
+                <th class="p-4">Hora</th>
+                <th class="p-4">Tipo</th>
+                <th class="p-4">Usuario</th>
+                <th class="p-4">Datos</th>
+              </tr>
+            </thead>
+            <tbody id="rows" class="divide-y divide-white/5 text-white/70"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_CURRENT = 'amarea_current_v1';
+    const STORAGE_GAS = 'amarea_gas_url';
+
+    const loginView = document.getElementById('login-view');
+    const panelView = document.getElementById('panel-view');
+    const configView = document.getElementById('config-view');
+    const dashboardView = document.getElementById('dashboard-view');
+    const authBox = document.getElementById('auth-box');
+
+    let currentUser = JSON.parse(localStorage.getItem(STORAGE_CURRENT) || 'null');
+
+    function checkAdmin() {
+      if (!currentUser || currentUser.role !== 'admin') {
+        loginView.classList.remove('hidden');
+        panelView.classList.add('hidden');
+        return;
+      }
+      loginView.classList.add('hidden');
+      panelView.classList.remove('hidden');
+      authBox.innerHTML = `<span class="text-amarea-cyan">${currentUser.username}</span> · <a href="index.html" class="hover:text-white underline">Volver al sitio</a>`;
+      const gasUrl = localStorage.getItem(STORAGE_GAS);
+      if (!gasUrl) {
+        configView.classList.remove('hidden');
+        dashboardView.classList.add('hidden');
+      } else {
+        configView.classList.add('hidden');
+        dashboardView.classList.remove('hidden');
+        loadDashboard(gasUrl);
+      }
+    }
+
+    function login(username, password) {
+      const users = JSON.parse(localStorage.getItem('amarea_users_v1') || '[]');
+      const found = users.find(u => u.username === username && u.password === password && u.role === 'admin');
+      if (found) {
+        currentUser = { username: found.username, role: found.role };
+        localStorage.setItem(STORAGE_CURRENT, JSON.stringify(currentUser));
+        return true;
+      }
+      return false;
+    }
+
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const u = document.getElementById('login-user').value.trim();
+      const p = document.getElementById('login-pass').value;
+      if (login(u, p)) {
+        checkAdmin();
+      } else {
+        document.getElementById('login-error').textContent = 'Usuario o contraseña incorrectos.';
+        document.getElementById('login-error').classList.remove('hidden');
+      }
+    });
+
+    document.getElementById('save-gas').addEventListener('click', () => {
+      const url = document.getElementById('gas-url').value.trim();
+      if (url) {
+        localStorage.setItem(STORAGE_GAS, url);
+        checkAdmin();
+      }
+    });
+
+    function loadDashboard(url) {
+      const script = document.createElement('script');
+      script.src = `${url}?callback=amareaRenderDashboard`;
+      script.onerror = () => {
+        document.getElementById('rows').innerHTML = '<tr><td colspan="4" class="p-4 text-amarea-fire text-sm">No se pudo cargar el dashboard. Revisa la URL del Apps Script.</td></tr>';
+      };
+      document.body.appendChild(script);
+      document.getElementById('sheet-link').href = '#';
+      // El enlace real a la hoja se puede poner manualmente si la tienes.
+    }
+
+    window.amareaRenderDashboard = function(rows) {
+      if (!Array.isArray(rows) || !rows.length) return;
+      const headers = rows.shift();
+      const tbody = document.getElementById('rows');
+      tbody.innerHTML = '';
+
+      const counts = {};
+      rows.reverse().forEach((r, i) => {
+        const [timestamp, type, username, payload] = r;
+        counts[type] = (counts[type] || 0) + 1;
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-white/[0.03]';
+        tr.innerHTML = `
+          <td class="p-4 text-white/50 font-mono text-xs">${new Date(timestamp).toLocaleString('es-MX')}</td>
+          <td class="p-4"><span class="text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded bg-white/5 text-amarea-cyan">${type}</span></td>
+          <td class="p-4 text-white/80">${username}</td>
+          <td class="p-4 max-w-sm">
+            <details class="text-xs">
+              <summary class="cursor-pointer text-white/40 hover:text-white select-none">Ver detalle</summary>
+              <pre class="mt-2 p-3 rounded bg-black/40 overflow-auto text-white/60 font-mono text-[10px] leading-relaxed">${payload.replace(/</g, '&lt;')}</pre>
+            </details>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('stat-total').textContent = rows.length;
+      const stats = document.getElementById('stats');
+      stats.innerHTML = `<div class="p-4 rounded-2xl border border-white/10 bg-white/[0.02]">
+        <p class="text-[10px] font-mono uppercase tracking-widest text-white/40">Total</p>
+        <p class="text-2xl font-display font-bold text-amarea-cyan">${rows.length}</p>
+      </div>`;
+      Object.entries(counts).sort((a, b) => b[1] - a[1]).forEach(([type, count]) => {
+        const div = document.createElement('div');
+        div.className = 'p-4 rounded-2xl border border-white/10 bg-white/[0.02]';
+        div.innerHTML = `<p class="text-[10px] font-mono uppercase tracking-widest text-white/40">${type}</p><p class="text-2xl font-display font-bold text-white">${count}</p>`;
+        stats.appendChild(div);
+      });
+    };
+
+    checkAdmin();
+  </script>
+</body>
+</html>
