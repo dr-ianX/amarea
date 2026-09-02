@@ -112,6 +112,7 @@
     const STORAGE_CURRENT = 'amarea_current_v1';
     const STORAGE_GAS = 'amarea_gas_url';
     const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycby64726s5X6Kjlu-xu5Hx0AnlA8AhBBQEhZCxJjzA8QCTyaF352DjG_qBgamNwgK7PJ/exec';
+    const API_TOKEN = 'amarea-token-2026-v1';
 
     const loginView = document.getElementById('login-view');
     const panelView = document.getElementById('panel-view');
@@ -173,13 +174,23 @@
 
     function loadDashboard(url) {
       const script = document.createElement('script');
-      script.src = `${url}?callback=amareaRenderDashboard`;
+      script.src = `${url}?callback=amareaRenderDashboard&token=${encodeURIComponent(API_TOKEN)}`;
       script.onerror = () => {
         document.getElementById('rows').innerHTML = '<tr><td colspan="4" class="p-4 text-amarea-fire text-sm">No se pudo cargar el dashboard. Revisa la URL del Apps Script.</td></tr>';
       };
       document.body.appendChild(script);
       document.getElementById('sheet-link').href = '#';
       // El enlace real a la hoja se puede poner manualmente si la tienes.
+    }
+
+    function blockDevice(deviceId) {
+      const url = localStorage.getItem(STORAGE_GAS) || DEFAULT_GAS_URL;
+      fetch(url, {
+        method: 'POST',
+        body: JSON.stringify({ token: API_TOKEN, type: 'block', username: 'admin', payload: { deviceId } }),
+        mode: 'no-cors'
+      }).catch(() => {});
+      setTimeout(() => loadDashboard(url), 1000);
     }
 
     window.amareaRenderDashboard = function(rows) {
@@ -189,24 +200,38 @@
       tbody.innerHTML = '';
 
       const counts = {};
-      rows.reverse().forEach((r, i) => {
+      rows.reverse().forEach((r) => {
         const [timestamp, type, username, payload] = r;
         counts[type] = (counts[type] || 0) + 1;
 
+        let parsed = {};
+        try { parsed = JSON.parse(payload); } catch (e) {}
+        const deviceId = parsed.deviceId || '';
+
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-white/[0.03]';
+        const payloadText = (typeof payload === 'string' ? payload : JSON.stringify(payload)).replace(/</g, '&lt;');
+        const blockBtn = (type === 'chat' && deviceId)
+          ? `<button data-block="${deviceId}" class="mt-2 text-[10px] font-display font-bold uppercase tracking-widest text-amarea-fire hover:text-white transition border border-amarea-fire/30 rounded px-2 py-1">Bloquear dispositivo</button>`
+          : '';
         tr.innerHTML = `
           <td class="p-4 text-white/50 font-mono text-xs">${new Date(timestamp).toLocaleString('es-MX')}</td>
           <td class="p-4"><span class="text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded bg-white/5 text-amarea-cyan">${type}</span></td>
-          <td class="p-4 text-white/80">${username}</td>
+          <td class="p-4 text-white/80">${username}${deviceId ? `<p class="text-[9px] font-mono text-white/30 mt-1">ID: ${deviceId}</p>` : ''}</td>
           <td class="p-4 max-w-sm">
+            ${blockBtn}
             <details class="text-xs">
               <summary class="cursor-pointer text-white/40 hover:text-white select-none">Ver detalle</summary>
-              <pre class="mt-2 p-3 rounded bg-black/40 overflow-auto text-white/60 font-mono text-[10px] leading-relaxed">${payload.replace(/</g, '&lt;')}</pre>
+              <pre class="mt-2 p-3 rounded bg-black/40 overflow-auto text-white/60 font-mono text-[10px] leading-relaxed">${payloadText}</pre>
             </details>
           </td>
         `;
         tbody.appendChild(tr);
+      });
+
+      tbody.addEventListener('click', (e) => {
+        const id = e.target.dataset.block;
+        if (id) blockDevice(id);
       });
 
       document.getElementById('stat-total').textContent = rows.length;

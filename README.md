@@ -42,7 +42,7 @@ Landing page de AMAREA — fiestas inmersivas, música electrónica y experienci
 2. Sube la carpeta `amarea-landing` (o el contenido directo si es repo propio).
 3. En [render.com](https://render.com) elige **New → Static Site**.
 4. Conecta el repo y usa:
-   - **Build Command:** (vacío)
+   - **Build Command:** `npm run build`
    - **Publish directory:** `.`
 
 Render generará una URL tipo `https://amarea-landing.onrender.com`.
@@ -68,6 +68,25 @@ En la versión estática todo se guarda en el navegador con `localStorage`:
 8. Pega la URL del Apps Script en el campo de configuración.
 
 Desde ese momento, chat, registros, logins y cuestionarios se registrarán en la hoja de cálculo. El panel `privado.html` muestra el aviso de privacidad y un dashboard interno exclusivo para el admin.
+
+## Multimedia dinámica
+
+La carpeta `multimedia/` detecta automáticamente fotos, clips y videos. Render ejecuta `npm run build` (que corre `build-media.js`) antes de publicar, generando `multimedia.json`. El navegador lee ese archivo y reproduce un fondo visual aleatorio que cambia en cada carga y cada pocos segundos.
+
+Para usarlo, deposita tus archivos en `multimedia/`:
+- Soportados: `.jpg`, `.jpeg`, `.png`, `.gif`, `.webp`, `.avif`, `.svg`, `.mp4`, `.webm`, `.mov`, `.ogv`, `.mkv`
+- En local: corre `node build-media.js` tras añadir archivos.
+- En Render: se regenera automáticamente con cada deploy.
+
+El sitio evita cargar clips muy largos con tiempos de rotación de 7-20 segundos. Si un video es largo, simplemente pasa al siguiente clip.
+
+## Seguridad y privacidad
+
+- No se recolectan datos personales. Cada navegador recibe un `deviceId` anónimo persistente en `localStorage`.
+- Ese `deviceId` no se muestra a los usuarios, pero sí al administrador en el dashboard para evitar suplantaciones y moderar.
+- Las peticiones al Apps Script incluyen un token compartido (`amarea-token-2026-v1`). Los visitantes normales no pueden escribir en la hoja sin ese token.
+- El admin puede bloquear dispositivos desde `privado.html` sin crear cuentas.
+- El único espacio público entre usuarios es el chat. Las respuestas del cuestionario y los registros solo los ve el admin.
 
 ## Nota sobre redes sociales
 

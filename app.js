@@ -8,6 +8,8 @@ const STORAGE_BRIEFS = 'amarea_briefs_v1';
 const STORAGE_CURRENT = 'amarea_current_v1';
 const STORAGE_DRAFT = 'amarea_draft_v1';
 const STORAGE_GAS = 'amarea_gas_url';
+const STORAGE_DEVICE = 'amarea_device_v1';
+const API_TOKEN = 'amarea-token-2026-v1';
 
 const djNews = [
   { title: 'Residente Akir B estrena set en CRANIA', date: '2026-02-01', tag: 'Residente', summary: 'Un viaje de techno oscuro y disco lunar grabado en vivo durante la última edición AMAREA.' },
@@ -23,6 +25,17 @@ const caboNews = [
 
 let currentUser = JSON.parse(localStorage.getItem(STORAGE_CURRENT) || 'null');
 let radarFilter = 'dj';
+let deviceId = localStorage.getItem(STORAGE_DEVICE);
+let blockedIds = new Set();
+
+function getDeviceId() {
+  if (!deviceId) {
+    deviceId = crypto.randomUUID ? crypto.randomUUID() : 'd-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
+    localStorage.setItem(STORAGE_DEVICE, deviceId);
+  }
+  return deviceId;
+}
+getDeviceId();
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycby64726s5X6Kjlu-xu5Hx0AnlA8AhBBQEhZCxJjzA8QCTyaF352DjG_qBgamNwgK7PJ/exec';
 const GAS_LOG_URL = () => localStorage.getItem(STORAGE_GAS) || GAS_URL;
@@ -31,8 +44,10 @@ function logToSheet(type, payload) {
   const url = GAS_LOG_URL();
   if (!url) return;
   const body = JSON.stringify({
+    token: API_TOKEN,
     type,
     username: currentUser?.username || nickname || 'guest',
+    deviceId: getDeviceId(),
     payload
   });
   fetch(url, { method: 'POST', body, mode: 'no-cors' }).catch(() => {});
@@ -357,9 +372,16 @@ function renderChat() {
 
 function addMessage(text) {
   if (!nickname || !text.trim()) return;
+  if (blockedIds.has(getDeviceId())) {
+    chatInput.disabled = true;
+    chatSend.disabled = true;
+    chatInput.placeholder = 'Usuario bloqueado.';
+    return;
+  }
   const msg = {
     id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
     author: nickname,
+    deviceId: getDeviceId(),
     text: text.trim(),
     date: new Date().toISOString()
   };
@@ -394,6 +416,25 @@ chatInput.addEventListener('keydown', (e) => {
 });
 
 renderChat();
+
+function loadBlocked() {
+  const url = GAS_LOG_URL();
+  if (!url) return;
+  const cb = 'amareaBlocks_' + Math.random().toString(36).slice(2, 9);
+  window[cb] = (ids) => {
+    blockedIds = new Set(ids || []);
+    if (blockedIds.has(getDeviceId())) {
+      chatInput.disabled = true;
+      chatSend.disabled = true;
+      chatInput.placeholder = 'Usuario bloqueado.';
+    }
+    delete window[cb];
+  };
+  const script = document.createElement('script');
+  script.src = `${url}?callback=${cb}&view=blocks&token=${encodeURIComponent(API_TOKEN)}`;
+  script.onerror = () => { delete window[cb]; };
+  document.body.appendChild(script);
+}
 
 // === JOIN FORM ===
 const joinForm = document.getElementById('join-form');
@@ -851,10 +892,79 @@ if (spotlight) {
   });
 }
 
+function initMedia() {
+  const bg = document.getElementById('media-bg');
+  if (!bg) return;
+  fetch('multimedia.json')
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (!data || !data.items || !data.items.length) return;
+      const mediaList = data.items;
+      const slots = [];
+      for (let i = 0; i < 2; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'absolute inset-0 transition-opacity duration-1000 ease-in-out';
+        slot.style.opacity = '0';
+        bg.appendChild(slot);
+        slots.push(slot);
+      }
+      let currentIndex = -1;
+      let activeSlot = 0;
+
+      function showNext() {
+        let nextIndex;
+        do { nextIndex = Math.floor(Math.random() * mediaList.length); }
+        while (nextIndex === currentIndex && mediaList.length > 1);
+        currentIndex = nextIndex;
+        activeSlot = (activeSlot + 1) % 2;
+        const item = mediaList[currentIndex];
+        const slot = slots[activeSlot];
+        slot.innerHTML = '';
+        let el;
+        const loaded = () => {
+          slot.style.opacity = '1';
+          setTimeout(() => {
+            slots.forEach((s, i) => { if (i !== activeSlot) s.style.opacity = '0'; });
+          }, 50);
+        };
+        if (item.type === 'video') {
+          el = document.createElement('video');
+          el.src = item.path;
+          el.muted = true;
+          el.loop = true;
+          el.playsInline = true;
+          el.autoplay = true;
+          el.preload = 'metadata';
+          el.className = 'w-full h-full object-cover';
+          el.onloadeddata = loaded;
+          el.onerror = loaded;
+        } else {
+          el = document.createElement('img');
+          el.src = item.path;
+          el.alt = '';
+          el.decoding = 'async';
+          el.className = 'w-full h-full object-cover';
+          el.onload = loaded;
+          el.onerror = loaded;
+        }
+        slot.appendChild(el);
+        const duration = item.type === 'video'
+          ? 10000 + Math.random() * 10000
+          : 7000 + Math.random() * 8000;
+        setTimeout(showNext, duration);
+      }
+
+      showNext();
+    })
+    .catch(() => {});
+}
+
 // === INIT ===
 seedAdmin();
 initAuth();
 loadTracks();
 renderRadar();
+loadBlocked();
+initMedia();
 if (currentUser && currentUser.role === 'admin') renderAdmin();
 switchTab('inicio');

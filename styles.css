@@ -390,3 +390,34 @@ input[type="range"]::-webkit-slider-thumb {
   mix-blend-mode: screen;
 }
 
+/* Dynamic media background */
+#media-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background: var(--black);
+}
+
+#media-bg video,
+#media-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#media-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, rgba(3, 3, 5, 0.45), rgba(3, 3, 5, 0.85)),
+    linear-gradient(to right, rgba(3, 3, 5, 0.25), transparent 20%, transparent 80%, rgba(3, 3, 5, 0.25));
+}
+
+#dust {
+  z-index: 2 !important;
+}
+

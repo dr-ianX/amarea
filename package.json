@@ -1,0 +1,12 @@
+{
+  "name": "amarea-landing",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AMAREA landing con multimedia dinámica y métricas en Google Sheets",
+  "scripts": {
+    "build": "node build-media.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
