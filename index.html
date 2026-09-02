@@ -218,34 +218,25 @@
     </section>
 
     <!-- BRIEF -->
-    <section id="brief" class="tab-section px-6 py-24 md:py-32 max-w-4xl mx-auto">
-      <p class="text-amarea-violet text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Brief</p>
-      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-6">Cuéntanos tu <span class="gradient-text">proyecto</span></h2>
-      <p class="text-white/50 mb-8">Responde el cuestionario. Solo el equipo de AMAREA verá tus respuestas.</p>
-      <form id="brief-form" class="space-y-5 rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 md:p-10 neon-box">
-        <input type="text" name="nombre" placeholder="Nombre completo" required class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-pink outline-none">
-        <input type="email" name="email" placeholder="Email" required class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-pink outline-none">
-        <select name="tipo" required class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-pink outline-none text-white">
-          <option value="" disabled selected>Tipo de evento</option>
-          <option value="fiesta">Fiesta pública</option>
-          <option value="privado">Evento privado</option>
-          <option value="corporativo">Corporativo / brand</option>
-          <option value="residencia">Residencia artística</option>
-          <option value="otro">Otro</option>
-        </select>
-        <input type="date" name="fecha" class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-pink outline-none text-white/70">
-        <select name="invitados" class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-pink outline-none text-white">
-          <option value="" disabled selected>Número aproximado de invitados</option>
-          <option value="50">&lt; 50</option>
-          <option value="100">50 – 100</option>
-          <option value="300">100 – 300</option>
-          <option value="500">300 – 500</option>
-          <option value="+500">+ 500</option>
-        </select>
-        <textarea name="detalles" rows="4" placeholder="Cuéntanos la idea, la energía, el sueño..." required class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-pink outline-none"></textarea>
-        <button type="submit" class="w-full py-4 rounded-xl bg-amarea-pink text-black font-display font-bold uppercase tracking-widest hover:bg-white transition">Enviar brief</button>
-      </form>
-      <p id="brief-msg" class="hidden text-amarea-cyan text-sm mt-4">Brief enviado. Te contactaremos pronto.</p>
+    <section id="brief" class="tab-section px-6 py-24 md:py-32 max-w-6xl mx-auto">
+      <p class="text-amarea-violet text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Cuestionario</p>
+      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-6">Identidad, <span class="gradient-text">estructura y futuro</span></h2>
+      <p id="brief-instructions" class="text-white/50 mb-6 text-sm leading-relaxed">
+        161 preguntas para entender qué es AMAREA, qué quiere ser y cómo funciona. Cada integrante responde por separado. No hay respuestas correctas. Responde desde lo que piensas. Si no sabes algo, escribe "no sé".
+      </p>
+      <div id="brief-wizard" class="hidden rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 md:p-10 neon-box">
+        <div id="brief-progress" class="flex flex-wrap gap-2 mb-8"></div>
+        <form id="brief-form" class="space-y-6">
+          <div id="brief-step" class="min-h-[300px]"></div>
+          <div class="flex flex-wrap gap-4 pt-6 border-t border-white/10">
+            <button type="button" id="brief-prev" class="px-6 py-3 rounded-xl border border-white/10 text-white/70 text-xs font-display font-bold uppercase tracking-widest hover:border-amarea-cyan hover:text-amarea-cyan transition hidden">Anterior</button>
+            <button type="button" id="brief-next" class="px-6 py-3 rounded-xl bg-amarea-cyan text-black text-xs font-display font-bold uppercase tracking-widest hover:bg-white transition">Siguiente</button>
+            <button type="button" id="brief-save" class="px-6 py-3 rounded-xl border border-amarea-gold text-amarea-gold text-xs font-display font-bold uppercase tracking-widest hover:bg-amarea-gold hover:text-black transition ml-auto">Guardar borrador</button>
+            <button type="submit" id="brief-submit" class="px-6 py-3 rounded-xl bg-amarea-pink text-black text-xs font-display font-bold uppercase tracking-widest hover:bg-white transition hidden">Enviar cuestionario</button>
+          </div>
+        </form>
+      </div>
+      <p id="brief-msg" class="hidden text-amarea-cyan text-sm mt-4"></p>
     </section>
 
     <!-- ADMIN -->
@@ -254,9 +245,9 @@
       <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8">Panel de <span class="gradient-text">control</span></h2>
       <div class="grid md:grid-cols-2 gap-10">
         <div>
-          <h3 class="text-2xl font-display font-bold mb-4">Briefs recibidos</h3>
+          <h3 class="text-2xl font-display font-bold mb-4">Cuestionarios recibidos</h3>
           <div id="admin-briefs" class="space-y-4"></div>
-          <button id="export-briefs" class="mt-6 px-6 py-2 rounded-xl border border-amarea-cyan text-amarea-cyan text-xs font-display font-bold uppercase tracking-widest hover:bg-amarea-cyan hover:text-black transition">Exportar JSON</button>
+          <button id="export-briefs" class="mt-6 px-6 py-2 rounded-xl border border-amarea-cyan text-amarea-cyan text-xs font-display font-bold uppercase tracking-widest hover:bg-amarea-cyan hover:text-black transition">Exportar cuestionarios</button>
         </div>
         <div>
           <h3 class="text-2xl font-display font-bold mb-4">Usuarios registrados</h3>
@@ -328,6 +319,7 @@
     </div>
   </div>
 
+  <script src="cuestionario.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

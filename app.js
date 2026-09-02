@@ -6,6 +6,7 @@ const STORAGE_JOIN = 'amarea_join_v1';
 const STORAGE_USERS = 'amarea_users_v1';
 const STORAGE_BRIEFS = 'amarea_briefs_v1';
 const STORAGE_CURRENT = 'amarea_current_v1';
+const STORAGE_DRAFT = 'amarea_draft_v1';
 
 const djNews = [
   { title: 'Residente Akir B estrena set en CRANIA', date: '2026-02-01', tag: 'Residente', summary: 'Un viaje de techno oscuro y disco lunar grabado en vivo durante la última edición AMAREA.' },
@@ -540,35 +541,162 @@ function renderRadar() {
 btnDj.addEventListener('click', () => { radarFilter = 'dj'; renderRadar(); });
 btnCabo.addEventListener('click', () => { radarFilter = 'cabo'; renderRadar(); });
 
-// === BRIEF / CUESTIONARIO ===
+// === CUESTIONARIO WIZARD ===
+const briefWizard = document.getElementById('brief-wizard');
 const briefForm = document.getElementById('brief-form');
+const briefStep = document.getElementById('brief-step');
+const briefPrev = document.getElementById('brief-prev');
+const briefNext = document.getElementById('brief-next');
+const briefSave = document.getElementById('brief-save');
+const briefSubmit = document.getElementById('brief-submit');
+const briefProgress = document.getElementById('brief-progress');
 const briefMsg = document.getElementById('brief-msg');
 
+let currentStep = 0;
+let answers = {};
+
+function draftKey() { return STORAGE_DRAFT + '_' + (currentUser?.username || 'guest'); }
+
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(draftKey());
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return {};
+}
+
+function saveDraft() {
+  localStorage.setItem(draftKey(), JSON.stringify(answers));
+}
+
+function updateAnswers() {
+  if (!briefStep) return;
+  briefStep.querySelectorAll('textarea[data-qid]').forEach(ta => {
+    answers[ta.dataset.qid] = ta.value;
+  });
+  answers.__step = currentStep;
+  saveDraft();
+}
+
+function renderProgress() {
+  if (!briefProgress) return;
+  briefProgress.innerHTML = '';
+  CUESTIONARIO.forEach((sec, i) => {
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = `text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded border transition ${i === currentStep ? 'border-amarea-pink text-amarea-pink' : 'border-white/10 text-white/40 hover:border-amarea-cyan hover:text-amarea-cyan'}`;
+    dot.textContent = `${i + 1}. ${sec.title}`;
+    dot.addEventListener('click', () => {
+      updateAnswers();
+      currentStep = i;
+      answers.__step = currentStep;
+      saveDraft();
+      renderStep();
+      updateNav();
+    });
+    briefProgress.appendChild(dot);
+  });
+}
+
+function renderStep() {
+  if (!briefStep || !CUESTIONARIO[currentStep]) return;
+  const sec = CUESTIONARIO[currentStep];
+  const first = sec.questions[0].id.replace('q', '');
+  const last = sec.questions[sec.questions.length - 1].id.replace('q', '');
+  briefStep.innerHTML = `<h3 class="text-2xl md:text-3xl font-display font-bold mb-2 text-amarea-cyan">${sec.title}</h3><p class="text-white/40 text-sm mb-6">Preguntas ${first}–${last} · ${sec.questions.length} respuestas</p>`;
+
+  sec.questions.forEach(q => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'mb-6';
+    const label = document.createElement('label');
+    label.className = 'block text-sm font-medium text-white/80 mb-2 leading-relaxed';
+    label.textContent = q.text;
+    const ta = document.createElement('textarea');
+    ta.className = 'w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-amarea-pink outline-none min-h-[100px] resize-y';
+    ta.dataset.qid = q.id;
+    ta.value = answers[q.id] || '';
+    ta.placeholder = 'Escribe aquí...';
+    ta.addEventListener('input', updateAnswers);
+    wrapper.appendChild(label);
+    wrapper.appendChild(ta);
+    briefStep.appendChild(wrapper);
+  });
+  renderProgress();
+}
+
+function updateNav() {
+  if (briefPrev) briefPrev.classList.toggle('hidden', currentStep === 0);
+  if (briefNext) briefNext.classList.toggle('hidden', currentStep === CUESTIONARIO.length - 1);
+  if (briefSubmit) briefSubmit.classList.toggle('hidden', currentStep !== CUESTIONARIO.length - 1);
+}
+
+function nextStep() {
+  if (currentStep < CUESTIONARIO.length - 1) {
+    updateAnswers();
+    currentStep++;
+    answers.__step = currentStep;
+    saveDraft();
+    renderStep();
+    updateNav();
+    briefStep?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function prevStep() {
+  if (currentStep > 0) {
+    updateAnswers();
+    currentStep--;
+    answers.__step = currentStep;
+    saveDraft();
+    renderStep();
+    updateNav();
+    briefStep?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
 function renderBriefFormGate() {
-  if (!briefForm) return;
+  if (!briefWizard) return;
   if (!currentUser || (currentUser.role !== 'cliente' && currentUser.role !== 'admin')) {
-    briefForm.classList.add('hidden');
-    briefMsg.textContent = 'Inicia sesión como cliente para enviar tu brief.';
+    briefWizard.classList.add('hidden');
+    briefMsg.textContent = 'Inicia sesión como cliente para responder el cuestionario.';
     briefMsg.classList.remove('hidden', 'text-amarea-cyan');
     briefMsg.classList.add('text-white/50');
   } else {
-    briefForm.classList.remove('hidden');
     briefMsg.classList.add('hidden');
+    briefWizard.classList.remove('hidden');
+    answers = loadDraft();
+    currentStep = Math.max(0, Math.min(answers.__step || 0, CUESTIONARIO.length - 1));
+    renderStep();
+    updateNav();
   }
 }
+
+briefPrev?.addEventListener('click', prevStep);
+briefNext?.addEventListener('click', nextStep);
+briefSave?.addEventListener('click', () => {
+  updateAnswers();
+  saveDraft();
+  briefMsg.textContent = 'Borrador guardado.';
+  briefMsg.classList.remove('hidden', 'text-white/50');
+  briefMsg.classList.add('text-amarea-cyan');
+});
 
 briefForm?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!currentUser || (currentUser.role !== 'cliente' && currentUser.role !== 'admin')) return;
-  const fd = new FormData(briefForm);
-  const brief = Object.fromEntries(fd);
-  brief.date = new Date().toISOString();
-  brief.user = currentUser.username;
+  updateAnswers();
+  const answersCopy = { ...answers };
+  delete answersCopy.__step;
+  const submission = { user: currentUser.username, date: new Date().toISOString(), answers: answersCopy };
   const list = getBriefs();
-  list.push(brief);
+  list.push(submission);
   setBriefs(list);
-  briefForm.reset();
-  briefMsg.textContent = 'Brief enviado. Te contactaremos pronto.';
+  localStorage.removeItem(draftKey());
+  answers = {};
+  currentStep = 0;
+  briefStep.innerHTML = '';
+  briefWizard.classList.add('hidden');
+  briefMsg.textContent = 'Cuestionario enviado. Gracias.';
   briefMsg.classList.remove('hidden', 'text-white/50');
   briefMsg.classList.add('text-amarea-cyan');
   if (currentUser.role === 'admin') renderAdmin();
@@ -582,16 +710,40 @@ function renderAdmin() {
   const usersContainer = document.getElementById('admin-users');
   if (!briefsContainer || !usersContainer) return;
 
-  briefsContainer.innerHTML = briefs.length ? '' : '<p class="text-white/30 text-sm">Sin briefs aún.</p>';
+  briefsContainer.innerHTML = briefs.length ? '' : '<p class="text-white/30 text-sm">Sin cuestionarios aún.</p>';
   briefs.forEach((b, i) => {
+    const answered = Object.values(b.answers || {}).filter(a => (a || '').toString().trim()).length;
     const div = document.createElement('div');
     div.className = 'p-5 rounded-2xl border border-white/5 bg-white/[0.02]';
-    div.innerHTML = `
+    const header = document.createElement('div');
+    header.innerHTML = `
       <p class="text-[10px] text-white/30 font-mono uppercase tracking-widest mb-2">${new Date(b.date).toLocaleString('es-MX')} · ${b.user}</p>
-      <p class="font-display font-bold text-white mb-1">${b.nombre} · ${b.tipo}</p>
-      <p class="text-sm text-white/50 mb-1">${b.email} · ${b.invitados} invitados</p>
-      <p class="text-sm text-white/60 italic">“${b.detalles}”</p>
+      <p class="font-display font-bold text-white mb-1">Cuestionario · ${answered} de 161 preguntas respondidas</p>
     `;
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'mt-3 text-xs text-amarea-cyan hover:text-white transition font-display uppercase tracking-widest';
+    toggle.textContent = 'Ver respuestas';
+    const details = document.createElement('div');
+    details.className = 'hidden mt-6 space-y-6';
+    CUESTIONARIO.forEach(sec => {
+      const group = document.createElement('div');
+      group.className = 'border-l-2 border-amarea-cyan/20 pl-4';
+      group.innerHTML = `<h4 class="font-display font-bold text-amarea-cyan mb-3">${sec.title}</h4>`;
+      sec.questions.forEach(q => {
+        const a = (b.answers || {})[q.id] || '';
+        if (!a.trim()) return;
+        const p = document.createElement('div');
+        p.className = 'mb-4';
+        p.innerHTML = `<p class="text-sm text-white/80 font-medium mb-1">${q.id.replace('q', '')}. ${q.text}</p><p class="text-sm text-white/60 italic">“${a}”</p>`;
+        group.appendChild(p);
+      });
+      details.appendChild(group);
+    });
+    toggle.addEventListener('click', () => { details.classList.toggle('hidden'); toggle.textContent = details.classList.contains('hidden') ? 'Ver respuestas' : 'Ocultar respuestas'; });
+    div.appendChild(header);
+    div.appendChild(toggle);
+    div.appendChild(details);
     briefsContainer.appendChild(div);
   });
 
