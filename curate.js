@@ -14,9 +14,9 @@ const MM_DEST = path.join(__dirname, 'multimedia');
 const MUSIC_DEST = path.join(__dirname, 'musica');
 
 const COUNTS = {
-  fotos: 18,
-  videos: 10,
-  music: 12
+  fotos: 25,
+  videos: 25,
+  music: 15
 };
 
 const LIMITS = {

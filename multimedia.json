@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-02T22:49:33.508Z",
-  "count": 28,
+  "generatedAt": "2026-09-02T23:29:59.885Z",
+  "count": 50,
   "items": [
     {
       "path": "multimedia/fotos/fotosamarea%20(16).JPG",
@@ -8,39 +8,14 @@
       "filename": "fotosamarea (16).JPG"
     },
     {
-      "path": "multimedia/fotos/fotosamarea%20(17).JPG",
-      "type": "image",
-      "filename": "fotosamarea (17).JPG"
-    },
-    {
       "path": "multimedia/fotos/fotosamarea%20(4).jpeg",
       "type": "image",
       "filename": "fotosamarea (4).jpeg"
     },
     {
-      "path": "multimedia/fotos/fotosamarea%20(15).jpeg",
-      "type": "image",
-      "filename": "fotosamarea (15).jpeg"
-    },
-    {
-      "path": "multimedia/fotos/fotosamarea%20(13).JPG",
-      "type": "image",
-      "filename": "fotosamarea (13).JPG"
-    },
-    {
-      "path": "multimedia/fotos/fotosamarea%20(10).jpeg",
-      "type": "image",
-      "filename": "fotosamarea (10).jpeg"
-    },
-    {
       "path": "multimedia/fotos/fotosamarea%20(8).jpeg",
       "type": "image",
       "filename": "fotosamarea (8).jpeg"
-    },
-    {
-      "path": "multimedia/fotos/fotosamarea%20(2).JPG",
-      "type": "image",
-      "filename": "fotosamarea (2).JPG"
     },
     {
       "path": "multimedia/fotos/fotosamarea%20(8).JPG",
@@ -93,24 +68,69 @@
       "filename": "fotosamarea (11).JPG"
     },
     {
-      "path": "multimedia/videos/amareavids%20(17).mp4",
-      "type": "video",
-      "filename": "amareavids (17).mp4"
+      "path": "multimedia/fotos/fotosamarea%20(6).JPG",
+      "type": "image",
+      "filename": "fotosamarea (6).JPG"
     },
     {
-      "path": "multimedia/videos/amareavids%20(9).mp4",
-      "type": "video",
-      "filename": "amareavids (9).mp4"
+      "path": "multimedia/fotos/fotosamarea%20(11).jpeg",
+      "type": "image",
+      "filename": "fotosamarea (11).jpeg"
+    },
+    {
+      "path": "multimedia/fotos/fotosamarea%20(1).JPG",
+      "type": "image",
+      "filename": "fotosamarea (1).JPG"
+    },
+    {
+      "path": "multimedia/fotos/fotosamarea%20(7).JPG",
+      "type": "image",
+      "filename": "fotosamarea (7).JPG"
+    },
+    {
+      "path": "multimedia/fotos/fotosamarea%20(14).jpeg",
+      "type": "image",
+      "filename": "fotosamarea (14).jpeg"
+    },
+    {
+      "path": "multimedia/fotos/fotosamarea%20(12).jpeg",
+      "type": "image",
+      "filename": "fotosamarea (12).jpeg"
+    },
+    {
+      "path": "multimedia/fotos/fotosamarea%20(3).JPG",
+      "type": "image",
+      "filename": "fotosamarea (3).JPG"
+    },
+    {
+      "path": "multimedia/fotos/fotosamarea%20(15).JPG",
+      "type": "image",
+      "filename": "fotosamarea (15).JPG"
+    },
+    {
+      "path": "multimedia/fotos/fotosamarea%20(18).JPG",
+      "type": "image",
+      "filename": "fotosamarea (18).JPG"
+    },
+    {
+      "path": "multimedia/fotos/fotosamarea%20(5).jpeg",
+      "type": "image",
+      "filename": "fotosamarea (5).jpeg"
+    },
+    {
+      "path": "multimedia/fotos/fotosamarea%20(16).jpeg",
+      "type": "image",
+      "filename": "fotosamarea (16).jpeg"
+    },
+    {
+      "path": "multimedia/fotos/fotosamarea%20(4).JPG",
+      "type": "image",
+      "filename": "fotosamarea (4).JPG"
     },
     {
       "path": "multimedia/videos/amareavids%20(16).mp4",
       "type": "video",
       "filename": "amareavids (16).mp4"
-    },
-    {
-      "path": "multimedia/videos/amareavids%20(41).mp4",
-      "type": "video",
-      "filename": "amareavids (41).mp4"
     },
     {
       "path": "multimedia/videos/amareavids%20(36).mp4",
@@ -123,24 +143,114 @@
       "filename": "amareavids (28).mp4"
     },
     {
-      "path": "multimedia/videos/amareavids%20(43).mp4",
-      "type": "video",
-      "filename": "amareavids (43).mp4"
-    },
-    {
-      "path": "multimedia/videos/amareavids%20(33).mp4",
-      "type": "video",
-      "filename": "amareavids (33).mp4"
-    },
-    {
-      "path": "multimedia/videos/amareavids%20(3).mp4",
-      "type": "video",
-      "filename": "amareavids (3).mp4"
-    },
-    {
       "path": "multimedia/videos/amareavids%20(5).mp4",
       "type": "video",
       "filename": "amareavids (5).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(10).mp4",
+      "type": "video",
+      "filename": "amareavids (10).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(23).mp4",
+      "type": "video",
+      "filename": "amareavids (23).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(27).mp4",
+      "type": "video",
+      "filename": "amareavids (27).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(22).mp4",
+      "type": "video",
+      "filename": "amareavids (22).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(34).mp4",
+      "type": "video",
+      "filename": "amareavids (34).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(24).mp4",
+      "type": "video",
+      "filename": "amareavids (24).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(42).mp4",
+      "type": "video",
+      "filename": "amareavids (42).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(7).mp4",
+      "type": "video",
+      "filename": "amareavids (7).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(8).mp4",
+      "type": "video",
+      "filename": "amareavids (8).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(13).mp4",
+      "type": "video",
+      "filename": "amareavids (13).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(20).mp4",
+      "type": "video",
+      "filename": "amareavids (20).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(26).mp4",
+      "type": "video",
+      "filename": "amareavids (26).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(30).mp4",
+      "type": "video",
+      "filename": "amareavids (30).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(40).mp4",
+      "type": "video",
+      "filename": "amareavids (40).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(29).mp4",
+      "type": "video",
+      "filename": "amareavids (29).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(4).mp4",
+      "type": "video",
+      "filename": "amareavids (4).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(6).mp4",
+      "type": "video",
+      "filename": "amareavids (6).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(32).mp4",
+      "type": "video",
+      "filename": "amareavids (32).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(2).mp4",
+      "type": "video",
+      "filename": "amareavids (2).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(39).mp4",
+      "type": "video",
+      "filename": "amareavids (39).mp4"
+    },
+    {
+      "path": "multimedia/videos/amareavids%20(35).mp4",
+      "type": "video",
+      "filename": "amareavids (35).mp4"
     }
   ]
 }
