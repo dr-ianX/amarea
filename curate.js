@@ -18,19 +18,30 @@ const COUNTS = {
   music: 12
 };
 
+const LIMITS = {
+  fotos: 15 * 1024 * 1024,   // 15 MB
+  videos: 50 * 1024 * 1024,  // 50 MB (GitHub warning threshold)
+  music: 25 * 1024 * 1024    // 25 MB
+};
+
 const videoExts = new Set(['.mp4', '.webm', '.mov', '.ogv', '.mkv', '.avi']);
 const imageExts = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.svg']);
 const audioExts = new Set(['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a', '.weba']);
 
 function mkdir(p) { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); }
 
-function listFiles(dir, allowedExts) {
+function listFiles(dir, allowedExts, maxBytes = Infinity) {
   const out = [];
   if (!fs.existsSync(dir)) return out;
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     if (e.isDirectory()) continue;
     const ext = path.extname(e.name).toLowerCase();
-    if (allowedExts.has(ext) && !e.name.startsWith('.')) out.push({ name: e.name, full: path.join(dir, e.name), ext });
+    if (allowedExts.has(ext) && !e.name.startsWith('.')) {
+      const full = path.join(dir, e.name);
+      const size = fs.statSync(full).size;
+      if (size <= maxBytes) out.push({ name: e.name, full, ext, size });
+      else process.stdout.write(`  [skip > limite] ${full}\n`);
+    }
   }
   return out;
 }
@@ -76,9 +87,9 @@ console.log(`Curando desde: ${path.resolve(RELAY)}`);
 mkdir(MM_DEST);
 mkdir(MUSIC_DEST);
 
-const fotos = listFiles(path.join(RELAY, 'fotos'), imageExts);
-const videos = listFiles(path.join(RELAY, 'videos'), videoExts);
-const music = listFiles(path.join(RELAY, 'Musica', 'Summer26'), audioExts);
+const fotos = listFiles(path.join(RELAY, 'fotos'), imageExts, LIMITS.fotos);
+const videos = listFiles(path.join(RELAY, 'videos'), videoExts, LIMITS.videos);
+const music = listFiles(path.join(RELAY, 'Musica', 'Summer26'), audioExts, LIMITS.music);
 
 const selectedFotos = pick(fotos, COUNTS.fotos);
 const selectedVideos = pick(videos, COUNTS.videos);
