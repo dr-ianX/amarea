@@ -2,6 +2,8 @@
 
 Landing page de AMAREA — fiestas inmersivas, música electrónica y experiencias en San José del Cabo, Baja California Sur.
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/dr-ianX/amarea)
+
 ## Características
 
 - Diseño contemporáneo, minimalista y nocturno.
@@ -44,6 +46,13 @@ Landing page de AMAREA — fiestas inmersivas, música electrónica y experienci
    - **Publish directory:** `.`
 
 Render generará una URL tipo `https://amarea-landing.onrender.com`.
+
+## Nota sobre datos y admin
+
+En la versión estática todo se guarda en el navegador con `localStorage`:
+- Chat, usuarios, borrador del cuestionario y respuestas enviadas **no viajan a un servidor**.
+- El admin puede ver solo las respuestas enviadas **desde ese mismo dispositivo/navegador**.
+- Si quieres que los 4 integrantes respondan desde sus propios dispositivos y tú veas todo desde el tuyo, se requiere un backend + base de datos (p. ej. Supabase, Firebase o una API en Render).
 
 ## Nota sobre redes sociales
 
