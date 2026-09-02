@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, spawnSync } = require('child_process');
 
 // Curador de multimedia desde Relay.
 // Selecciona N items al azar por categoria y los copia a amarea-landing.
@@ -8,20 +8,21 @@ const { execSync } = require('child_process');
 
 const RELAY = process.argv[2] || process.env.RELAY_SOURCE || path.join(__dirname, '..', 'Amarea', 'Relay');
 const DELETE_SOURCE = process.argv.includes('--delete-source');
+const NO_COMPRESS = process.argv.includes('--no-compress');
 
 const MM_DEST = path.join(__dirname, 'multimedia');
 const MUSIC_DEST = path.join(__dirname, 'musica');
 
 const COUNTS = {
   fotos: 18,
-  videos: 8,
+  videos: 10,
   music: 12
 };
 
 const LIMITS = {
-  fotos: 15 * 1024 * 1024,   // 15 MB
-  videos: 50 * 1024 * 1024,  // 50 MB (GitHub warning threshold)
-  music: 25 * 1024 * 1024    // 25 MB
+  fotos: 15 * 1024 * 1024,    // 15 MB
+  videos: 100 * 1024 * 1024,  // 100 MB (se comprimen despues)
+  music: 25 * 1024 * 1024     // 25 MB
 };
 
 const videoExts = new Set(['.mp4', '.webm', '.mov', '.ogv', '.mkv', '.avi']);
@@ -65,6 +66,27 @@ function copy(source, dest) {
   process.stdout.write('  ' + dest + '\n');
 }
 
+function compressVideo(src, dest) {
+  const tmp = dest + '.tmp';
+  const args = [
+    '-y', '-i', src,
+    '-c:v', 'libx264', '-crf', '24', '-preset', 'medium',
+    '-vf', "scale='min(1920,iw)':-2,format=yuv420p",
+    '-movflags', '+faststart',
+    '-c:a', 'aac', '-b:a', '128k',
+    '-pix_fmt', 'yuv420p',
+    '-f', 'mp4', tmp
+  ];
+  const result = spawnSync('ffmpeg', args, { stdio: 'pipe', encoding: 'utf8' });
+  if (result.error || result.status !== 0) {
+    if (result.stderr) process.stderr.write(result.stderr);
+    throw new Error(`ffmpeg falló para ${src}`);
+  }
+  fs.renameSync(tmp, dest);
+  process.stdout.write('  [compressed] ' + dest + '\n');
+  return dest;
+}
+
 const PROTECTED = new Set(['readme.md', '.gitkeep', 'desktop.ini', 'thumbs.db', '.ds_store', 'tracks.json', 'multimedia.json', '.gitignore']);
 
 function cleanDir(dir, keepSet) {
@@ -104,8 +126,14 @@ for (const f of selectedFotos) {
 }
 
 for (const v of selectedVideos) {
-  const dest = path.join(MM_DEST, 'videos', v.name);
-  copy(v.full, dest);
+  const base = path.basename(v.name, path.extname(v.name));
+  const dest = path.join(MM_DEST, 'videos', base + '.mp4');
+  if (NO_COMPRESS) {
+    copy(v.full, dest);
+  } else {
+    console.log('Comprimiendo:', v.name);
+    compressVideo(v.full, dest);
+  }
   keep.add(dest.toLowerCase());
 }
 
