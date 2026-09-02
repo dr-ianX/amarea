@@ -63,6 +63,7 @@
         <a href="#" class="tab-link hover:text-amarea-violet transition-colors" data-tab="brief">Brief</a>
         <a href="#" class="tab-link admin-link hidden" data-tab="admin">Admin</a>
         <a href="#" class="tab-link hover:text-amarea-pink transition-colors" data-tab="comunidad">Comunidad</a>
+        <a href="#" class="tab-link hover:text-amarea-gold transition-colors" data-tab="produccion">Producción</a>
         <a href="#" class="tab-link hover:text-amarea-cyan transition-colors" data-tab="contacto">Contacto</a>
         <button id="auth-toggle" class="text-amarea-white hover:text-amarea-pink transition-colors font-display font-medium tracking-widest uppercase">Entrar</button>
       </div>
@@ -78,6 +79,7 @@
         <a href="#" class="tab-link" data-tab="brief">Brief</a>
         <a href="#" class="tab-link admin-link hidden" data-tab="admin">Admin</a>
         <a href="#" class="tab-link" data-tab="comunidad">Comunidad</a>
+        <a href="#" class="tab-link" data-tab="produccion">Producción</a>
         <a href="#" class="tab-link" data-tab="contacto">Contacto</a>
         <button id="auth-toggle-mobile" class="text-left font-display font-medium tracking-widest uppercase text-white/70">Entrar</button>
       </div>
@@ -311,6 +313,114 @@
       </div>
     </section>
 
+    <!-- PRODUCCION -->
+    <section id="produccion" class="tab-section px-6 py-24 md:py-32 max-w-6xl mx-auto">
+      <p class="text-amarea-gold text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Toolkit</p>
+      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8">Conecta con la <span class="gradient-text">producción</span></h2>
+      <p class="text-white/50 max-w-2xl mb-10">Aquí se unen participantes, asistentes, residentes y el equipo de AMAREA. Sin datos personales obligatorios.</p>
+
+      <div id="prod-metrics" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12"></div>
+
+      <div class="grid md:grid-cols-2 gap-8 mb-12">
+        <!-- RSVP -->
+        <div class="rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 md:p-8 neon-box">
+          <h3 class="text-2xl font-display font-bold mb-4">RSVP · Próximas ediciones</h3>
+          <p class="text-white/40 text-sm mb-4">Marca los eventos que te interesan. Son conteos anónimos.</p>
+          <div id="produccion-rsvp-list" class="space-y-4"></div>
+        </div>
+
+        <!-- Perfil anónimo -->
+        <div class="rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 md:p-8 neon-box">
+          <h3 class="text-2xl font-display font-bold mb-4">Tu perfil anónimo</h3>
+          <form id="prod-profile-form" class="space-y-3">
+            <input name="name" type="text" placeholder="Nickname" maxlength="20" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-cyan outline-none">
+            <select name="role" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-cyan outline-none text-white">
+              <option value="">¿Cómo te describes?</option>
+              <option value="Asistente">Asistente</option>
+              <option value="DJ / Productor">DJ / Productor</option>
+              <option value="Visual / AV">Visual / AV</option>
+              <option value=" performer / Bailarín">Performer / Bailarín</option>
+              <option value="Fotógrafo / Creador">Fotógrafo / Creador</option>
+              <option value="Otro">Otro</option>
+            </select>
+            <input name="from" type="text" placeholder="De dónde nos visitas" maxlength="30" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-cyan outline-none">
+            <input name="tags" type="text" placeholder="Etiquetas: techno, sunset, desert..." maxlength="60" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-cyan outline-none">
+            <button type="submit" class="w-full py-3 rounded-xl bg-amarea-cyan text-black font-display font-bold uppercase tracking-widest text-xs hover:bg-white transition">Guardar perfil</button>
+          </form>
+          <p id="prod-profile-msg" class="hidden text-amarea-cyan text-xs mt-3"></p>
+          <div id="prod-profile-list" class="mt-4"></div>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8 mb-12">
+        <!-- Convocatoria -->
+        <div class="rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 md:p-8 neon-box">
+          <h3 class="text-2xl font-display font-bold mb-4">Convocatoria residente</h3>
+          <form id="prod-resident-form" class="space-y-3">
+            <input name="artist" type="text" placeholder="Nombre artístico" required maxlength="40" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-pink outline-none">
+            <select name="role" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-pink outline-none text-white">
+              <option value="dj">DJ</option>
+              <option value="live">Live Act</option>
+              <option value="visual">Visual / AV</option>
+              <option value="performer">Performer</option>
+              <option value="otro">Otro</option>
+            </select>
+            <input name="email" type="email" placeholder="Correo" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-pink outline-none">
+            <textarea name="bio" rows="3" placeholder="Bio o propuesta" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-pink outline-none"></textarea>
+            <input name="link" type="url" placeholder="Link de sound / mix / portfolio" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-pink outline-none">
+            <button type="submit" class="w-full py-3 rounded-xl bg-amarea-pink text-black font-display font-bold uppercase tracking-widest text-xs hover:bg-white transition">Postular</button>
+          </form>
+          <p id="prod-resident-msg" class="hidden text-amarea-cyan text-xs mt-3"></p>
+        </div>
+
+        <!-- Contacto -->
+        <div class="rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 md:p-8 neon-box">
+          <h3 class="text-2xl font-display font-bold mb-4">Escribir a producción</h3>
+          <form id="prod-contact-form" class="space-y-3">
+            <input name="name" type="text" placeholder="Nombre / alias" required maxlength="30" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-gold outline-none">
+            <input name="email" type="email" placeholder="Correo" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-gold outline-none">
+            <select name="type" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-gold outline-none text-white">
+              <option value="general">General</option>
+              <option value="booking">Booking</option>
+              <option value="prensa">Prensa</option>
+              <option value="colaboracion">Colaboración</option>
+              <option value="voluntario">Voluntario</option>
+            </select>
+            <textarea name="message" rows="3" placeholder="Mensaje" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-gold outline-none"></textarea>
+            <button type="submit" class="w-full py-3 rounded-xl bg-amarea-gold text-black font-display font-bold uppercase tracking-widest text-xs hover:bg-white transition">Enviar</button>
+          </form>
+          <p id="prod-contact-msg" class="hidden text-amarea-cyan text-xs mt-3"></p>
+        </div>
+
+        <!-- Sala de prensa + tienda -->
+        <div class="rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 md:p-8 neon-box">
+          <h3 class="text-2xl font-display font-bold mb-4">Sala de prensa</h3>
+          <p class="text-white/40 text-sm mb-4">Descarga el kit de prensa con la información esencial.</p>
+          <button id="prod-press-download" class="w-full mb-6 py-3 rounded-xl border border-amarea-cyan text-amarea-cyan font-display font-bold uppercase tracking-widest text-xs hover:bg-amarea-cyan hover:text-black transition">Descargar press kit</button>
+          <h3 class="text-xl font-display font-bold mb-3 mt-8">Boletos & tienda</h3>
+          <div id="prod-store-links" class="flex flex-wrap gap-2 mb-6"></div>
+          <h3 class="text-xl font-display font-bold mb-3">Canales</h3>
+          <div id="prod-forums" class="flex flex-wrap gap-2 mb-4"></div>
+          <p id="prod-forum-msg" class="hidden text-amarea-cyan text-xs mt-2"></p>
+          <div class="flex gap-3 mt-4">
+            <a id="prod-discord-link" href="#" target="_blank" rel="noopener" class="px-4 py-2 rounded-xl border border-amarea-violet/30 text-amarea-violet text-xs font-display font-bold uppercase tracking-widest hover:bg-amarea-violet/10 transition">Discord</a>
+            <a id="prod-telegram-link" href="#" target="_blank" rel="noopener" class="px-4 py-2 rounded-xl border border-amarea-cyan/30 text-amarea-cyan text-xs font-display font-bold uppercase tracking-widest hover:bg-amarea-cyan/10 transition">Telegram</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 md:p-8 neon-box">
+        <h3 class="text-2xl font-display font-bold mb-4">Configurar enlaces (admin)</h3>
+        <form id="prod-social-form" class="grid md:grid-cols-4 gap-3">
+          <input name="discord" type="url" placeholder="Discord invite" class="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-cyan outline-none">
+          <input name="telegram" type="url" placeholder="Telegram group" class="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-cyan outline-none">
+          <input name="tickets" type="url" placeholder="Tickets URL" class="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-cyan outline-none">
+          <button type="submit" class="py-3 rounded-xl border border-amarea-gold text-amarea-gold font-display font-bold uppercase tracking-widest text-xs hover:bg-amarea-gold hover:text-black transition">Guardar</button>
+        </form>
+        <p id="prod-social-msg" class="hidden text-amarea-cyan text-xs mt-3"></p>
+      </div>
+    </section>
+
     <!-- CONTACTO -->
     <section id="contacto" class="tab-section px-6 py-24 md:py-32 max-w-4xl mx-auto text-center">
       <p class="text-amarea-gold text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Conexión</p>
@@ -358,5 +468,6 @@
 
   <script src="cuestionario.js"></script>
   <script src="app.js"></script>
+  <script src="features.js"></script>
 </body>
 </html>

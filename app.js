@@ -62,7 +62,7 @@ const residents = [
   { name: 'Mentesaka', role: 'Visual & Sound', vibe: 'Entornos inmersivos y diseño lumínico.' }
 ];
 
-const events = [
+var events = [
   {
     title: 'AMAREA at CRANIA',
     date: '2026-02-06T21:00:00',

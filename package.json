@@ -6,7 +6,9 @@
   "scripts": {
     "build": "node build-media.js && node build-music.js",
     "sync": "node sync-relay.js",
-    "sync-build": "node sync-relay.js && npm run build"
+    "sync-build": "node sync-relay.js && npm run build",
+    "curate": "node curate.js",
+    "curate-clean-source": "node curate.js --delete-source"
   },
   "engines": {
     "node": ">=18"
