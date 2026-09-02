@@ -5,9 +5,15 @@ Landing page de AMAREA — fiestas inmersivas, música electrónica y experienci
 ## Características
 
 - Diseño contemporáneo, minimalista y nocturno.
-- Pestañas: Inicio, Experiencia, Residentes, Eventos, Música, Comunidad y Contacto.
+- Pestañas: Inicio, Experiencia, Residentes, Eventos, Radar, Mapa, Brief, Comunidad y Contacto.
 - Chat de comunidad persistente en `localStorage`.
 - Reproductor de sets con visualizador; la música no inicia sola.
+- Radar: noticias DJ y Cabo News.
+- Mapa interactivo de San José del Cabo.
+- Cuestionario wizard de 161 preguntas para clientes/equipo, con borrador automático.
+- Login con roles: invitado, cliente y admin.
+- Panel admin privado con respuestas, usuarios y exportación JSON.
+- Efectos visuales: partículas, blobs, spotlight y gradientes animados.
 - Carpeta `/musica` para que deposites tus sets manualmente.
 - Despliegue estático gratuito en Render.
 
@@ -22,9 +28,11 @@ Landing page de AMAREA — fiestas inmersivas, música electrónica y experienci
 
 - `index.html` — estructura de la landing
 - `styles.css` — estilos, efectos y animaciones
-- `app.js` — tabs, chat, música, visualizador y partículas
+- `app.js` — tabs, chat, música, visualizador, auth, cuestionario y admin
+- `cuestionario.js` — datos de las 161 preguntas
 - `musica/tracks.json` — lista de sets
 - `musica/` — archivos de audio
+- `render.yaml` — configuración de despliegue en Render
 
 ## Despliegue en Render
 
