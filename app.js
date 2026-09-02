@@ -8,6 +8,8 @@ const STORAGE_BRIEFS = 'amarea_briefs_v1';
 const STORAGE_CURRENT = 'amarea_current_v1';
 const STORAGE_DRAFT = 'amarea_draft_v1';
 const STORAGE_GAS = 'amarea_gas_url';
+const STORAGE_MIXER = 'amarea_mixer_v1';
+const CHAT_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const STORAGE_DEVICE = 'amarea_device_v1';
 const API_TOKEN = 'amarea-token-2026-v1';
 
@@ -188,7 +190,21 @@ events.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach((ev, i) => {
   eventsList.appendChild(div);
 });
 
-// === MUSIC LOADER ===
+// === MINI MIXER ===
+let mixerState = JSON.parse(localStorage.getItem(STORAGE_MIXER) || '{}');
+let shuffle = mixerState.shuffle || false;
+let autoplay = mixerState.autoplay || false;
+let mixerSkin = mixerState.skin || 'dark';
+let eq = mixerState.eq || { bass: 0, mid: 0, treble: 0 };
+let gainNode = null;
+let bassFilter = null;
+let midFilter = null;
+let trebleFilter = null;
+
+function saveMixerState() {
+  localStorage.setItem(STORAGE_MIXER, JSON.stringify({ shuffle, autoplay, skin: mixerSkin, eq }));
+}
+
 async function loadTracks() {
   try {
     const res = await fetch('musica/tracks.json');
@@ -205,6 +221,10 @@ async function loadTracks() {
 function renderTracks() {
   const list = document.getElementById('track-list');
   list.innerHTML = '';
+  if (!tracks.length) {
+    list.innerHTML = '<p class="text-sm text-white/30 text-center py-10">No hay sets disponibles.</p>';
+    return;
+  }
   tracks.forEach((t, i) => {
     const div = document.createElement('div');
     div.className = `track-item rounded-2xl p-4 flex items-center justify-between cursor-pointer ${i === currentTrackIndex ? 'active' : ''}`;
@@ -221,26 +241,48 @@ function renderTracks() {
 }
 
 function selectTrack(index) {
+  if (!tracks.length) return;
   currentTrackIndex = index;
-  const t = tracks[index];
+  const t = tracks[currentTrackIndex];
   audio.pause();
   audio.src = t.src;
   document.getElementById('current-track').textContent = t.title;
   document.getElementById('current-artist').textContent = t.artist;
   renderTracks();
-  playAudio();
+  document.getElementById('vinyl-hero')?.classList.remove('playing');
+  if (autoplay) playAudio();
+  logToSheet('track_select', { title: t.title, artist: t.artist, index });
+}
+
+function pickNextTrack() {
+  if (!tracks.length) return 0;
+  if (shuffle) {
+    let n;
+    do { n = Math.floor(Math.random() * tracks.length); } while (n === currentTrackIndex && tracks.length > 1);
+    return n;
+  }
+  return (currentTrackIndex + 1) % tracks.length;
+}
+
+function pickPrevTrack() {
+  if (!tracks.length) return 0;
+  if (shuffle) {
+    let n;
+    do { n = Math.floor(Math.random() * tracks.length); } while (n === currentTrackIndex && tracks.length > 1);
+    return n;
+  }
+  return (currentTrackIndex - 1 + tracks.length) % tracks.length;
 }
 
 function playAudio() {
-  if (currentTrackIndex < 0) return;
+  if (currentTrackIndex < 0) { selectTrack(0); return; }
   if (!audioCtx) initAudio();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   audio.play().then(() => {
     isPlaying = true;
     updatePlayButton();
     document.getElementById('vinyl-hero')?.classList.add('playing');
-  }).catch(() => {
-    // Autoplay blocked or load error
-  });
+  }).catch(() => {});
 }
 
 function pauseAudio() {
@@ -251,10 +293,7 @@ function pauseAudio() {
 }
 
 function togglePlay() {
-  if (currentTrackIndex < 0) {
-    selectTrack(0);
-    return;
-  }
+  if (currentTrackIndex < 0) { selectTrack(0); return; }
   if (isPlaying) pauseAudio();
   else playAudio();
 }
@@ -264,19 +303,66 @@ function updatePlayButton() {
   btn.textContent = isPlaying ? '⏸' : '▶';
 }
 
+function updateMixerUI() {
+  const mixer = document.getElementById('mini-mixer');
+  mixer.dataset.skin = mixerSkin;
+  document.getElementById('shuffle-btn').classList.toggle('text-amarea-cyan', shuffle);
+  document.getElementById('shuffle-btn').classList.toggle('border-amarea-cyan', shuffle);
+  document.getElementById('autoplay-btn').classList.toggle('text-amarea-gold', autoplay);
+  document.getElementById('autoplay-btn').classList.toggle('border-amarea-gold', autoplay);
+  document.getElementById('skin-label').textContent = `skin: ${mixerSkin} · autoplay: ${autoplay ? 'on' : 'off'}`;
+  document.getElementById('eq-bass').value = eq.bass;
+  document.getElementById('eq-mid').value = eq.mid;
+  document.getElementById('eq-treble').value = eq.treble;
+  document.getElementById('eq-bass-val').textContent = eq.bass;
+  document.getElementById('eq-mid-val').textContent = eq.mid;
+  document.getElementById('eq-treble-val').textContent = eq.treble;
+  document.getElementById('volume').value = audio.volume;
+  document.getElementById('volume-val').textContent = Math.round(audio.volume * 100) + '%';
+}
+
+function setEQ() {
+  if (!bassFilter || !midFilter || !trebleFilter) return;
+  bassFilter.gain.value = eq.bass;
+  midFilter.gain.value = eq.mid;
+  trebleFilter.gain.value = eq.treble;
+}
+
+function setSkin(skin) {
+  mixerSkin = skin;
+  updateMixerUI();
+  saveMixerState();
+}
+
 document.getElementById('play-btn').addEventListener('click', togglePlay);
-document.getElementById('next-btn').addEventListener('click', () => {
-  const next = (currentTrackIndex + 1) % tracks.length;
-  selectTrack(next);
+document.getElementById('next-btn').addEventListener('click', () => selectTrack(pickNextTrack()));
+document.getElementById('prev-btn').addEventListener('click', () => selectTrack(pickPrevTrack()));
+document.getElementById('shuffle-btn').addEventListener('click', () => {
+  shuffle = !shuffle;
+  updateMixerUI(); saveMixerState();
 });
-document.getElementById('prev-btn').addEventListener('click', () => {
-  const prev = (currentTrackIndex - 1 + tracks.length) % tracks.length;
-  selectTrack(prev);
+document.getElementById('autoplay-btn').addEventListener('click', () => {
+  autoplay = !autoplay;
+  updateMixerUI(); saveMixerState();
+});
+document.querySelectorAll('.skin-btn').forEach(b => b.addEventListener('click', () => setSkin(b.dataset.skin)));
+
+document.getElementById('volume').addEventListener('input', (e) => {
+  audio.volume = parseFloat(e.target.value);
+  document.getElementById('volume-val').textContent = Math.round(audio.volume * 100) + '%';
+});
+
+['bass','mid','treble'].forEach(k => {
+  document.getElementById('eq-' + k).addEventListener('input', (e) => {
+    eq[k] = parseInt(e.target.value, 10);
+    document.getElementById('eq-' + k + '-val').textContent = eq[k];
+    setEQ(); saveMixerState();
+  });
 });
 
 audio.addEventListener('ended', () => {
-  const next = (currentTrackIndex + 1) % tracks.length;
-  selectTrack(next);
+  if (!autoplay) return;
+  selectTrack(pickNextTrack());
 });
 
 audio.addEventListener('timeupdate', () => {
@@ -299,6 +385,7 @@ document.getElementById('progress').addEventListener('input', (e) => {
 });
 
 function formatTime(s) {
+  if (!isFinite(s) || s < 0) return '0:00';
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60).toString().padStart(2, '0');
   return `${m}:${sec}`;
@@ -312,29 +399,62 @@ function initAudio() {
   if (audioCtx) return;
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 128;
+  analyser.fftSize = 256;
+  analyser.smoothingTimeConstant = 0.85;
+
   source = audioCtx.createMediaElementSource(audio);
-  source.connect(analyser);
+  bassFilter = audioCtx.createBiquadFilter();
+  bassFilter.type = 'lowshelf';
+  bassFilter.frequency.value = 100;
+  midFilter = audioCtx.createBiquadFilter();
+  midFilter.type = 'peaking';
+  midFilter.frequency.value = 1000;
+  midFilter.Q.value = 1;
+  trebleFilter = audioCtx.createBiquadFilter();
+  trebleFilter.type = 'highshelf';
+  trebleFilter.frequency.value = 10000;
+  gainNode = audioCtx.createGain();
+
+  source.connect(bassFilter);
+  bassFilter.connect(midFilter);
+  midFilter.connect(trebleFilter);
+  trebleFilter.connect(gainNode);
+  gainNode.connect(analyser);
   analyser.connect(audioCtx.destination);
+
+  setEQ();
   drawVisualizer();
 }
 
 function drawVisualizer() {
   if (!analyser) return;
   const bufferLength = analyser.frequencyBinCount;
-  const dataArray = new Uint8Array(bufferLength);
-  analyser.getByteFrequencyData(dataArray);
+  const data = new Uint8Array(bufferLength);
+  analyser.getByteFrequencyData(data);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle = 'rgba(0,0,0,0.15)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const maxR = Math.min(cx, cy) - 6;
+  const bands = 64;
+  const step = Math.floor(bufferLength / bands);
 
-  const barW = canvas.width / bufferLength;
-  for (let i = 0; i < bufferLength; i++) {
-    const barH = (dataArray[i] / 255) * canvas.height * 0.9;
-    const hue = 300 + (i / bufferLength) * 120;
-    ctx.fillStyle = `hsla(${hue}, 80%, 60%, ${dataArray[i] / 255})`;
-    ctx.fillRect(i * barW, canvas.height - barH, barW - 1, barH);
+  ctx.lineWidth = 1.2;
+  for (let i = 0; i < bands; i++) {
+    const v = data[i * step] || 0;
+    const norm = v / 255;
+    const base = 6 + (i / bands) * (maxR - 6);
+    const r = base + norm * 18;
+    const hue = 300 + (i / bands) * 120;
+    const alpha = 0.12 + norm * 0.75;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = `hsla(${hue}, 90%, 60%, ${alpha})`;
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = `hsla(${hue}, 90%, 60%, ${norm})`;
+    ctx.stroke();
   }
+  ctx.shadowBlur = 0;
 
   animationId = requestAnimationFrame(drawVisualizer);
 }
@@ -345,9 +465,29 @@ const setNickBtn = document.getElementById('set-nick');
 const chatInput = document.getElementById('chat-input');
 const chatSend = document.getElementById('chat-send');
 const chatMessages = document.getElementById('chat-messages');
+const chatReply = document.getElementById('chat-reply');
+const chatReplyLabel = document.getElementById('chat-reply-label');
+const chatReplyCancel = document.getElementById('chat-reply-cancel');
 
 let nickname = localStorage.getItem(STORAGE_NICK) || '';
 let chatData = JSON.parse(localStorage.getItem(STORAGE_CHAT) || '[]');
+let replyTo = null;
+
+function hashColor(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h << 5) - h + str.charCodeAt(i);
+  const palette = [310, 180, 45, 270, 20, 140];
+  return palette[Math.abs(h) % palette.length];
+}
+
+function pruneChat() {
+  const now = Date.now();
+  const before = chatData.length;
+  chatData = chatData.filter(m => now - new Date(m.date).getTime() < CHAT_TTL_MS);
+  if (chatData.length !== before) localStorage.setItem(STORAGE_CHAT, JSON.stringify(chatData));
+}
+
+function escapeHTML(t) { return String(t).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
 if (nickname) {
   chatNick.value = nickname;
@@ -355,18 +495,53 @@ if (nickname) {
   chatSend.disabled = false;
 }
 
+function startReply(id) {
+  const msg = chatData.find(m => m.id === id);
+  if (!msg) return;
+  replyTo = id;
+  chatReply.classList.remove('hidden');
+  chatReplyLabel.textContent = `${msg.author}: ${msg.text}`;
+  chatInput.focus();
+}
+
+function cancelReply() {
+  replyTo = null;
+  chatReply.classList.add('hidden');
+  chatReplyLabel.textContent = '';
+}
+
+chatReplyCancel.addEventListener('click', cancelReply);
+
 function renderChat() {
   chatMessages.innerHTML = '';
-  chatData.forEach(msg => {
+  chatData.forEach((msg, idx) => {
+    const isOwn = msg.author === nickname;
     const div = document.createElement('div');
-    div.className = `chat-msg ${msg.author === nickname ? 'own' : 'other'}`;
+    div.className = `chat-msg ${isOwn ? 'own' : 'other'}`;
+    const hue = hashColor(msg.author);
+    const initial = escapeHTML(msg.author.slice(0, 1).toUpperCase());
+    const replyHTML = msg.replyTo ? (() => {
+      const r = chatData.find(m => m.id === msg.replyTo);
+      return r ? `<p class="text-[10px] text-white/30 mb-1 border-l-2 pl-2" style="border-color:hsl(${hashColor(r.author)},80%,60%)">↩ ${escapeHTML(r.author)}: ${escapeHTML(r.text)}</p>` : '';
+    })() : '';
+    const deleteBtn = isOwn ? `<button class="chat-del" data-del="${msg.id}" title="Borrar">×</button>` : '';
+    const replyBtn = `<button class="chat-reply" data-reply="${msg.id}" title="Responder">↩</button>`;
+    const time = new Date(msg.date).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
     div.innerHTML = `
-      <p class="text-[10px] uppercase tracking-widest text-white/40 mb-1">${msg.author}</p>
-      <p class="text-sm text-white/90">${msg.text}</p>
-      <p class="text-[10px] text-white/30 mt-1 text-right">${new Date(msg.date).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</p>
+      <div class="chat-meta">
+        <span class="chat-avatar" style="background:hsl(${hue},80%,45%)">${initial}</span>
+        <span class="chat-author" style="color:hsl(${hue},80%,70%)">${escapeHTML(msg.author)}</span>
+        <span class="chat-time">${time}</span>
+        <span class="chat-actions">${replyBtn}${deleteBtn}</span>
+      </div>
+      ${replyHTML}
+      <p class="chat-text">${escapeHTML(msg.text)}</p>
     `;
     chatMessages.appendChild(div);
   });
+
+  chatMessages.querySelectorAll('.chat-reply').forEach(b => b.addEventListener('click', (e) => startReply(e.target.dataset.reply)));
+  chatMessages.querySelectorAll('.chat-del').forEach(b => b.addEventListener('click', (e) => deleteMessage(e.target.dataset.del)));
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
@@ -383,12 +558,24 @@ function addMessage(text) {
     author: nickname,
     deviceId: getDeviceId(),
     text: text.trim(),
-    date: new Date().toISOString()
+    date: new Date().toISOString(),
+    replyTo: replyTo || undefined
   };
   chatData.push(msg);
-  if (chatData.length > 100) chatData = chatData.slice(-100);
+  if (chatData.length > 200) chatData = chatData.slice(-200);
+  pruneChat();
   localStorage.setItem(STORAGE_CHAT, JSON.stringify(chatData));
   logToSheet('chat', msg);
+  cancelReply();
+  renderChat();
+}
+
+function deleteMessage(id) {
+  const msg = chatData.find(m => m.id === id);
+  if (!msg || msg.author !== nickname) return;
+  chatData = chatData.filter(m => m.id !== id);
+  localStorage.setItem(STORAGE_CHAT, JSON.stringify(chatData));
+  logToSheet('delete_msg', { id, deviceId: getDeviceId() });
   renderChat();
 }
 
@@ -400,6 +587,7 @@ setNickBtn.addEventListener('click', () => {
     chatInput.disabled = false;
     chatSend.disabled = false;
     chatInput.focus();
+    renderChat();
   }
 });
 
@@ -415,6 +603,7 @@ chatInput.addEventListener('keydown', (e) => {
   }
 });
 
+pruneChat();
 renderChat();
 
 function loadBlocked() {
@@ -966,5 +1155,6 @@ loadTracks();
 renderRadar();
 loadBlocked();
 initMedia();
+updateMixerUI();
 if (currentUser && currentUser.role === 'admin') renderAdmin();
 switchTab('inicio');

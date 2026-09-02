@@ -81,7 +81,10 @@
       <section id="dashboard-view" class="hidden">
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-lg font-display font-bold text-white">Métricas</h2>
-          <a id="sheet-link" href="#" target="_blank" rel="noopener" class="text-xs text-amarea-cyan hover:text-white transition font-display uppercase tracking-widest">Abrir hoja de cálculo</a>
+          <div class="flex items-center gap-4">
+            <button id="prune-btn" class="text-[10px] font-display font-bold uppercase tracking-widest text-amarea-fire hover:text-white transition border border-amarea-fire/30 rounded px-3 py-1.5">Purgar &gt; 90 días</button>
+            <a id="sheet-link" href="#" target="_blank" rel="noopener" class="text-xs text-amarea-cyan hover:text-white transition font-display uppercase tracking-widest">Abrir hoja de cálculo</a>
+          </div>
         </div>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="stats">
@@ -192,6 +195,22 @@
       }).catch(() => {});
       setTimeout(() => loadDashboard(url), 1000);
     }
+
+    function pruneLog() {
+      const url = localStorage.getItem(STORAGE_GAS) || DEFAULT_GAS_URL;
+      const cb = 'amareaPrune_' + Math.random().toString(36).slice(2, 9);
+      window[cb] = (res) => {
+        alert(res?.removed ? `Se purgaron ${res.removed} registros. Se recargará el dashboard.` : 'No se encontraron registros mayores a 90 días.');
+        loadDashboard(url);
+        delete window[cb];
+      };
+      const script = document.createElement('script');
+      script.src = `${url}?callback=${cb}&token=${encodeURIComponent(API_TOKEN)}&action=prune`;
+      script.onerror = () => { alert('No se pudo purgar el log.'); delete window[cb]; };
+      document.body.appendChild(script);
+    }
+
+    document.getElementById('prune-btn')?.addEventListener('click', pruneLog);
 
     window.amareaRenderDashboard = function(rows) {
       if (!Array.isArray(rows) || !rows.length) return;

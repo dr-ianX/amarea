@@ -88,6 +88,32 @@ El sitio evita cargar clips muy largos con tiempos de rotación de 7-20 segundos
 - El admin puede bloquear dispositivos desde `privado.html` sin crear cuentas.
 - El único espacio público entre usuarios es el chat. Las respuestas del cuestionario y los registros solo los ve el admin.
 
+## Sincronización con Relay
+
+Si la multimedia y la música originales están en `Amarea/Relay`, puedes sincronizarlas sin copiar a mano:
+
+```bash
+npm run sync-build
+```
+
+Esto copia `Relay/fotos`, `Relay/videos` y `Relay/Musica` al sitio, y genera `multimedia.json` y `musica/tracks.json`. Para no subir todo al repo, selecciona una curaduría o usa un CDN/host externo y ajusta las URLs en los manifests.
+
+## Mini-mixer
+
+La sección **Música** ahora incluye un mini-mixer:
+- Play/pausa, anterior, siguiente, shuffle, autoplay.
+- Volumen y ecualizador de 3 bandas (bass / mid / treble) vía Web Audio API.
+- Tres skins visuales: dark, neon y retro.
+- Visualizador radial minimalista y contemporáneo.
+- La música **nunca inicia sola**. El visitante activa el sonido; autoplay solo aplica tras elegir un track.
+
+## Chat y comunidad
+
+- El chat es **texto plano**.
+- Cada usuario elige un nickname y puede responder o borrar sus propios mensajes.
+- Los mensajes se mantienen **90 días** en `localStorage`; luego se purgan localmente.
+- El admin puede purgar logs de más de 90 días en Google Sheets desde `privado.html`.
+
 ## Nota sobre redes sociales
 
 Las redes enlazadas son ejemplos basados en la investigación pública disponible. Actualízalas con los enlaces oficiales reales cuando los tengas.

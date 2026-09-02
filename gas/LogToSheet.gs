@@ -25,6 +25,25 @@ function getLogSheet() {
   return sheet;
 }
 
+function pruneLog() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Log');
+  if (!sheet) return 0;
+  const now = new Date();
+  const days90 = 90 * 24 * 60 * 60 * 1000;
+  const rows = sheet.getDataRange().getValues();
+  let removed = 0;
+  // Desde abajo hacia arriba para no alterar índices
+  for (let i = rows.length - 1; i > 0; i--) {
+    const ts = new Date(rows[i][0]);
+    if (now - ts > days90) {
+      sheet.deleteRow(i + 1);
+      removed++;
+    }
+  }
+  return removed;
+}
+
 function doPost(e) {
   try {
     const body = e.postData.contents;
@@ -62,7 +81,10 @@ function doGet(e) {
     const rows = sheet.getDataRange().getValues();
     let json;
 
-    if (e.parameter.view === 'blocks') {
+    if (e.parameter.action === 'prune') {
+      const removed = pruneLog();
+      json = JSON.stringify({ result: 'ok', removed });
+    } else if (e.parameter.view === 'blocks') {
       const blocked = new Set();
       rows.slice(1).forEach(r => {
         if (String(r[1]) === 'block') {

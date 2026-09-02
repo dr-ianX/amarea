@@ -4,7 +4,7 @@ const path = require('path');
 const MEDIA_DIR = process.argv[2] || './multimedia';
 const OUT = './multimedia.json';
 
-const videoExts = new Set(['.mp4', '.webm', '.mov', '.ogv', '.mkv']);
+const videoExts = new Set(['.mp4', '.webm', '.mov', '.ogv', '.mkv', '.avi']);
 const imageExts = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.svg']);
 
 function scan(dir) {
@@ -18,10 +18,11 @@ function scan(dir) {
       items.push(...scan(full));
     } else {
       const ext = path.extname(entry.name).toLowerCase();
+      if (entry.name.startsWith('.') || entry.name === 'desktop.ini' || entry.name === 'Thumbs.db' || entry.name === '.DS_Store') continue;
       if (videoExts.has(ext)) {
-        items.push({ path: rel, type: 'video', filename: entry.name });
+        items.push({ path: encodeURI(rel), type: 'video', filename: entry.name });
       } else if (imageExts.has(ext)) {
-        items.push({ path: rel, type: 'image', filename: entry.name });
+        items.push({ path: encodeURI(rel), type: 'image', filename: entry.name });
       }
     }
   }

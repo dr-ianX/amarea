@@ -153,27 +153,55 @@
     <section id="musica" class="tab-section px-6 py-24 md:py-32 max-w-6xl mx-auto">
       <p class="text-amarea-cyan text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Archivo sonoro</p>
       <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8">Mixes & <span class="gradient-text">fiestas</span></h2>
-      <p class="text-white/50 max-w-xl mb-10">Selecciona un set. La música nunca comienza sola: tú activas el sonido.</p>
-      <div class="grid lg:grid-cols-[1fr,360px] gap-10">
+      <p class="text-white/50 max-w-xl mb-10">Selecciona un set. El sonido se activa cuando tú quieres, con control total.</p>
+      <div class="grid lg:grid-cols-[1fr,420px] gap-10">
         <div id="track-list" class="space-y-3"></div>
-        <div class="sticky top-28 h-fit rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 neon-box">
-          <canvas id="visualizer" width="320" height="120" class="w-full h-32 rounded-xl bg-black/40 mb-6"></canvas>
+        <div id="mini-mixer" class="sticky top-28 h-fit rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 neon-box" data-skin="dark">
+          <div class="flex justify-end gap-2 mb-2">
+            <button data-skin="dark" class="skin-btn text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded border border-white/10 text-white/60 hover:text-white hover:border-amarea-cyan transition" title="Oscuro">D</button>
+            <button data-skin="neon" class="skin-btn text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded border border-white/10 text-white/60 hover:text-amarea-pink hover:border-amarea-pink transition" title="Neón">N</button>
+            <button data-skin="retro" class="skin-btn text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded border border-white/10 text-white/60 hover:text-amarea-gold hover:border-amarea-gold transition" title="Retro">R</button>
+          </div>
+          <canvas id="visualizer" width="360" height="120" class="w-full h-32 rounded-xl bg-black/40 mb-4"></canvas>
           <div id="now-playing" class="text-center mb-4">
             <p class="text-xs text-white/40 uppercase tracking-widest mb-1">Ahora suena</p>
             <h3 id="current-track" class="text-xl font-display font-bold text-white truncate">—</h3>
             <p id="current-artist" class="text-sm text-white/50">Selecciona un track</p>
           </div>
-          <div class="flex justify-center gap-6 items-center mb-4">
+          <div class="flex justify-center items-center gap-4 mb-4">
+            <button id="shuffle-btn" class="w-9 h-9 rounded-full border border-white/10 text-white/60 hover:text-amarea-cyan hover:border-amarea-cyan flex items-center justify-center text-xs" title="Shuffle">⇄</button>
             <button id="prev-btn" class="text-white/60 hover:text-amarea-cyan transition">«</button>
             <button id="play-btn" class="w-14 h-14 rounded-full bg-amarea-pink text-black font-bold text-xl hover:scale-110 transition flex items-center justify-center">▶</button>
             <button id="next-btn" class="text-white/60 hover:text-amarea-cyan transition">»</button>
+            <button id="autoplay-btn" class="w-9 h-9 rounded-full border border-white/10 text-white/60 hover:text-amarea-gold hover:border-amarea-gold flex items-center justify-center text-xs" title="Autoplay desactivado">A</button>
           </div>
           <input id="progress" type="range" min="0" max="100" value="0" class="w-full mb-3 accent-amarea-cyan opacity-50 hover:opacity-100 transition">
-          <div class="flex justify-between text-xs text-white/30 font-mono">
+          <div class="flex justify-between text-xs text-white/30 font-mono mb-4">
             <span id="time-current">0:00</span>
             <span id="time-total">0:00</span>
           </div>
-          <p class="text-[10px] text-white/30 text-center mt-4 uppercase tracking-widest">No autoplay · actívalo tú</p>
+          <div class="mb-4">
+            <div class="flex justify-between text-[10px] font-display uppercase tracking-widest text-white/40 mb-1"><span>Volumen</span> <span id="volume-val">100%</span></div>
+            <input id="volume" type="range" min="0" max="1" step="0.05" value="1" class="w-full accent-amarea-pink">
+          </div>
+          <div class="eq grid grid-cols-3 gap-2 mb-4">
+            <div class="eq-col">
+              <label for="eq-bass" class="block text-[9px] font-display uppercase tracking-widest text-white/40 text-center mb-1">Bass</label>
+              <input id="eq-bass" type="range" min="-12" max="12" step="1" value="0" orient="vertical" class="eq-slider">
+              <span class="block text-[9px] text-white/40 text-center mt-1" id="eq-bass-val">0</span>
+            </div>
+            <div class="eq-col">
+              <label for="eq-mid" class="block text-[9px] font-display uppercase tracking-widest text-white/40 text-center mb-1">Mid</label>
+              <input id="eq-mid" type="range" min="-12" max="12" step="1" value="0" orient="vertical" class="eq-slider">
+              <span class="block text-[9px] text-white/40 text-center mt-1" id="eq-mid-val">0</span>
+            </div>
+            <div class="eq-col">
+              <label for="eq-treble" class="block text-[9px] font-display uppercase tracking-widest text-white/40 text-center mb-1">Treble</label>
+              <input id="eq-treble" type="range" min="-12" max="12" step="1" value="0" orient="vertical" class="eq-slider">
+              <span class="block text-[9px] text-white/40 text-center mt-1" id="eq-treble-val">0</span>
+            </div>
+          </div>
+          <p id="skin-label" class="text-[10px] text-white/30 text-center uppercase tracking-widest">skin: dark · autoplay: off</p>
         </div>
       </div>
     </section>
@@ -270,10 +298,16 @@
           <button id="set-nick" class="px-4 py-2 text-xs font-display font-bold uppercase tracking-widest rounded-xl border border-white/10 hover:border-amarea-pink transition">Entrar</button>
         </div>
         <div id="chat-messages" class="flex-1 overflow-y-auto space-y-3 pr-2 mb-4"></div>
+        <div id="chat-reply" class="hidden mb-2 text-xs text-white/50 flex items-center gap-2">
+          <span class="text-amarea-cyan">↩</span>
+          <span id="chat-reply-label" class="truncate max-w-[200px]"></span>
+          <button id="chat-reply-cancel" class="text-white/40 hover:text-white ml-auto">×</button>
+        </div>
         <div class="flex gap-3">
           <input id="chat-input" type="text" placeholder="Escribe un mensaje..." maxlength="240" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-cyan outline-none" disabled>
           <button id="chat-send" class="px-6 py-3 rounded-xl bg-amarea-cyan/10 text-amarea-cyan font-display font-bold uppercase tracking-widest text-xs hover:bg-amarea-cyan hover:text-black transition" disabled>Enviar</button>
         </div>
+        <p class="text-[10px] text-white/20 text-right mt-2 uppercase tracking-widest">Mensajes vivos: 90 días</p>
       </div>
     </section>
 
