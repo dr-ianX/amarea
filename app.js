@@ -3,6 +3,24 @@
 const STORAGE_CHAT = 'amarea_chat_v1';
 const STORAGE_NICK = 'amarea_nick_v1';
 const STORAGE_JOIN = 'amarea_join_v1';
+const STORAGE_USERS = 'amarea_users_v1';
+const STORAGE_BRIEFS = 'amarea_briefs_v1';
+const STORAGE_CURRENT = 'amarea_current_v1';
+
+const djNews = [
+  { title: 'Residente Akir B estrena set en CRANIA', date: '2026-02-01', tag: 'Residente', summary: 'Un viaje de techno oscuro y disco lunar grabado en vivo durante la última edición AMAREA.' },
+  { title: 'Lua Mora prepara EP inspirado en la Baja', date: '2026-01-20', tag: 'Lanzamiento', summary: 'Tres tracks que traducen el viento del Pacífico en ritmos de house introspectivo.' },
+  { title: 'Simbionte x Mentesaka: live AV', date: '2025-12-15', tag: 'Live', summary: 'Primera presentación conjunta de hardware, visuales generativos y escultura sonora.' }
+];
+
+const caboNews = [
+  { title: 'CRANIA abre su residencia de artistas', date: '2026-01-18', tag: 'Venue', summary: 'Convocatoria abierta para productores, visuales y performers en San José del Cabo.' },
+  { title: 'Temporada alta de eventos en Los Cabos', date: '2026-01-10', tag: 'Destino', summary: 'Aeropuerto SJD reporta récord de conectividad internacional para primavera.' },
+  { title: 'Nueva ruta de gastronomía nocturna', date: '2026-01-05', tag: 'Cultura', summary: 'Bares y restaurantes del centro histórico suman experiencias after-hours.' }
+];
+
+let currentUser = JSON.parse(localStorage.getItem(STORAGE_CURRENT) || 'null');
+let radarFilter = 'dj';
 
 const residents = [
   { name: 'Akir B', role: 'DJ · Techno / Dark Disco', vibe: 'Sets profundos, texturas desérticas.' },
@@ -58,9 +76,21 @@ const mobileMenu = document.getElementById('mobile-menu');
 const menuBtn = document.getElementById('menu-btn');
 const nav = document.getElementById('nav');
 
+function updateActiveNav(id) {
+  document.querySelectorAll('.tab-link').forEach(l => {
+    l.classList.remove('nav-active');
+    if (l.dataset.tab === id) l.classList.add('nav-active');
+  });
+}
+
 function switchTab(id) {
+  if (id === 'admin' && (!currentUser || currentUser.role !== 'admin')) {
+    switchTab('inicio');
+    return;
+  }
   sections.forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  updateActiveNav(id);
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if (mobileMenu) mobileMenu.classList.add('hidden');
 }
@@ -365,6 +395,231 @@ joinForm?.addEventListener('submit', (e) => {
   }
 });
 
+// === AUTH / ROLES ===
+const authModal = document.getElementById('auth-modal');
+const authToggle = document.getElementById('auth-toggle');
+const authToggleMobile = document.getElementById('auth-toggle-mobile');
+const authClose = document.getElementById('auth-close');
+const authForm = document.getElementById('auth-form');
+const authRegister = document.getElementById('auth-register');
+const authGuest = document.getElementById('auth-guest');
+const authError = document.getElementById('auth-error');
+const authTitle = document.getElementById('auth-title');
+const authSubtitle = document.getElementById('auth-subtitle');
+
+function getUsers() { return JSON.parse(localStorage.getItem(STORAGE_USERS) || '[]'); }
+function setUsers(users) { localStorage.setItem(STORAGE_USERS, JSON.stringify(users)); }
+function getBriefs() { return JSON.parse(localStorage.getItem(STORAGE_BRIEFS) || '[]'); }
+function setBriefs(list) { localStorage.setItem(STORAGE_BRIEFS, JSON.stringify(list)); }
+
+function seedAdmin() {
+  const users = getUsers();
+  if (!users.find(u => u.username === 'admin')) {
+    users.push({ username: 'admin', password: 'amarea2026', role: 'admin' });
+    setUsers(users);
+  }
+}
+
+function saveCurrent() {
+  if (currentUser) localStorage.setItem(STORAGE_CURRENT, JSON.stringify(currentUser));
+  else localStorage.removeItem(STORAGE_CURRENT);
+}
+
+function showAuth() { authModal.classList.remove('hidden'); authModal.classList.add('flex'); }
+function closeAuth() { authModal.classList.add('hidden'); authModal.classList.remove('flex'); authError.classList.add('hidden'); }
+
+function updateAuthUI() {
+  if (currentUser) {
+    authToggle.textContent = 'SALIR';
+    authToggleMobile.textContent = 'SALIR';
+    authTitle.textContent = 'Hola, ' + currentUser.username;
+    authSubtitle.textContent = 'Rol: ' + currentUser.role;
+    document.querySelectorAll('.admin-link').forEach(el => el.classList.toggle('hidden', currentUser.role !== 'admin'));
+  } else {
+    authToggle.textContent = 'ENTRAR';
+    authToggleMobile.textContent = 'ENTRAR';
+    authTitle.textContent = 'Entrar';
+    authSubtitle.textContent = 'Invitados pueden navegar. Clientes inician sesión.';
+    document.querySelectorAll('.admin-link').forEach(el => el.classList.add('hidden'));
+  }
+  renderBriefFormGate();
+  if (currentUser && currentUser.role === 'admin') renderAdmin();
+}
+
+function login(username, password) {
+  const users = getUsers();
+  const found = users.find(u => u.username === username && u.password === password);
+  if (found) {
+    currentUser = { username: found.username, role: found.role };
+    saveCurrent();
+    updateAuthUI();
+    closeAuth();
+    return true;
+  }
+  return false;
+}
+
+function register(username, password) {
+  const users = getUsers();
+  if (users.find(u => u.username === username)) return false;
+  users.push({ username, password, role: 'cliente' });
+  setUsers(users);
+  currentUser = { username, role: 'cliente' };
+  saveCurrent();
+  updateAuthUI();
+  closeAuth();
+  return true;
+}
+
+function logout() {
+  currentUser = null;
+  saveCurrent();
+  updateAuthUI();
+  switchTab('inicio');
+}
+
+function initAuth() {
+  authToggle.addEventListener('click', () => { currentUser ? logout() : showAuth(); });
+  authToggleMobile.addEventListener('click', () => { currentUser ? logout() : showAuth(); });
+  authClose.addEventListener('click', closeAuth);
+  authModal.addEventListener('click', (e) => { if (e.target === authModal) closeAuth(); });
+  authGuest.addEventListener('click', closeAuth);
+
+  authForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const u = document.getElementById('auth-username').value.trim();
+    const p = document.getElementById('auth-password').value;
+    if (login(u, p)) { authForm.reset(); return; }
+    authError.textContent = 'Usuario o contraseña incorrectos.';
+    authError.classList.remove('hidden');
+  });
+
+  authRegister.addEventListener('click', () => {
+    const u = document.getElementById('auth-username').value.trim();
+    const p = document.getElementById('auth-password').value;
+    if (u.length < 3 || p.length < 4) {
+      authError.textContent = 'Mínimo 3 caracteres de usuario y 4 de contraseña.';
+      authError.classList.remove('hidden');
+      return;
+    }
+    if (register(u, p)) { authForm.reset(); return; }
+    authError.textContent = 'El usuario ya existe.';
+    authError.classList.remove('hidden');
+  });
+
+  updateAuthUI();
+}
+
+// === RADAR / NOTICIAS ===
+const radarGrid = document.getElementById('radar-grid');
+const btnDj = document.getElementById('radar-dj');
+const btnCabo = document.getElementById('radar-cabo');
+
+function renderRadar() {
+  const data = radarFilter === 'dj' ? djNews : caboNews;
+  const activeClass = 'border-amarea-cyan/30 text-amarea-cyan bg-amarea-cyan/10';
+  const inactiveClass = 'border-white/10 text-white/60 hover:border-amarea-gold hover:text-amarea-gold';
+
+  btnDj.className = `px-5 py-2 rounded-full border text-xs font-display font-bold uppercase tracking-widest transition ${radarFilter === 'dj' ? activeClass : inactiveClass}`;
+  btnCabo.className = `px-5 py-2 rounded-full border text-xs font-display font-bold uppercase tracking-widest transition ${radarFilter === 'cabo' ? 'border-amarea-gold/30 text-amarea-gold bg-amarea-gold/10' : inactiveClass}`;
+
+  radarGrid.innerHTML = '';
+  data.forEach((n, i) => {
+    const div = document.createElement('div');
+    div.className = 'radar-card rounded-2xl p-6 relative overflow-hidden group';
+    div.innerHTML = `
+      <span class="absolute top-4 right-4 text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded bg-white/5 text-white/60">${n.tag}</span>
+      <p class="text-xs text-white/30 font-mono mb-3">${n.date}</p>
+      <h3 class="text-xl font-display font-bold text-white mb-3 group-hover:text-amarea-cyan transition-colors">${n.title}</h3>
+      <p class="text-sm text-white/50 leading-relaxed">${n.summary}</p>
+    `;
+    radarGrid.appendChild(div);
+  });
+}
+
+btnDj.addEventListener('click', () => { radarFilter = 'dj'; renderRadar(); });
+btnCabo.addEventListener('click', () => { radarFilter = 'cabo'; renderRadar(); });
+
+// === BRIEF / CUESTIONARIO ===
+const briefForm = document.getElementById('brief-form');
+const briefMsg = document.getElementById('brief-msg');
+
+function renderBriefFormGate() {
+  if (!briefForm) return;
+  if (!currentUser || (currentUser.role !== 'cliente' && currentUser.role !== 'admin')) {
+    briefForm.classList.add('hidden');
+    briefMsg.textContent = 'Inicia sesión como cliente para enviar tu brief.';
+    briefMsg.classList.remove('hidden', 'text-amarea-cyan');
+    briefMsg.classList.add('text-white/50');
+  } else {
+    briefForm.classList.remove('hidden');
+    briefMsg.classList.add('hidden');
+  }
+}
+
+briefForm?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (!currentUser || (currentUser.role !== 'cliente' && currentUser.role !== 'admin')) return;
+  const fd = new FormData(briefForm);
+  const brief = Object.fromEntries(fd);
+  brief.date = new Date().toISOString();
+  brief.user = currentUser.username;
+  const list = getBriefs();
+  list.push(brief);
+  setBriefs(list);
+  briefForm.reset();
+  briefMsg.textContent = 'Brief enviado. Te contactaremos pronto.';
+  briefMsg.classList.remove('hidden', 'text-white/50');
+  briefMsg.classList.add('text-amarea-cyan');
+  if (currentUser.role === 'admin') renderAdmin();
+});
+
+// === ADMIN PANEL ===
+function renderAdmin() {
+  const briefs = getBriefs().slice().reverse();
+  const users = getUsers();
+  const briefsContainer = document.getElementById('admin-briefs');
+  const usersContainer = document.getElementById('admin-users');
+  if (!briefsContainer || !usersContainer) return;
+
+  briefsContainer.innerHTML = briefs.length ? '' : '<p class="text-white/30 text-sm">Sin briefs aún.</p>';
+  briefs.forEach((b, i) => {
+    const div = document.createElement('div');
+    div.className = 'p-5 rounded-2xl border border-white/5 bg-white/[0.02]';
+    div.innerHTML = `
+      <p class="text-[10px] text-white/30 font-mono uppercase tracking-widest mb-2">${new Date(b.date).toLocaleString('es-MX')} · ${b.user}</p>
+      <p class="font-display font-bold text-white mb-1">${b.nombre} · ${b.tipo}</p>
+      <p class="text-sm text-white/50 mb-1">${b.email} · ${b.invitados} invitados</p>
+      <p class="text-sm text-white/60 italic">“${b.detalles}”</p>
+    `;
+    briefsContainer.appendChild(div);
+  });
+
+  usersContainer.innerHTML = '';
+  users.forEach(u => {
+    const div = document.createElement('div');
+    div.className = 'p-4 rounded-2xl border border-white/5 bg-white/[0.02] flex justify-between items-center';
+    div.innerHTML = `
+      <span class="font-display font-bold text-white">${u.username}</span>
+      <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded ${u.role === 'admin' ? 'bg-amarea-fire/10 text-amarea-fire' : 'bg-amarea-cyan/10 text-amarea-cyan'}">${u.role}</span>
+    `;
+    usersContainer.appendChild(div);
+  });
+}
+
+function exportJSON(filename, data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('export-briefs')?.addEventListener('click', () => exportJSON('amarea-briefs.json', getBriefs()));
+document.getElementById('export-users')?.addEventListener('click', () => exportJSON('amarea-users.json', getUsers()));
+
 // === DUST / PARTICLES CANVAS ===
 const dustCanvas = document.getElementById('dust');
 const dCtx = dustCanvas.getContext('2d');
@@ -415,6 +670,19 @@ resizeDust();
 initParticles();
 drawDust();
 
+// === SPOTLIGHT ===
+const spotlight = document.getElementById('spotlight');
+if (spotlight) {
+  document.addEventListener('mousemove', (e) => {
+    spotlight.style.setProperty('--x', (e.clientX / window.innerWidth) * 100 + '%');
+    spotlight.style.setProperty('--y', (e.clientY / window.innerHeight) * 100 + '%');
+  });
+}
+
 // === INIT ===
+seedAdmin();
+initAuth();
 loadTracks();
+renderRadar();
+if (currentUser && currentUser.role === 'admin') renderAdmin();
 switchTab('inicio');

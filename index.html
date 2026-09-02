@@ -41,6 +41,10 @@
 </head>
 <body class="bg-amarea-black text-amarea-white font-sans antialiased overflow-x-hidden selection:bg-amarea-pink selection:text-white">
   <canvas id="dust" class="fixed inset-0 w-full h-full pointer-events-none z-0"></canvas>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+  <div class="spotlight" id="spotlight"></div>
   <div class="grain fixed inset-0 pointer-events-none z-50"></div>
 
   <nav id="nav" class="fixed top-0 left-0 right-0 z-40 transition-all duration-500">
@@ -52,8 +56,13 @@
         <a href="#" class="tab-link hover:text-amarea-cyan transition-colors" data-tab="residentes">Residentes</a>
         <a href="#" class="tab-link hover:text-amarea-gold transition-colors" data-tab="eventos">Eventos</a>
         <a href="#" class="tab-link hover:text-amarea-violet transition-colors" data-tab="musica">Música</a>
+        <a href="#" class="tab-link hover:text-amarea-gold transition-colors" data-tab="radar">Radar</a>
+        <a href="#" class="tab-link hover:text-amarea-cyan transition-colors" data-tab="mapa">Mapa</a>
+        <a href="#" class="tab-link hover:text-amarea-violet transition-colors" data-tab="brief">Brief</a>
+        <a href="#" class="tab-link admin-link hidden" data-tab="admin">Admin</a>
         <a href="#" class="tab-link hover:text-amarea-pink transition-colors" data-tab="comunidad">Comunidad</a>
         <a href="#" class="tab-link hover:text-amarea-cyan transition-colors" data-tab="contacto">Contacto</a>
+        <button id="auth-toggle" class="text-amarea-white hover:text-amarea-pink transition-colors font-display font-medium tracking-widest uppercase">Entrar</button>
       </div>
     </div>
     <div id="mobile-menu" class="md:hidden hidden bg-amarea-ink/95 backdrop-blur-xl border-b border-white/5 px-6 py-6">
@@ -62,8 +71,13 @@
         <a href="#" class="tab-link" data-tab="residentes">Residentes</a>
         <a href="#" class="tab-link" data-tab="eventos">Eventos</a>
         <a href="#" class="tab-link" data-tab="musica">Música</a>
+        <a href="#" class="tab-link" data-tab="radar">Radar</a>
+        <a href="#" class="tab-link" data-tab="mapa">Mapa</a>
+        <a href="#" class="tab-link" data-tab="brief">Brief</a>
+        <a href="#" class="tab-link admin-link hidden" data-tab="admin">Admin</a>
         <a href="#" class="tab-link" data-tab="comunidad">Comunidad</a>
         <a href="#" class="tab-link" data-tab="contacto">Contacto</a>
+        <button id="auth-toggle-mobile" class="text-left font-display font-medium tracking-widest uppercase text-white/70">Entrar</button>
       </div>
     </div>
   </nav>
@@ -162,6 +176,96 @@
       </div>
     </section>
 
+    <!-- RADAR -->
+    <section id="radar" class="tab-section px-6 py-24 md:py-32 max-w-6xl mx-auto">
+      <p class="text-amarea-cyan text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Radar</p>
+      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8">DJ News & <span class="gradient-text">Cabo News</span></h2>
+      <div class="flex gap-4 mb-10">
+        <button id="radar-dj" class="px-5 py-2 rounded-full border border-amarea-cyan/30 text-amarea-cyan text-xs font-display font-bold uppercase tracking-widest bg-amarea-cyan/10">DJ News</button>
+        <button id="radar-cabo" class="px-5 py-2 rounded-full border border-white/10 text-white/60 text-xs font-display font-bold uppercase tracking-widest hover:border-amarea-gold hover:text-amarea-gold transition">Cabo News</button>
+      </div>
+      <div id="radar-grid" class="grid md:grid-cols-2 gap-6"></div>
+    </section>
+
+    <!-- MAPA -->
+    <section id="mapa" class="tab-section px-6 py-24 md:py-32 max-w-6xl mx-auto">
+      <p class="text-amarea-pink text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Mapa</p>
+      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8">San José del <span class="gradient-text">Cabo</span></h2>
+      <div class="rounded-3xl overflow-hidden border border-white/10 neon-box h-[500px] relative mb-6">
+        <iframe
+          title="Mapa CRANIA, San José del Cabo"
+          src="https://www.google.com/maps?q=CRANIA+Air+Disco+San+Jose+del+Cabo+Baja+California+Sur&z=14&output=embed"
+          class="w-full h-full border-0"
+          allowfullscreen
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+      </div>
+      <div class="grid sm:grid-cols-3 gap-4 text-sm text-white/60">
+        <div class="p-4 rounded-2xl border border-white/5 bg-white/[0.02]">
+          <p class="font-display font-bold text-white mb-1">CRANIA</p>
+          <p>Puerto Los Cabos · 5 min del centro</p>
+        </div>
+        <div class="p-4 rounded-2xl border border-white/5 bg-white/[0.02]">
+          <p class="font-display font-bold text-white mb-1">Aeropuerto SJD</p>
+          <p>15 min en auto · vuelos nacionales e internacionales</p>
+        </div>
+        <div class="p-4 rounded-2xl border border-white/5 bg-white/[0.02]">
+          <p class="font-display font-bold text-white mb-1">Centro histórico</p>
+          <p>San José del Cabo · art district, gastronomía y hospedaje</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- BRIEF -->
+    <section id="brief" class="tab-section px-6 py-24 md:py-32 max-w-4xl mx-auto">
+      <p class="text-amarea-violet text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Brief</p>
+      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-6">Cuéntanos tu <span class="gradient-text">proyecto</span></h2>
+      <p class="text-white/50 mb-8">Responde el cuestionario. Solo el equipo de AMAREA verá tus respuestas.</p>
+      <form id="brief-form" class="space-y-5 rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 md:p-10 neon-box">
+        <input type="text" name="nombre" placeholder="Nombre completo" required class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-pink outline-none">
+        <input type="email" name="email" placeholder="Email" required class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-pink outline-none">
+        <select name="tipo" required class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-pink outline-none text-white">
+          <option value="" disabled selected>Tipo de evento</option>
+          <option value="fiesta">Fiesta pública</option>
+          <option value="privado">Evento privado</option>
+          <option value="corporativo">Corporativo / brand</option>
+          <option value="residencia">Residencia artística</option>
+          <option value="otro">Otro</option>
+        </select>
+        <input type="date" name="fecha" class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-pink outline-none text-white/70">
+        <select name="invitados" class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-pink outline-none text-white">
+          <option value="" disabled selected>Número aproximado de invitados</option>
+          <option value="50">&lt; 50</option>
+          <option value="100">50 – 100</option>
+          <option value="300">100 – 300</option>
+          <option value="500">300 – 500</option>
+          <option value="+500">+ 500</option>
+        </select>
+        <textarea name="detalles" rows="4" placeholder="Cuéntanos la idea, la energía, el sueño..." required class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-pink outline-none"></textarea>
+        <button type="submit" class="w-full py-4 rounded-xl bg-amarea-pink text-black font-display font-bold uppercase tracking-widest hover:bg-white transition">Enviar brief</button>
+      </form>
+      <p id="brief-msg" class="hidden text-amarea-cyan text-sm mt-4">Brief enviado. Te contactaremos pronto.</p>
+    </section>
+
+    <!-- ADMIN -->
+    <section id="admin" class="tab-section px-6 py-24 md:py-32 max-w-6xl mx-auto">
+      <p class="text-amarea-fire text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Admin</p>
+      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8">Panel de <span class="gradient-text">control</span></h2>
+      <div class="grid md:grid-cols-2 gap-10">
+        <div>
+          <h3 class="text-2xl font-display font-bold mb-4">Briefs recibidos</h3>
+          <div id="admin-briefs" class="space-y-4"></div>
+          <button id="export-briefs" class="mt-6 px-6 py-2 rounded-xl border border-amarea-cyan text-amarea-cyan text-xs font-display font-bold uppercase tracking-widest hover:bg-amarea-cyan hover:text-black transition">Exportar JSON</button>
+        </div>
+        <div>
+          <h3 class="text-2xl font-display font-bold mb-4">Usuarios registrados</h3>
+          <div id="admin-users" class="space-y-3"></div>
+          <button id="export-users" class="mt-6 px-6 py-2 rounded-xl border border-amarea-pink text-amarea-pink text-xs font-display font-bold uppercase tracking-widest hover:bg-amarea-pink hover:text-black transition">Exportar usuarios</button>
+        </div>
+      </div>
+    </section>
+
     <!-- COMUNIDAD -->
     <section id="comunidad" class="tab-section px-6 py-24 md:py-32 max-w-4xl mx-auto">
       <p class="text-amarea-pink text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Comunidad</p>
@@ -203,6 +307,26 @@
       <p class="text-xs text-white/20 uppercase tracking-widest">Hecho con purpurina, desierto y buena vibra · 2026</p>
     </footer>
   </main>
+
+  <!-- AUTH MODAL -->
+  <div id="auth-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div class="w-full max-w-md p-8 rounded-3xl border border-white/10 bg-amarea-ink/90 neon-box relative">
+      <button id="auth-close" class="absolute top-4 right-4 text-white/40 hover:text-white">✕</button>
+      <h2 id="auth-title" class="text-3xl font-display font-bold mb-2">Entrar</h2>
+      <p id="auth-subtitle" class="text-white/50 text-sm mb-6">Invitados pueden navegar. Clientes inician sesión.</p>
+      <form id="auth-form" class="space-y-4">
+        <input id="auth-username" type="text" placeholder="Usuario" required class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-pink outline-none">
+        <input id="auth-password" type="password" placeholder="Contraseña" required class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-pink outline-none">
+        <div class="flex gap-3">
+          <button type="submit" class="flex-1 py-3 rounded-xl bg-amarea-pink text-black font-display font-bold uppercase tracking-widest text-sm hover:bg-white transition">Iniciar sesión</button>
+          <button type="button" id="auth-register" class="flex-1 py-3 rounded-xl border border-amarea-cyan text-amarea-cyan font-display font-bold uppercase tracking-widest text-sm hover:bg-amarea-cyan hover:text-black transition">Registrarme</button>
+        </div>
+      </form>
+      <button id="auth-guest" class="w-full mt-4 text-white/40 text-xs uppercase tracking-widest hover:text-white transition">Continuar como invitado</button>
+      <p id="auth-error" class="hidden text-amarea-fire text-xs mt-4 text-center"></p>
+      <p class="text-[10px] text-white/20 mt-6 text-center">Admin demo: usuario <span class="text-amarea-cyan">admin</span> · clave <span class="text-amarea-cyan">amarea2026</span></p>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

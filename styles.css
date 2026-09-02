@@ -185,6 +185,7 @@ body {
 /* Range input */
 input[type="range"] {
   -webkit-appearance: none;
+  appearance: none;
   height: 4px;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
@@ -259,3 +260,133 @@ input[type="range"]::-webkit-slider-thumb {
   outline: 1px solid var(--cyan);
   outline-offset: 2px;
 }
+
+/* Nav active state */
+.tab-link.nav-active {
+  color: var(--pink) !important;
+  text-shadow: 0 0 12px rgba(255, 0, 110, 0.45);
+}
+
+/* Admin link */
+.admin-link {
+  color: var(--fire);
+  opacity: 0.9;
+}
+
+/* Auth modal */
+#auth-modal {
+  transition: opacity 0.3s ease;
+}
+
+#auth-modal:not(.hidden) {
+  opacity: 1;
+}
+
+#auth-modal.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Radar cards */
+.radar-card {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(0, 240, 255, 0.02));
+  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.radar-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 0, 110, 0.1), rgba(0, 240, 255, 0.1));
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.radar-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  border-color: rgba(0, 240, 255, 0.25);
+  box-shadow: 0 20px 40px -20px rgba(0, 240, 255, 0.2);
+}
+
+.radar-card:hover::before {
+  opacity: 1;
+}
+
+/* Morphing background blobs */
+.blob {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.18;
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: screen;
+  animation: blob 20s ease-in-out infinite;
+}
+
+.blob-1 {
+  width: 500px;
+  height: 500px;
+  background: var(--pink);
+  top: 10%;
+  left: -10%;
+  animation-delay: 0s;
+}
+
+.blob-2 {
+  width: 600px;
+  height: 600px;
+  background: var(--cyan);
+  bottom: 5%;
+  right: -15%;
+  animation-delay: -7s;
+}
+
+.blob-3 {
+  width: 400px;
+  height: 400px;
+  background: var(--violet);
+  top: 40%;
+  left: 50%;
+  animation-delay: -14s;
+}
+
+@keyframes blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(20px, -30px) scale(1.05); }
+  50% { transform: translate(-20px, 20px) scale(1.1); }
+  75% { transform: translate(30px, 10px) scale(0.95); }
+}
+
+/* Shifting gradient text */
+.gradient-text {
+  background-size: 200% 200%;
+  animation: gradientShift 5s ease infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Neon box pulse */
+.neon-box {
+  animation: neonPulse 6s ease-in-out infinite;
+}
+
+@keyframes neonPulse {
+  0%, 100% { box-shadow: 0 0 30px -10px rgba(0, 240, 255, 0.1); }
+  50% { box-shadow: 0 0 50px -5px rgba(0, 240, 255, 0.25); }
+}
+
+/* Spotlight cursor (optional) */
+.spotlight {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255, 0, 110, 0.08), transparent 25%);
+  z-index: 1;
+  mix-blend-mode: screen;
+}
+
