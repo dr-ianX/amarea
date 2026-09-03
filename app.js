@@ -91,7 +91,27 @@ function initAnalytics() {
   gtag('config', ga);
 }
 
-const DEFAULT_RESIDENTS = [];
+const DEFAULT_RESIDENTS = [
+  {
+    name: 'dR.iAn',
+    role: 'fundador',
+    bio: 'Productor y curador sonoro. Cada set es una narrativa en constante transformación.',
+    image: 'assets/resident-drian.jpg',
+    links: { soundcloud: '#', instagram: 'https://instagram.com/drian.mx' }
+  },
+  {
+    name: 'JOHANN',
+    role: 'DJ principal',
+    bio: 'Seleccionador implacable. Construye sets que navegan entre el house profundo y la techno con alma.',
+    links: { instagram: '#', soundcloud: '#' }
+  },
+  {
+    name: 'JU BODENSDEDT',
+    role: 'DJ principal',
+    bio: 'Versátil y preciso. Lee la pista de baile como pocos y conduce la noche sin perder la sorpresa.',
+    links: { instagram: '#', soundcloud: '#' }
+  }
+];
 let residents = [...DEFAULT_RESIDENTS];
 
 const DEFAULT_EVENTS = [
@@ -141,10 +161,39 @@ let deckBTitle = '';
 let masterVolume = 1;
 let crossValue = 0;
 let localTracks = [];
-let currentBuffer = null;
+let currentBufferA = null;
+let currentBufferB = null;
 let waveformZoom = 4;
-let waveformCanvas = null;
-let waveformCtx = null;
+let waveformACanvas = null, waveformBCanvas = null;
+let waveformACtx = null, waveformBCtx = null;
+
+let sourceB = null;
+let crossGainA = null;
+let crossGainB = null;
+let masterGain = null;
+let lowGain = null;
+let midGain = null;
+let highGain = null;
+let midLowFilter = null;
+let midHighFilter = null;
+let reverbNode = null;
+let reverbWet = null;
+let reverbOn = false;
+let reverbMix = 0.3;
+
+let loopOn = false;
+let loopStart = 0;
+let loopEnd = 0;
+let loopBpm = 128;
+
+const VISUALIZER_MODES = ['circles','bars','wave','spiral','grid','particles','nebula','scope'];
+let visMode = 'circles';
+let visModeTimer = null;
+let visHueShift = 0;
+
+function tr(key, fallback = '') {
+  return (typeof window.t === 'function' ? window.t(key, fallback) : fallback) || fallback;
+}
 
 // === TABS ===
 const tabLinks = document.querySelectorAll('.tab-link, .tab-cta');
@@ -204,10 +253,12 @@ function renderResidents() {
     const div = document.createElement('div');
     div.className = 'resident-card rounded-2xl p-6';
     div.style.animationDelay = `${i * 80}ms`;
+    const img = r.image ? `<div class="w-16 h-16 rounded-full bg-black/40 border border-white/10 mb-4 overflow-hidden"><img src="${r.image}" alt="${r.name}" class="w-full h-full object-cover" onerror="this.style.display='none'"></div>` : '';
     div.innerHTML = `
+      ${img}
       <h3 class="text-2xl font-display font-bold text-white mb-1">${r.name}</h3>
       <p class="text-xs font-mono text-amarea-cyan uppercase tracking-widest mb-4">${r.role}</p>
-      <p class="text-sm text-white/50 leading-relaxed">${r.vibe}</p>
+      <p class="text-sm text-white/50 leading-relaxed">${r.bio || r.vibe}</p>
     `;
     residentsGrid.appendChild(div);
   });
@@ -372,6 +423,7 @@ function renderTracks() {
     div.querySelectorAll('.preview-btn').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); previewTrack(i); }));
     list.appendChild(div);
   });
+  renderDeckSelects();
 }
 
 function previewTrack(index, seconds = 15) {
@@ -398,7 +450,7 @@ function selectTrack(index, preview = false) {
   renderTracks();
   document.getElementById('vinyl-hero')?.classList.remove('playing');
   if (autoplay || autoDj || preview) playAudio();
-  loadWaveform(t.src);
+  loadWaveformFor('a', t.src);
   logToSheet('track_select', { title: t.title, artist: t.artist, index });
   updateMiniPlayer();
 }
@@ -450,16 +502,17 @@ function togglePlay() {
 function updatePlayButton() {
   const btn = document.getElementById('play-btn');
   if (btn) btn.textContent = isPlaying ? '⏸' : '▶';
+  updateDeckAPlay();
   updateMiniPlayer();
 }
 
 function updateMiniPlayer() {
-  const t = tracks[currentTrackIndex] || null;
+  const track = tracks[currentTrackIndex] || null;
   const title = document.getElementById('mini-title');
   const artist = document.getElementById('mini-artist');
   const play = document.getElementById('mini-play');
-  if (title) title.textContent = t ? t.title : '—';
-  if (artist) artist.textContent = t ? `${t.artist} · ${t.duration || '—'}` : 'Selecciona un track';
+  if (title) title.textContent = track ? track.title : '—';
+  if (artist) artist.textContent = track ? `${track.artist} · ${track.duration || '—'}` : tr('currentArtist', 'Selecciona un track');
   if (play) play.textContent = isPlaying ? '⏸' : '▶';
 }
 
@@ -471,7 +524,7 @@ function updateMixerUI() {
   document.getElementById('repeat-btn')?.classList.toggle('active', repeat);
   document.getElementById('autodj-btn')?.classList.toggle('active', autoDj);
   const skinLabel = document.getElementById('skin-label');
-  if (skinLabel) skinLabel.textContent = `skin: ${mixerSkin} · autoplay: ${autoplay ? 'on' : 'off'} · repeat: ${repeat ? 'on' : 'off'} · auto-dj: ${autoDj ? 'on' : 'off'}`;
+  if (skinLabel) skinLabel.textContent = `skin: ${mixerSkin} · autoplay: ${autoplay ? 'on' : 'off'} · repeat: ${repeat ? 'on' : 'off'} · auto-dj: ${autoDj ? 'on' : 'off'} · loop: ${loopOn ? 'on' : 'off'}`;
   ['bass','mid','treble'].forEach(k => {
     const el = document.getElementById('eq-' + k);
     if (el) el.value = eq[k];
@@ -480,18 +533,23 @@ function updateMixerUI() {
   });
   const vol = document.getElementById('volume');
   if (vol) vol.value = masterVolume;
+  const cf = document.getElementById('crossfader');
+  if (cf) cf.value = crossValue;
+  renderDeckSelects();
   updateVolumes();
   updateDelay();
   updateCrush();
+  updateReverb();
   updateStutter(false);
   updateAutoDj();
+  updateLoopUI();
 }
 
 function setEQ() {
-  if (!bassFilter || !midFilter || !trebleFilter) return;
-  bassFilter.gain.value = eq.bass;
-  midFilter.gain.value = eq.mid;
-  trebleFilter.gain.value = eq.treble;
+  if (!lowGain || !midGain || !highGain || !audioCtx) return;
+  lowGain.gain.setTargetAtTime(dbToGain(eq.bass), audioCtx.currentTime, 0.05);
+  midGain.gain.setTargetAtTime(dbToGain(eq.mid), audioCtx.currentTime, 0.05);
+  highGain.gain.setTargetAtTime(dbToGain(eq.treble), audioCtx.currentTime, 0.05);
 }
 
 function setSkin(skin) {
@@ -549,11 +607,12 @@ audio.addEventListener('timeupdate', () => {
     const tt = document.getElementById('time-total');
     if (tt) tt.textContent = formatTime(audio.duration);
     const da = document.getElementById('deck-a-time');
-    if (da) da.textContent = formatTime(audio.currentTime);
-    const dat = document.getElementById('deck-a-total');
-    if (dat) dat.textContent = formatTime(audio.duration);
+    if (da) da.textContent = formatTime(audio.currentTime) + ' / ' + formatTime(audio.duration);
   }
-  drawWaveform();
+  if (loopOn && audio.currentTime >= loopEnd) {
+    audio.currentTime = loopStart;
+  }
+  drawWaveformFor('a');
   if (previewEnd && audio.currentTime >= previewEnd) {
     pauseAudio();
     previewEnd = 0;
@@ -567,8 +626,9 @@ audio.addEventListener('timeupdate', () => {
 audio.addEventListener('loadedmetadata', () => {
   const tt = document.getElementById('time-total');
   if (tt) tt.textContent = formatTime(audio.duration);
-  const dt = document.getElementById('deck-a-total');
-  if (dt) dt.textContent = formatTime(audio.duration);
+  const da = document.getElementById('deck-a-time');
+  if (da) da.textContent = formatTime(audio.currentTime) + ' / ' + formatTime(audio.duration);
+  if (!currentBufferA && audio.src) loadWaveformFor('a', audio.src);
 });
 
 deckB.addEventListener('loadedmetadata', () => {
@@ -579,6 +639,7 @@ deckB.addEventListener('loadedmetadata', () => {
 deckB.addEventListener('timeupdate', () => {
   const dt = document.getElementById('deck-b-time');
   if (dt) dt.textContent = formatTime(deckB.currentTime) + ' / ' + formatTime(deckB.duration);
+  drawWaveformFor('b');
 });
 
 deckB.addEventListener('ended', () => { deckBPlaying = false; updateDeckBPlay(); });
@@ -611,24 +672,83 @@ function makeCrushCurve(bits) {
   return curve;
 }
 
+function makeReverbImpulse(duration = 2.5, decay = 2.5) {
+  if (!audioCtx) return null;
+  const sr = audioCtx.sampleRate;
+  const len = Math.floor(sr * duration);
+  const buf = audioCtx.createBuffer(2, len, sr);
+  for (let c = 0; c < 2; c++) {
+    const data = buf.getChannelData(c);
+    for (let i = 0; i < len; i++) {
+      const t = i / len;
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, decay);
+    }
+  }
+  return buf;
+}
+
+function dbToGain(db) {
+  if (db <= -30) return 0;
+  return Math.max(0, Math.pow(10, db / 20));
+}
+
 function initAudio() {
   if (audioCtx) return;
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   analyser = audioCtx.createAnalyser();
   analyser.fftSize = 256;
   analyser.smoothingTimeConstant = 0.85;
 
   source = audioCtx.createMediaElementSource(audio);
+  sourceB = audioCtx.createMediaElementSource(deckB);
+
+  crossGainA = audioCtx.createGain();
+  crossGainB = audioCtx.createGain();
+  source.connect(crossGainA);
+  sourceB.connect(crossGainB);
+
   bassFilter = audioCtx.createBiquadFilter();
-  bassFilter.type = 'lowshelf';
+  bassFilter.type = 'lowpass';
   bassFilter.frequency.value = 250;
-  midFilter = audioCtx.createBiquadFilter();
-  midFilter.type = 'peaking';
-  midFilter.frequency.value = 1000;
-  midFilter.Q.value = 0.9;
+  bassFilter.Q.value = 0.707;
+
+  midLowFilter = audioCtx.createBiquadFilter();
+  midLowFilter.type = 'lowpass';
+  midLowFilter.frequency.value = 2500;
+  midLowFilter.Q.value = 0.707;
+
+  midHighFilter = audioCtx.createBiquadFilter();
+  midHighFilter.type = 'highpass';
+  midHighFilter.frequency.value = 250;
+  midHighFilter.Q.value = 0.707;
+
   trebleFilter = audioCtx.createBiquadFilter();
-  trebleFilter.type = 'highshelf';
+  trebleFilter.type = 'highpass';
   trebleFilter.frequency.value = 2500;
+  trebleFilter.Q.value = 0.707;
+
+  lowGain = audioCtx.createGain();
+  midGain = audioCtx.createGain();
+  highGain = audioCtx.createGain();
+
+  crossGainA.connect(bassFilter);
+  crossGainB.connect(bassFilter);
+  crossGainA.connect(midLowFilter);
+  crossGainB.connect(midLowFilter);
+  crossGainA.connect(trebleFilter);
+  crossGainB.connect(trebleFilter);
+
+  bassFilter.connect(lowGain);
+  midLowFilter.connect(midHighFilter);
+  midHighFilter.connect(midGain);
+  trebleFilter.connect(highGain);
+
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = masterVolume;
+  lowGain.connect(masterGain);
+  midGain.connect(masterGain);
+  highGain.connect(masterGain);
 
   djFilter = audioCtx.createBiquadFilter();
   djFilter.type = 'lowpass';
@@ -648,17 +768,21 @@ function initAudio() {
   delayWet = audioCtx.createGain();
   delayWet.gain.value = 0;
 
+  reverbNode = audioCtx.createConvolver();
+  reverbNode.buffer = makeReverbImpulse(2.5, 2.5);
+  reverbWet = audioCtx.createGain();
+  reverbWet.gain.value = 0;
+
   dryGain = audioCtx.createGain();
   dryGain.gain.value = 1;
   crushWet = audioCtx.createGain();
   crushWet.gain.value = 0;
 
   gainNode = audioCtx.createGain();
+  gainNode.gain.value = 1;
 
-  source.connect(bassFilter);
-  bassFilter.connect(midFilter);
-  midFilter.connect(trebleFilter);
-  trebleFilter.connect(djFilter);
+  masterGain.connect(djFilter);
+  masterGain.connect(reverbNode);
 
   djFilter.connect(dryGain);
   djFilter.connect(bitcrusherNode);
@@ -670,64 +794,202 @@ function initAudio() {
   feedbackNode.connect(delayInput);
   delayNode.connect(delayWet);
 
+  reverbNode.connect(reverbWet);
+
   dryGain.connect(gainNode);
   crushWet.connect(gainNode);
   delayWet.connect(gainNode);
+  reverbWet.connect(gainNode);
 
   gainNode.connect(analyser);
   analyser.connect(audioCtx.destination);
 
   setEQ();
   updateVolumes();
+  updateDelay();
+  updateCrush();
+  updateReverb();
   updateMixerUI();
   drawVisualizer();
+  startVisRotation();
 }
 
 function drawVisualizer() {
-  if (!analyser) return;
+  if (!analyser || !ctx || !canvas) return;
   const bufferLength = analyser.frequencyBinCount;
   const data = new Uint8Array(bufferLength);
+  const timeData = new Uint8Array(bufferLength);
   analyser.getByteFrequencyData(data);
+  analyser.getByteTimeDomainData(timeData);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  const cx = canvas.width / 2;
-  const cy = canvas.height / 2;
-  const maxR = Math.min(cx, cy) - 6;
-  const bands = 64;
-  const step = Math.floor(bufferLength / bands);
-
-  ctx.lineWidth = 1.2;
-  for (let i = 0; i < bands; i++) {
-    const v = data[i * step] || 0;
-    const norm = v / 255;
-    const base = 6 + (i / bands) * (maxR - 6);
-    const r = base + norm * 18;
-    const hue = 300 + (i / bands) * 120;
-    const alpha = 0.12 + norm * 0.75;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = `hsla(${hue}, 90%, 60%, ${alpha})`;
-    ctx.shadowBlur = 6;
-    ctx.shadowColor = `hsla(${hue}, 90%, 60%, ${norm})`;
-    ctx.stroke();
-  }
-  ctx.shadowBlur = 0;
-
+  visHueShift = (visHueShift + 0.25) % 360;
+  drawVisMode(visMode, data, timeData, bufferLength);
   animationId = requestAnimationFrame(drawVisualizer);
+}
+
+function drawVisMode(mode, data, timeData, bufferLength) {
+  const cx = canvas.width / 2, cy = canvas.height / 2;
+  const w = canvas.width, h = canvas.height;
+  const avg = data.reduce((a, b) => a + b, 0) / bufferLength / 255;
+
+  if (mode === 'circles') {
+    const maxR = Math.min(cx, cy) - 8;
+    const bands = 64;
+    const step = Math.floor(bufferLength / bands);
+    ctx.lineWidth = 1.4;
+    for (let i = 0; i < bands; i++) {
+      const v = data[i * step] || 0;
+      const norm = v / 255;
+      const base = 8 + (i / bands) * (maxR - 8);
+      const r = base + norm * 26;
+      const hue = (visHueShift + (i / bands) * 140) % 360;
+      const alpha = 0.12 + norm * 0.78;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = `hsla(${hue}, 90%, 60%, ${alpha})`;
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = `hsla(${hue}, 90%, 60%, ${norm})`;
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+  } else if (mode === 'bars') {
+    const bars = 64;
+    const step = Math.floor(bufferLength / bars);
+    const bw = w / bars;
+    for (let i = 0; i < bars; i++) {
+      const v = data[i * step] || 0;
+      const bh = (v / 255) * h * 0.95;
+      const hue = (visHueShift + (i / bars) * 160) % 360;
+      ctx.fillStyle = `hsla(${hue}, 90%, 60%, ${0.6 + (v / 255) * 0.4})`;
+      ctx.fillRect(i * bw, h - bh, bw - 1, bh);
+    }
+  } else if (mode === 'wave') {
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const slice = w / bufferLength;
+    for (let i = 0; i < bufferLength; i++) {
+      const v = timeData[i] / 128 - 1;
+      const y = cy + v * cy * 0.95;
+      if (i === 0) ctx.moveTo(i * slice, y);
+      else ctx.lineTo(i * slice, y);
+    }
+    ctx.strokeStyle = `hsla(${(visHueShift + 180) % 360}, 90%, 60%, 0.9)`;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = `hsla(${(visHueShift + 180) % 360}, 90%, 60%, 0.6)`;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  } else if (mode === 'spiral') {
+    const arms = 3, turns = 2.5, maxR = Math.min(cx, cy) - 6;
+    ctx.lineWidth = 1.5;
+    for (let a = 0; a < arms; a++) {
+      const baseAngle = (a / arms) * Math.PI * 2 + visHueShift * 0.01;
+      ctx.beginPath();
+      for (let i = 0; i < 120; i++) {
+        const t = i / 119;
+        const v = data[Math.floor(t * (bufferLength - 1))] || 0;
+        const r = 6 + t * maxR + (v / 255) * 20;
+        const angle = baseAngle + t * Math.PI * 2 * turns;
+        const x = cx + Math.cos(angle) * r;
+        const y = cy + Math.sin(angle) * r;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = `hsla(${(visHueShift + a * 70) % 360}, 90%, 60%, 0.8)`;
+      ctx.stroke();
+    }
+  } else if (mode === 'grid') {
+    const cols = 12, rows = 6;
+    const cw = w / cols, rh = h / rows;
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const i = Math.floor((y * cols + x) / (cols * rows) * (bufferLength - 1));
+        const v = data[i] || 0;
+        const norm = v / 255;
+        const hue = (visHueShift + norm * 120 + (x + y) * 15) % 360;
+        ctx.fillStyle = `hsla(${hue}, 90%, 60%, ${0.1 + norm * 0.8})`;
+        const size = Math.max(2, norm * Math.min(cw, rh) * 0.9);
+        ctx.fillRect(x * cw + (cw - size) / 2, y * rh + (rh - size) / 2, size, size);
+      }
+    }
+  } else if (mode === 'particles') {
+    const particles = 40;
+    for (let i = 0; i < particles; i++) {
+      const v = data[Math.floor(i / particles * (bufferLength - 1))] || 0;
+      const norm = v / 255;
+      const angle = (i / particles) * Math.PI * 2 + visHueShift * 0.02;
+      const r = 20 + norm * (Math.min(cx, cy) - 20);
+      const x = cx + Math.cos(angle) * r;
+      const y = cy + Math.sin(angle) * r;
+      const hue = (visHueShift + i * 9) % 360;
+      ctx.fillStyle = `hsla(${hue}, 90%, 60%, ${0.4 + norm * 0.6})`;
+      ctx.beginPath();
+      ctx.arc(x, y, 2 + norm * 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (mode === 'nebula') {
+    const blobs = 6;
+    for (let i = 0; i < blobs; i++) {
+      const v = data[Math.floor(i / blobs * (bufferLength - 1))] || 0;
+      const norm = v / 255;
+      const angle = (i / blobs) * Math.PI * 2 + visHueShift * 0.01;
+      const r = 40 + norm * (Math.min(cx, cy) - 40);
+      const x = cx + Math.cos(angle) * r;
+      const y = cy + Math.sin(angle) * r;
+      const hue = (visHueShift + i * 60) % 360;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, 30 + norm * 60);
+      g.addColorStop(0, `hsla(${hue}, 90%, 60%, ${0.5 + norm * 0.5})`);
+      g.addColorStop(1, `hsla(${hue}, 90%, 60%, 0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, 30 + norm * 60, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (mode === 'scope') {
+    const r = Math.min(cx, cy) - 10;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < bufferLength; i++) {
+      const t = i / bufferLength;
+      const v = timeData[i] / 128 - 1;
+      const rr = r + v * r * 0.4;
+      const a = t * Math.PI * 2;
+      const x = cx + Math.cos(a) * rr;
+      const y = cy + Math.sin(a) * rr;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = `hsla(${(visHueShift + 300) % 360}, 90%, 60%, 0.9)`;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = `hsla(${(visHueShift + 300) % 360}, 90%, 60%, 0.5)`;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+}
+
+function nextVisMode() {
+  const choices = VISUALIZER_MODES.filter(m => m !== visMode);
+  visMode = choices[Math.floor(Math.random() * choices.length)];
+  visHueShift = Math.random() * 360;
+  const delay = 12000 + Math.random() * 12000;
+  if (visModeTimer) clearTimeout(visModeTimer);
+  visModeTimer = setTimeout(nextVisMode, delay);
+}
+
+function startVisRotation() {
+  if (visModeTimer) clearTimeout(visModeTimer);
+  nextVisMode();
 }
 
 function updateDelay() {
   if (!delayNode || !delayWet || !feedbackNode || !dryGain || !audioCtx) return;
-  const enabled = delayOn;
   const time = parseFloat(document.getElementById('delay-time')?.value || 0.3);
   const feedback = parseFloat(document.getElementById('delay-feedback')?.value || 0.4);
   const mix = parseFloat(document.getElementById('delay-mix')?.value || 0.5);
-  const crushMix = crushOn ? parseFloat(document.getElementById('crush-mix')?.value || 0.6) : 0;
-  const totalWet = (enabled ? mix : 0) + crushMix;
   delayNode.delayTime.setTargetAtTime(time, audioCtx.currentTime, 0.05);
-  feedbackNode.gain.setTargetAtTime(enabled ? feedback : 0, audioCtx.currentTime, 0.05);
-  delayWet.gain.setTargetAtTime(enabled ? mix : 0, audioCtx.currentTime, 0.05);
-  dryGain.gain.setTargetAtTime(Math.max(0.2, 1 - totalWet * 0.5), audioCtx.currentTime, 0.05);
+  feedbackNode.gain.setTargetAtTime(delayOn ? feedback : 0, audioCtx.currentTime, 0.05);
+  delayWet.gain.setTargetAtTime(delayOn ? mix : 0, audioCtx.currentTime, 0.05);
+  updateDry();
   const timeVal = document.getElementById('delay-time-val');
   if (timeVal) timeVal.textContent = time.toFixed(2) + 's';
   const fbVal = document.getElementById('delay-feedback-val');
@@ -735,25 +997,22 @@ function updateDelay() {
   const mixVal = document.getElementById('delay-mix-val');
   if (mixVal) mixVal.textContent = Math.round(mix * 100) + '%';
   const btn = document.getElementById('fx-delay');
-  if (btn) btn.classList.toggle('active', enabled);
+  if (btn) btn.classList.toggle('active', delayOn);
 }
 
 function updateCrush() {
   if (!bitcrusherNode || !crushWet || !dryGain || !audioCtx) return;
-  const enabled = crushOn;
   const bits = parseInt(document.getElementById('crush-bits')?.value || 8, 10);
   const mix = parseFloat(document.getElementById('crush-mix')?.value || 0.6);
-  const delayMix = delayOn ? parseFloat(document.getElementById('delay-mix')?.value || 0.5) : 0;
-  const totalWet = (enabled ? mix : 0) + delayMix;
   bitcrusherNode.curve = makeCrushCurve(bits);
-  crushWet.gain.setTargetAtTime(enabled ? mix : 0, audioCtx.currentTime, 0.05);
-  dryGain.gain.setTargetAtTime(Math.max(0.2, 1 - totalWet * 0.5), audioCtx.currentTime, 0.05);
+  crushWet.gain.setTargetAtTime(crushOn ? mix : 0, audioCtx.currentTime, 0.05);
+  updateDry();
   const bitsVal = document.getElementById('crush-bits-val');
   if (bitsVal) bitsVal.textContent = bits;
   const mixVal = document.getElementById('crush-mix-val');
   if (mixVal) mixVal.textContent = Math.round(mix * 100) + '%';
   const btn = document.getElementById('fx-crush');
-  if (btn) btn.classList.toggle('active', enabled);
+  if (btn) btn.classList.toggle('active', crushOn);
 }
 
 function startStutter() {
@@ -786,17 +1045,42 @@ function resetMixer() {
   eq = { bass: 0, mid: 0, treble: 0 };
   shuffle = false; autoplay = false; repeat = false;
   mixerSkin = 'dark';
+  masterVolume = 1;
+  crossValue = 0;
   audio.volume = 1;
+  deckB.volume = 1;
   audio.playbackRate = 1;
-  delayOn = false; crushOn = false; stutterOn = false; autoDj = false;
+  delayOn = false; crushOn = false; stutterOn = false; autoDj = false; reverbOn = false;
   stopAutoDj(); stopStutter();
   if (audio) audio.loop = false;
+  clearLoop();
   if (djFilter && audioCtx) {
     djFilter.frequency.setTargetAtTime(20000, audioCtx.currentTime, 0.1);
     djFilter.Q.setTargetAtTime(0, audioCtx.currentTime, 0.1);
   }
+  if (masterGain && audioCtx) masterGain.gain.setTargetAtTime(1, audioCtx.currentTime, 0.05);
   saveMixerState();
   updateMixerUI();
+}
+
+function updateDry() {
+  if (!dryGain || !audioCtx) return;
+  const d = delayOn ? parseFloat(document.getElementById('delay-mix')?.value || 0.5) : 0;
+  const c = crushOn ? parseFloat(document.getElementById('crush-mix')?.value || 0.6) : 0;
+  const r = reverbOn ? parseFloat(document.getElementById('reverb-mix')?.value || 0.3) : 0;
+  const wet = Math.min(1.2, d + c + r);
+  dryGain.gain.setTargetAtTime(Math.max(0.15, 1 - wet * 0.45), audioCtx.currentTime, 0.05);
+}
+
+function updateReverb() {
+  if (!reverbWet || !audioCtx) return;
+  const mix = parseFloat(document.getElementById('reverb-mix')?.value || 0.3);
+  reverbWet.gain.setTargetAtTime(reverbOn ? mix : 0, audioCtx.currentTime, 0.05);
+  updateDry();
+  const val = document.getElementById('reverb-mix-val');
+  if (val) val.textContent = Math.round(mix * 100) + '%';
+  const btn = document.getElementById('fx-reverb');
+  if (btn) btn.classList.toggle('active', reverbOn);
 }
 
 function stopAutoDj() {
@@ -929,11 +1213,13 @@ function bindDjPad() {
 
 document.getElementById('close-announcement')?.addEventListener('click', () => { document.getElementById('announcement')?.classList.add('hidden'); });
 document.getElementById('fx-delay')?.addEventListener('click', () => { delayOn = !delayOn; updateDelay(); });
+document.getElementById('fx-reverb')?.addEventListener('click', () => { reverbOn = !reverbOn; updateReverb(); });
 document.getElementById('fx-crush')?.addEventListener('click', () => { crushOn = !crushOn; updateCrush(); });
 document.getElementById('fx-stutter')?.addEventListener('click', () => { stutterOn = !stutterOn; updateStutter(); });
 document.getElementById('delay-time')?.addEventListener('input', updateDelay);
 document.getElementById('delay-feedback')?.addEventListener('input', updateDelay);
 document.getElementById('delay-mix')?.addEventListener('input', updateDelay);
+document.getElementById('reverb-mix')?.addEventListener('input', updateReverb);
 document.getElementById('crush-bits')?.addEventListener('input', updateCrush);
 document.getElementById('crush-mix')?.addEventListener('input', updateCrush);
 document.getElementById('stutter-rate')?.addEventListener('input', updateStutter);
@@ -955,12 +1241,33 @@ document.getElementById('upload-tracks')?.addEventListener('change', (e) => {
 
 document.getElementById('clear-local-tracks')?.addEventListener('click', clearLocalTracks);
 
+document.getElementById('deck-a-select')?.addEventListener('change', (e) => {
+  const idx = parseInt(e.target.value, 10);
+  if (!isNaN(idx) && tracks[idx]) selectDeckA(idx);
+});
+
+document.getElementById('deck-a-file-btn')?.addEventListener('click', () => {
+  document.getElementById('deck-a-file')?.click();
+});
+
+document.getElementById('deck-a-file')?.addEventListener('change', (e) => {
+  if (e.target.files[0]) loadDeckAFile(e.target.files[0]);
+  e.target.value = '';
+});
+
+document.getElementById('deck-a-play')?.addEventListener('click', toggleDeckA);
+
+document.getElementById('deck-b-select')?.addEventListener('change', (e) => {
+  const idx = parseInt(e.target.value, 10);
+  if (!isNaN(idx) && tracks[idx]) selectDeckB(idx);
+});
+
 document.getElementById('deck-b-file-btn')?.addEventListener('click', () => {
   document.getElementById('deck-b-file')?.click();
 });
 
 document.getElementById('deck-b-file')?.addEventListener('change', (e) => {
-  if (e.target.files[0]) loadDeckB(e.target.files[0]);
+  if (e.target.files[0]) loadDeckBFile(e.target.files[0]);
   e.target.value = '';
 });
 
@@ -975,13 +1282,25 @@ document.getElementById('waveform-zoom')?.addEventListener('input', (e) => {
   waveformZoom = Math.max(1, parseFloat(e.target.value));
   const z = document.getElementById('waveform-zoom-val');
   if (z) z.textContent = waveformZoom.toFixed(1) + 'x';
-  drawWaveform();
+  drawWaveformFor('a');
+  drawWaveformFor('b');
+});
+
+document.querySelectorAll('.loop-bar-btn').forEach(b => b.addEventListener('click', () => {
+  setLoop(parseInt(b.dataset.bars, 10));
+}));
+
+document.getElementById('loop-clear')?.addEventListener('click', clearLoop);
+
+document.getElementById('loop-bpm')?.addEventListener('input', (e) => {
+  loopBpm = Math.max(60, Math.min(200, parseInt(e.target.value, 10) || 128));
 });
 
 function updateVolumes() {
-  if (!audio || !deckB) return;
-  audio.volume = Math.max(0, Math.min(1, masterVolume * (1 - crossValue)));
-  deckB.volume = Math.max(0, Math.min(1, masterVolume * crossValue));
+  if (!crossGainA || !crossGainB || !masterGain || !audioCtx) return;
+  crossGainA.gain.setTargetAtTime(Math.max(0, 1 - crossValue), audioCtx.currentTime, 0.02);
+  crossGainB.gain.setTargetAtTime(Math.max(0, crossValue), audioCtx.currentTime, 0.02);
+  masterGain.gain.setTargetAtTime(Math.max(0, masterVolume), audioCtx.currentTime, 0.02);
   const volVal = document.getElementById('volume-val');
   if (volVal) volVal.textContent = Math.round(masterVolume * 100) + '%';
 }
@@ -1015,7 +1334,62 @@ function clearLocalTracks() {
   logToSheet('local_clear', { removed });
 }
 
-function loadDeckB(file) {
+function renderDeckSelects() {
+  const aSel = document.getElementById('deck-a-select');
+  const bSel = document.getElementById('deck-b-select');
+  if (!aSel || !bSel) return;
+  const aVal = aSel.value, bVal = bSel.value;
+  const opts = tracks.map((t, i) => `<option value="${i}">${t.title}</option>`).join('');
+  aSel.innerHTML = '<option value="">— track —</option>' + opts;
+  bSel.innerHTML = '<option value="">— track —</option>' + opts;
+  aSel.value = aVal;
+  bSel.value = bVal;
+}
+
+function selectDeckA(index) {
+  if (!tracks[index]) return;
+  currentTrackIndex = index;
+  selectTrack(index);
+}
+
+function loadDeckAFile(file) {
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  if (audio.src && audio.src.startsWith('blob:')) URL.revokeObjectURL(audio.src);
+  audio.src = url;
+  audio.load();
+  const title = file.name.replace(/\.[^.]+$/, '');
+  document.getElementById('deck-a-title') && (document.getElementById('deck-a-title').textContent = title);
+  document.getElementById('current-track') && (document.getElementById('current-track').textContent = title);
+  document.getElementById('current-artist') && (document.getElementById('current-artist').textContent = 'Local');
+  loadWaveformFor('a', url);
+  logToSheet('deck_a_file', { title });
+}
+
+function toggleDeckA() {
+  if (!audio.src) { if (tracks.length) selectTrack(0); return; }
+  if (isPlaying) pauseAudio();
+  else playAudio();
+}
+
+function updateDeckAPlay() {
+  const b = document.getElementById('deck-a-play');
+  if (b) b.textContent = isPlaying ? '⏸' : '▶';
+}
+
+function selectDeckB(index) {
+  const t = tracks[index];
+  if (!t) return;
+  deckB.src = t.src;
+  deckBTitle = t.title;
+  const el = document.getElementById('deck-b-title');
+  if (el) el.textContent = deckBTitle;
+  deckB.load();
+  loadWaveformFor('b', t.src);
+  logToSheet('deck_b_track', { title: t.title });
+}
+
+function loadDeckBFile(file) {
   if (!file) return;
   const url = URL.createObjectURL(file);
   if (deckB.src && deckB.src.startsWith('blob:')) URL.revokeObjectURL(deckB.src);
@@ -1024,7 +1398,8 @@ function loadDeckB(file) {
   const t = document.getElementById('deck-b-title');
   if (t) t.textContent = deckBTitle;
   deckB.load();
-  logToSheet('deck_b_load', { title: deckBTitle });
+  loadWaveformFor('b', url);
+  logToSheet('deck_b_file', { title: deckBTitle });
 }
 
 function updateDeckBPlay() {
@@ -1034,6 +1409,8 @@ function updateDeckBPlay() {
 
 function toggleDeckB() {
   if (!deckB.src) return;
+  if (!audioCtx) initAudio();
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
   if (deckB.paused) {
     deckB.play().then(() => { deckBPlaying = true; updateDeckBPlay(); }).catch(() => {});
   } else {
@@ -1043,7 +1420,7 @@ function toggleDeckB() {
   }
 }
 
-async function loadWaveform(src) {
+async function loadWaveformFor(deck, src) {
   if (!src) return;
   try {
     const r = await fetch(src);
@@ -1051,29 +1428,28 @@ async function loadWaveform(src) {
     const ab = await r.arrayBuffer();
     const ctx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
     const buf = await ctx.decodeAudioData(ab);
-    currentBuffer = buf;
-    drawWaveform();
+    if (deck === 'a') currentBufferA = buf; else currentBufferB = buf;
+    drawWaveformFor(deck);
     if (!audioCtx && ctx.close) ctx.close();
   } catch (e) {
-    currentBuffer = null;
+    if (deck === 'a') currentBufferA = null; else currentBufferB = null;
   }
 }
 
-function drawWaveform() {
-  if (!currentBuffer) return;
-  if (!waveformCanvas) {
-    waveformCanvas = document.getElementById('waveform');
-    if (!waveformCanvas) return;
-    waveformCtx = waveformCanvas.getContext('2d');
-  }
-  const w = waveformCanvas.width, h = waveformCanvas.height;
+function drawWaveformFor(deck) {
+  const canvas = deck === 'a' ? (waveformACanvas || (waveformACanvas = document.getElementById('waveform-a'))) : (waveformBCanvas || (waveformBCanvas = document.getElementById('waveform-b')));
+  if (!canvas) return;
+  const context = deck === 'a' ? (waveformACtx || (waveformACtx = canvas.getContext('2d'))) : (waveformBCtx || (waveformBCtx = canvas.getContext('2d')));
+  const buffer = deck === 'a' ? currentBufferA : currentBufferB;
+  const a = deck === 'a' ? audio : deckB;
+  if (!buffer || !context || !a) return;
+  const w = canvas.width, h = canvas.height;
   if (!w || !h) return;
-  if (!waveformCtx) return;
-  waveformCtx.clearRect(0, 0, w, h);
-  const duration = currentBuffer.duration;
-  const data = currentBuffer.getChannelData(0);
+  context.clearRect(0, 0, w, h);
+  const duration = buffer.duration;
+  const data = buffer.getChannelData(0);
   const view = Math.max(2, duration / waveformZoom);
-  const center = Math.max(0, Math.min(duration, audio.currentTime || 0));
+  const center = Math.max(0, Math.min(duration, a.currentTime || 0));
   let start = Math.max(0, center - view / 2);
   if (start + view > duration) start = Math.max(0, duration - view);
   const end = Math.min(duration, start + view);
@@ -1081,7 +1457,8 @@ function drawWaveform() {
   const startSample = Math.floor(start / duration * samples);
   const endSample = Math.floor(end / duration * samples);
   const range = Math.max(1, endSample - startSample);
-  waveformCtx.lineWidth = 1;
+  context.lineWidth = 1;
+  const hue = deck === 'a' ? 180 : 330;
   for (let x = 0; x < w; x++) {
     const s0 = startSample + Math.floor(x * range / w);
     const s1 = startSample + Math.floor((x + 1) * range / w);
@@ -1094,19 +1471,54 @@ function drawWaveform() {
     }
     const y0 = (1 - max) * h / 2;
     const y1 = (1 - min) * h / 2;
-    waveformCtx.strokeStyle = `hsla(${180 + (x / w) * 80}, 90%, 60%, 0.85)`;
-    waveformCtx.beginPath();
-    waveformCtx.moveTo(x, y0);
-    waveformCtx.lineTo(x, y1);
-    waveformCtx.stroke();
+    context.strokeStyle = `hsla(${hue + (x / w) * 60}, 90%, 60%, 0.85)`;
+    context.beginPath();
+    context.moveTo(x, y0);
+    context.lineTo(x, y1);
+    context.stroke();
   }
   const headX = (center - start) / view * w;
-  waveformCtx.strokeStyle = '#ff006e';
-  waveformCtx.lineWidth = 2;
-  waveformCtx.beginPath();
-  waveformCtx.moveTo(headX, 0);
-  waveformCtx.lineTo(headX, h);
-  waveformCtx.stroke();
+  context.strokeStyle = deck === 'a' ? '#00f0ff' : '#ff006e';
+  context.lineWidth = 2;
+  context.beginPath();
+  context.moveTo(headX, 0);
+  context.lineTo(headX, h);
+  context.stroke();
+  const label = document.getElementById('waveform-' + deck + '-label');
+  if (label) label.textContent = waveformZoom.toFixed(1) + 'x';
+}
+
+function setLoop(bars) {
+  if (!audio || !audio.duration || !isPlaying) return;
+  loopBpm = Math.max(60, Math.min(200, parseInt(document.getElementById('loop-bpm')?.value, 10) || 128));
+  const seconds = bars * 4 * (60 / loopBpm);
+  loopStart = audio.currentTime;
+  loopEnd = Math.min(audio.duration, loopStart + seconds);
+  loopOn = true;
+  updateLoopUI();
+  logToSheet('loop', { bars, bpm: loopBpm, start: loopStart });
+}
+
+function clearLoop() {
+  loopOn = false;
+  loopStart = 0;
+  loopEnd = 0;
+  updateLoopUI();
+}
+
+function updateLoopUI() {
+  const status = document.getElementById('loop-status');
+  if (status) status.textContent = loopOn ? tr('loopOn', 'On') : tr('loopOff', 'Off');
+  const len = document.getElementById('loop-length');
+  if (len) {
+    if (loopOn) {
+      const s = loopEnd - loopStart;
+      len.textContent = s.toFixed(2) + 's';
+    } else {
+      len.textContent = '';
+    }
+  }
+  document.querySelectorAll('.loop-bar-btn').forEach(b => b.classList.remove('active'));
 }
 
 // === CHAT ===
@@ -1236,7 +1648,7 @@ function addMessage(text) {
   if (blockedIds.has(getDeviceId())) {
     chatInput.disabled = true;
     chatSend.disabled = true;
-    chatInput.placeholder = 'Usuario bloqueado.';
+    chatInput.placeholder = tr('chatBlocked', 'Usuario bloqueado.');
     return;
   }
   const msg = {
@@ -1302,7 +1714,7 @@ function loadBlocked() {
     if (blockedIds.has(getDeviceId())) {
       chatInput.disabled = true;
       chatSend.disabled = true;
-      chatInput.placeholder = 'Usuario bloqueado.';
+      chatInput.placeholder = tr('chatBlocked', 'Usuario bloqueado.');
     }
     delete window[cb];
   };
@@ -1630,7 +2042,7 @@ function renderStep() {
     ta.className = 'w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-amarea-pink outline-none min-h-[100px] resize-y';
     ta.dataset.qid = q.id;
     ta.value = answers[q.id] || '';
-    ta.placeholder = 'Escribe aquí...';
+    ta.placeholder = tr('briefWriteHere', 'Escribe aquí...');
     ta.addEventListener('input', updateAnswers);
     wrapper.appendChild(label);
     wrapper.appendChild(ta);
@@ -1673,7 +2085,7 @@ function renderBriefFormGate() {
   if (!briefWizard) return;
   if (!currentUser || (currentUser.role !== 'cliente' && currentUser.role !== 'admin')) {
     briefWizard.classList.add('hidden');
-    briefMsg.textContent = 'Inicia sesión como cliente para responder el cuestionario.';
+    briefMsg.textContent = tr('briefLoginRequired', 'Inicia sesión como cliente para responder el cuestionario.');
     briefMsg.classList.remove('hidden', 'text-amarea-cyan');
     briefMsg.classList.add('text-white/50');
   } else {
@@ -1691,7 +2103,7 @@ briefNext?.addEventListener('click', nextStep);
 briefSave?.addEventListener('click', () => {
   updateAnswers();
   saveDraft();
-  briefMsg.textContent = 'Borrador guardado.';
+  briefMsg.textContent = tr('briefSaved', 'Borrador guardado.');
   briefMsg.classList.remove('hidden', 'text-white/50');
   briefMsg.classList.add('text-amarea-cyan');
 });
@@ -1712,66 +2124,133 @@ briefForm?.addEventListener('submit', (e) => {
   currentStep = 0;
   briefStep.innerHTML = '';
   briefWizard.classList.add('hidden');
-  briefMsg.textContent = 'Cuestionario enviado. Gracias.';
+  briefMsg.textContent = tr('briefSent', 'Cuestionario enviado. Gracias.');
   briefMsg.classList.remove('hidden', 'text-white/50');
   briefMsg.classList.add('text-amarea-cyan');
   if (currentUser.role === 'admin') renderAdmin();
 });
 
 // === ADMIN PANEL ===
-function renderAdmin() {
-  const briefs = getBriefs().slice().reverse();
-  const users = getUsers();
+function loadAdminFromSheets() {
+  const url = GAS_LOG_URL();
+  if (!url) { renderAdmin(getBriefs().slice().reverse(), getUsers()); return; }
+  const cb = 'amareaAdmin_' + Math.random().toString(36).slice(2, 9);
+  window[cb] = (res) => {
+    delete window[cb];
+    if (!res || res.error) { renderAdmin(getBriefs().slice().reverse(), getUsers()); return; }
+    const briefs = (res.briefs || []).slice().reverse();
+    const users = res.users || [];
+    renderAdmin(briefs, users);
+  };
+  const script = document.createElement('script');
+  script.src = `${url}?callback=${cb}&view=admin&token=${encodeURIComponent(API_TOKEN)}`;
+  script.onerror = () => { delete window[cb]; renderAdmin(getBriefs().slice().reverse(), getUsers()); };
+  document.body.appendChild(script);
+}
+
+function filterAdmin(query = '') {
+  const q = query.toLowerCase().trim();
+  document.querySelectorAll('.admin-brief-card').forEach(c => {
+    c.style.display = q && !(c.dataset.user || '').includes(q) ? 'none' : 'block';
+  });
+}
+
+function renderAdmin(briefs = null, users = null) {
+  if (!briefs || !users) { loadAdminFromSheets(); return; }
   const briefsContainer = document.getElementById('admin-briefs');
   const usersContainer = document.getElementById('admin-users');
+  const stats = document.getElementById('admin-stats');
   if (!briefsContainer || !usersContainer) return;
 
-  briefsContainer.innerHTML = briefs.length ? '' : '<p class="text-white/30 text-sm">Sin cuestionarios aún.</p>';
+  const totalUsers = users.length;
+  const totalBriefs = briefs.length;
+  const totalAnswers = briefs.reduce((sum, b) => sum + Object.values(b.answers || {}).filter(a => (a || '').toString().trim()).length, 0);
+
+  if (stats) {
+    stats.innerHTML = `
+      <div class="p-4 rounded-2xl border border-white/5 bg-white/[0.02] text-center">
+        <p class="text-2xl font-display font-bold text-white">${totalUsers}</p>
+        <p class="text-[10px] text-white/40 uppercase tracking-widest" data-i18n="adminStatUsers">Usuarios</p>
+      </div>
+      <div class="p-4 rounded-2xl border border-white/5 bg-white/[0.02] text-center">
+        <p class="text-2xl font-display font-bold text-white">${totalBriefs}</p>
+        <p class="text-[10px] text-white/40 uppercase tracking-widest" data-i18n="adminStatBriefs">Cuestionarios</p>
+      </div>
+      <div class="p-4 rounded-2xl border border-white/5 bg-white/[0.02] text-center">
+        <p class="text-2xl font-display font-bold text-white">${totalAnswers}</p>
+        <p class="text-[10px] text-white/40 uppercase tracking-widest" data-i18n="adminStatAnswers">Respuestas</p>
+      </div>
+    `;
+  }
+
+  usersContainer.innerHTML = users.length ? '' : '<p class="text-white/30 text-sm" data-i18n="noUsers">Sin usuarios registrados.</p>';
+  users.forEach(u => {
+    const div = document.createElement('div');
+    div.className = 'p-4 rounded-2xl border border-white/5 bg-white/[0.02] flex justify-between items-center cursor-pointer hover:border-amarea-cyan/30 transition';
+    div.innerHTML = `
+      <div>
+        <span class="font-display font-bold text-white block">${u.username}</span>
+        <span class="text-[10px] text-white/40 font-mono">${u.email ? u.email + ' · ' : ''}${u.date ? new Date(u.date).toLocaleDateString('es-MX') : ''}</span>
+      </div>
+      <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded ${u.role === 'admin' ? 'bg-amarea-fire/10 text-amarea-fire' : 'bg-amarea-cyan/10 text-amarea-cyan'}">${u.role}</span>
+    `;
+    div.addEventListener('click', () => {
+      const input = document.getElementById('admin-search');
+      if (input) input.value = u.username;
+      filterAdmin(u.username);
+    });
+    usersContainer.appendChild(div);
+  });
+
+  briefsContainer.innerHTML = briefs.length ? '' : '<p class="text-white/30 text-sm" data-i18n="noBriefs">Sin cuestionarios aún.</p>';
   briefs.forEach((b, i) => {
     const answered = Object.values(b.answers || {}).filter(a => (a || '').toString().trim()).length;
+    const percent = Math.round((answered / 161) * 100);
     const div = document.createElement('div');
-    div.className = 'p-5 rounded-2xl border border-white/5 bg-white/[0.02]';
+    div.className = 'p-5 rounded-2xl border border-white/5 bg-white/[0.02] admin-brief-card';
+    div.dataset.user = (b.user || '').toLowerCase();
     const header = document.createElement('div');
     header.innerHTML = `
-      <p class="text-[10px] text-white/30 font-mono uppercase tracking-widest mb-2">${new Date(b.date).toLocaleString('es-MX')} · ${b.user}</p>
-      <p class="font-display font-bold text-white mb-1">Cuestionario · ${answered} de 161 preguntas respondidas</p>
+      <div class="flex justify-between items-start mb-2">
+        <div>
+          <p class="text-[10px] text-white/30 font-mono uppercase tracking-widest mb-1">${new Date(b.date).toLocaleString('es-MX')} · ${b.user}</p>
+          <p class="font-display font-bold text-white mb-1">Cuestionario · ${answered} de 161 respondidas</p>
+        </div>
+        <span class="text-2xl font-display font-bold text-amarea-cyan">${percent}<span class="text-sm">%</span></span>
+      </div>
+      <div class="w-full h-1 bg-white/5 rounded overflow-hidden mb-3">
+        <div class="h-full bg-amarea-cyan" style="width: ${percent}%"></div>
+      </div>
     `;
+    const viewText = tr('toggleAnswers', 'Ver respuestas');
+    const hideText = tr('hideAnswers', 'Ocultar respuestas');
     const toggle = document.createElement('button');
     toggle.type = 'button';
-    toggle.className = 'mt-3 text-xs text-amarea-cyan hover:text-white transition font-display uppercase tracking-widest';
-    toggle.textContent = 'Ver respuestas';
+    toggle.className = 'text-xs text-amarea-cyan hover:text-white transition font-display uppercase tracking-widest';
+    toggle.textContent = viewText;
     const details = document.createElement('div');
     details.className = 'hidden mt-6 space-y-6';
     CUESTIONARIO.forEach(sec => {
       const group = document.createElement('div');
       group.className = 'border-l-2 border-amarea-cyan/20 pl-4';
       group.innerHTML = `<h4 class="font-display font-bold text-amarea-cyan mb-3">${sec.title}</h4>`;
+      let hasAny = false;
       sec.questions.forEach(q => {
         const a = (b.answers || {})[q.id] || '';
         if (!a.trim()) return;
+        hasAny = true;
         const p = document.createElement('div');
         p.className = 'mb-4';
         p.innerHTML = `<p class="text-sm text-white/80 font-medium mb-1">${q.id.replace('q', '')}. ${q.text}</p><p class="text-sm text-white/60 italic">“${a}”</p>`;
         group.appendChild(p);
       });
-      details.appendChild(group);
+      if (hasAny) details.appendChild(group);
     });
-    toggle.addEventListener('click', () => { details.classList.toggle('hidden'); toggle.textContent = details.classList.contains('hidden') ? 'Ver respuestas' : 'Ocultar respuestas'; });
+    toggle.addEventListener('click', () => { details.classList.toggle('hidden'); toggle.textContent = details.classList.contains('hidden') ? viewText : hideText; });
     div.appendChild(header);
     div.appendChild(toggle);
     div.appendChild(details);
     briefsContainer.appendChild(div);
-  });
-
-  usersContainer.innerHTML = '';
-  users.forEach(u => {
-    const div = document.createElement('div');
-    div.className = 'p-4 rounded-2xl border border-white/5 bg-white/[0.02] flex justify-between items-center';
-    div.innerHTML = `
-      <span class="font-display font-bold text-white">${u.username}</span>
-      <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded ${u.role === 'admin' ? 'bg-amarea-fire/10 text-amarea-fire' : 'bg-amarea-cyan/10 text-amarea-cyan'}">${u.role}</span>
-    `;
-    usersContainer.appendChild(div);
   });
 }
 
@@ -1785,6 +2264,8 @@ function exportJSON(filename, data) {
   URL.revokeObjectURL(url);
 }
 
+document.getElementById('admin-search')?.addEventListener('input', (e) => filterAdmin(e.target.value));
+document.getElementById('refresh-admin')?.addEventListener('click', () => renderAdmin());
 document.getElementById('export-briefs')?.addEventListener('click', () => exportJSON('amarea-briefs.json', getBriefs()));
 document.getElementById('export-users')?.addEventListener('click', () => exportJSON('amarea-users.json', getUsers()));
 
@@ -1914,6 +2395,18 @@ function initMedia() {
     .catch(() => {});
 }
 
+function initLang() {
+  const sel = document.getElementById('lang-select');
+  const mobile = document.getElementById('lang-select-mobile');
+  const saved = localStorage.getItem('amarea_lang') || 'es';
+  if (sel) sel.value = saved;
+  if (mobile) mobile.value = saved;
+  [sel, mobile].forEach(el => {
+    if (!el) return;
+    el.addEventListener('change', (e) => { setLang(e.target.value); });
+  });
+}
+
 // === INIT ===
 (async function init() {
   applySiteContent();
@@ -1923,6 +2416,7 @@ function initMedia() {
   seedAdmin();
   initAnalytics();
   initAuth();
+  initLang();
   if (tracks.length) renderTracks(); else await loadTracks();
   renderRadar();
   loadBlocked();

@@ -109,34 +109,48 @@
       <a href="#" class="tab-link text-2xl font-mono font-black tracking-widest gradient-text" data-tab="inicio">AMAREA</a>
       <button id="menu-btn" class="md:hidden text-amarea-white" aria-label="Menu">☰</button>
       <div id="nav-links" class="hidden md:flex items-center gap-8 text-xs font-display font-medium tracking-[0.2em] uppercase">
-        <a href="#" class="tab-link hover:text-amarea-pink transition-colors" data-tab="experiencia">Experiencia</a>
-        <a href="#" class="tab-link hover:text-amarea-cyan transition-colors" data-tab="residentes">Residentes</a>
-        <a href="#" class="tab-link hover:text-amarea-gold transition-colors" data-tab="eventos">Eventos</a>
-        <a href="#" class="tab-link hover:text-amarea-violet transition-colors" data-tab="musica">Música</a>
-        <a href="#" class="tab-link hover:text-amarea-gold transition-colors" data-tab="radar">Radar</a>
-        <a href="#" class="tab-link hover:text-amarea-cyan transition-colors" data-tab="mapa">Mapa</a>
-        <a href="#" class="tab-link hover:text-amarea-violet transition-colors" data-tab="brief">Brief</a>
-        <a href="#" class="tab-link admin-link hidden" data-tab="admin">Admin</a>
-        <a href="#" class="tab-link hover:text-amarea-pink transition-colors" data-tab="comunidad">Comunidad</a>
-        <a href="#" class="tab-link hover:text-amarea-gold transition-colors" data-tab="produccion">Producción</a>
-        <a href="#" class="tab-link hover:text-amarea-cyan transition-colors" data-tab="contacto">Contacto</a>
-        <button id="auth-toggle" class="text-amarea-white hover:text-amarea-pink transition-colors font-display font-medium tracking-widest uppercase">Entrar</button>
+        <a href="#" class="tab-link hover:text-amarea-pink transition-colors" data-tab="experiencia" data-i18n="navExperiencia">Experiencia</a>
+        <a href="#" class="tab-link hover:text-amarea-cyan transition-colors" data-tab="residentes" data-i18n="navResidentes">Residentes</a>
+        <a href="#" class="tab-link hover:text-amarea-gold transition-colors" data-tab="eventos" data-i18n="navEventos">Eventos</a>
+        <a href="#" class="tab-link hover:text-amarea-violet transition-colors" data-tab="musica" data-i18n="navMusica">Música</a>
+        <a href="#" class="tab-link hover:text-amarea-gold transition-colors" data-tab="radar" data-i18n="navRadar">Radar</a>
+        <a href="#" class="tab-link hover:text-amarea-cyan transition-colors" data-tab="mapa" data-i18n="navMapa">Mapa</a>
+        <a href="#" class="tab-link hover:text-amarea-violet transition-colors" data-tab="brief" data-i18n="navBrief">Brief</a>
+        <a href="#" class="tab-link admin-link hidden" data-tab="admin" data-i18n="navAdmin">Admin</a>
+        <a href="#" class="tab-link hover:text-amarea-pink transition-colors" data-tab="comunidad" data-i18n="navComunidad">Comunidad</a>
+        <a href="#" class="tab-link hover:text-amarea-gold transition-colors" data-tab="produccion" data-i18n="navProduccion">Producción</a>
+        <a href="#" class="tab-link hover:text-amarea-cyan transition-colors" data-tab="contacto" data-i18n="navContacto">Contacto</a>
+        <select id="lang-select" class="bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white focus:border-amarea-cyan outline-none" aria-label="Idioma">
+          <option value="es">ES</option>
+          <option value="en">EN</option>
+          <option value="de">DE</option>
+          <option value="fr">FR</option>
+          <option value="eo">EO</option>
+        </select>
+        <button id="auth-toggle" class="text-amarea-white hover:text-amarea-pink transition-colors font-display font-medium tracking-widest uppercase" data-i18n="navEntrar">Entrar</button>
       </div>
     </div>
     <div id="mobile-menu" class="md:hidden hidden bg-amarea-ink/95 backdrop-blur-xl border-b border-white/5 px-6 py-6">
       <div class="flex flex-col gap-4 text-sm font-display font-medium tracking-[0.15em] uppercase">
-        <a href="#" class="tab-link" data-tab="experiencia">Experiencia</a>
-        <a href="#" class="tab-link" data-tab="residentes">Residentes</a>
-        <a href="#" class="tab-link" data-tab="eventos">Eventos</a>
-        <a href="#" class="tab-link" data-tab="musica">Música</a>
-        <a href="#" class="tab-link" data-tab="radar">Radar</a>
-        <a href="#" class="tab-link" data-tab="mapa">Mapa</a>
-        <a href="#" class="tab-link" data-tab="brief">Brief</a>
-        <a href="#" class="tab-link admin-link hidden" data-tab="admin">Admin</a>
-        <a href="#" class="tab-link" data-tab="comunidad">Comunidad</a>
-        <a href="#" class="tab-link" data-tab="produccion">Producción</a>
-        <a href="#" class="tab-link" data-tab="contacto">Contacto</a>
-        <button id="auth-toggle-mobile" class="text-left font-display font-medium tracking-widest uppercase text-white/70">Entrar</button>
+        <a href="#" class="tab-link" data-tab="experiencia" data-i18n="navExperiencia">Experiencia</a>
+        <a href="#" class="tab-link" data-tab="residentes" data-i18n="navResidentes">Residentes</a>
+        <a href="#" class="tab-link" data-tab="eventos" data-i18n="navEventos">Eventos</a>
+        <a href="#" class="tab-link" data-tab="musica" data-i18n="navMusica">Música</a>
+        <a href="#" class="tab-link" data-tab="radar" data-i18n="navRadar">Radar</a>
+        <a href="#" class="tab-link" data-tab="mapa" data-i18n="navMapa">Mapa</a>
+        <a href="#" class="tab-link" data-tab="brief" data-i18n="navBrief">Brief</a>
+        <a href="#" class="tab-link admin-link hidden" data-tab="admin" data-i18n="navAdmin">Admin</a>
+        <a href="#" class="tab-link" data-tab="comunidad" data-i18n="navComunidad">Comunidad</a>
+        <a href="#" class="tab-link" data-tab="produccion" data-i18n="navProduccion">Producción</a>
+        <a href="#" class="tab-link" data-tab="contacto" data-i18n="navContacto">Contacto</a>
+        <select id="lang-select-mobile" class="bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white focus:border-amarea-cyan outline-none w-20" aria-label="Idioma">
+          <option value="es">ES</option>
+          <option value="en">EN</option>
+          <option value="de">DE</option>
+          <option value="fr">FR</option>
+          <option value="eo">EO</option>
+        </select>
+        <button id="auth-toggle-mobile" class="text-left font-display font-medium tracking-widest uppercase text-white/70" data-i18n="navEntrar">Entrar</button>
       </div>
     </div>
   </nav>
@@ -152,14 +166,14 @@
       <p class="text-xs font-display font-medium tracking-[0.35em] text-amarea-cyan/80 mb-6 uppercase">San José del Cabo · Baja California Sur</p>
       <h1 class="hero-title text-[15vw] md:text-[12vw] leading-[0.85] font-mono font-black tracking-tighter mb-8">
         <span class="block gradient-text">AMAREA</span>
-        <span class="block text-[6vw] md:text-[3.5vw] font-display font-light tracking-[0.15em] text-white/70 mt-2">LA NOCHE NOS UNE</span>
+        <span class="block text-[6vw] md:text-[3.5vw] font-display font-light tracking-[0.15em] text-white/70 mt-2" data-i18n="heroSub">LA NOCHE NOS UNE</span>
       </h1>
-      <p class="max-w-2xl text-lg md:text-xl font-light text-white/60 leading-relaxed mb-10">
+      <p class="max-w-2xl text-lg md:text-xl font-light text-white/60 leading-relaxed mb-10" data-i18n="heroDescription">
         Fiestas inmersivas, música electrónica y experiencias que no se explican: se sienten. Desde el desierto de Los Cabos para el mundo.
       </p>
       <div class="flex flex-wrap gap-4 justify-center">
-        <button class="tab-cta px-8 py-3 rounded-full border border-amarea-pink/50 bg-amarea-pink/10 text-amarea-pink font-display font-medium uppercase tracking-widest hover:bg-amarea-pink hover:text-black transition-all duration-300" data-tab="eventos">Próximos eventos</button>
-        <button class="tab-cta px-8 py-3 rounded-full border border-white/10 hover:border-amarea-cyan hover:text-amarea-cyan font-display font-medium uppercase tracking-widest transition-all duration-300" data-tab="musica">Escuchar mixes</button>
+        <button class="tab-cta px-8 py-3 rounded-full border border-amarea-pink/50 bg-amarea-pink/10 text-amarea-pink font-display font-medium uppercase tracking-widest hover:bg-amarea-pink hover:text-black transition-all duration-300" data-tab="eventos" data-i18n="heroCtaEvents">Próximos eventos</button>
+        <button class="tab-cta px-8 py-3 rounded-full border border-white/10 hover:border-amarea-cyan hover:text-amarea-cyan font-display font-medium uppercase tracking-widest transition-all duration-300" data-tab="musica" data-i18n="heroCtaMusic">Escuchar mixes</button>
       </div>
     </section>
 
@@ -167,16 +181,16 @@
     <section id="experiencia" class="tab-section px-6 py-24 md:py-32 max-w-6xl mx-auto">
       <div class="grid md:grid-cols-2 gap-16 items-center">
         <div>
-          <p class="text-amarea-gold text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Filosofía</p>
-          <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8">El sonido<br><span class="gradient-text">como ritual</span></h2>
-          <p class="text-white/60 text-lg leading-relaxed mb-6">
+          <p class="text-amarea-gold text-xs font-display font-medium tracking-[0.3em] uppercase mb-4" data-i18n="experienciaLabel">Filosofía</p>
+          <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8" data-i18n="experienciaTitle">El sonido<br><span class="gradient-text">como ritual</span></h2>
+          <p class="text-white/60 text-lg leading-relaxed mb-6" data-i18n="experienciaBody1">
             AMAREA no es un evento. Es un punto de encuentro donde la intuición, la energía local y el diseño sonoro se convierten en algo físico.
           </p>
-          <p class="text-white/60 text-lg leading-relaxed mb-8">
+          <p class="text-white/60 text-lg leading-relaxed mb-8" data-i18n="experienciaBody2">
             No creemos en la noche por defecto. Creemos en el detalle, la sorpresa y el flujo. Cada fiesta es una edición irrepetible, construida en torno a residentes, escultura sonora y un público que sabe escuchar.
           </p>
           <div class="flex gap-8 text-sm font-display font-medium tracking-widest uppercase">
-            <span class="text-amarea-cyan">DJs residentes</span>
+            <span class="text-amarea-cyan" data-i18n="navResidentes">DJs residentes</span>
             <span class="text-amarea-pink">Experiencias inmersivas</span>
             <span class="text-amarea-gold">San José del Cabo</span>
           </div>
@@ -199,31 +213,31 @@
 
     <!-- RESIDENTES -->
     <section id="residentes" class="tab-section px-6 py-24 md:py-32 max-w-6xl mx-auto">
-      <p class="text-amarea-violet text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Residentes</p>
-      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-16">Los que <span class="gradient-text">habitan</span><br>la noche</h2>
+      <p class="text-amarea-violet text-xs font-display font-medium tracking-[0.3em] uppercase mb-4" data-i18n="residentesLabel">Residentes</p>
+      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-16" data-i18n="residentesTitle">Los que <span class="gradient-text">habitan</span><br>la noche</h2>
       <div id="residents-grid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
     </section>
 
     <!-- EVENTOS -->
     <section id="eventos" class="tab-section px-6 py-24 md:py-32 max-w-6xl mx-auto">
-      <p class="text-amarea-fire text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Calendario</p>
-      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-16">Próximas <span class="gradient-text">editions</span></h2>
+      <p class="text-amarea-fire text-xs font-display font-medium tracking-[0.3em] uppercase mb-4" data-i18n="eventosLabel">Calendario</p>
+      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-16" data-i18n="eventosTitle">Próximas <span class="gradient-text">editions</span></h2>
       <div id="events-list" class="space-y-6"></div>
     </section>
 
     <!-- MÚSICA -->
     <section id="musica" class="tab-section px-6 py-24 md:py-32 max-w-6xl mx-auto">
-      <p class="text-amarea-cyan text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Archivo sonoro</p>
-      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8">Mixes & <span class="gradient-text">fiestas</span></h2>
-      <p class="text-white/50 max-w-xl mb-10">Selecciona un set. El sonido se activa cuando tú quieres, con control total.</p>
-      <div class="grid lg:grid-cols-[1fr,420px] gap-10">
+      <p class="text-amarea-cyan text-xs font-display font-medium tracking-[0.3em] uppercase mb-4" data-i18n="musicaLabel">Archivo sonoro</p>
+      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8" data-i18n="musicaTitle">Mixes & <span class="gradient-text">fiestas</span></h2>
+      <p class="text-white/50 max-w-xl mb-10" data-i18n="musicSubtitle">Selecciona un set. El sonido se activa cuando tú quieres, con control total.</p>
+      <div class="grid lg:grid-cols-[1fr,520px] gap-10 items-start">
         <div class="space-y-3">
           <div class="flex gap-2">
             <input type="file" id="upload-tracks" accept="audio/*" multiple class="hidden">
-            <button id="upload-tracks-btn" class="px-4 py-2 rounded-xl border border-amarea-cyan/30 text-amarea-cyan hover:bg-amarea-cyan/10 text-xs font-display font-bold uppercase tracking-widest transition">Subir rolas</button>
-            <button id="clear-local-tracks" class="hidden px-4 py-2 rounded-xl border border-amarea-fire/30 text-amarea-fire hover:bg-amarea-fire/10 text-xs font-display font-bold uppercase tracking-widest transition">Quitar locales</button>
+            <button id="upload-tracks-btn" class="px-4 py-2 rounded-xl border border-amarea-cyan/30 text-amarea-cyan hover:bg-amarea-cyan/10 text-xs font-display font-bold uppercase tracking-widest transition" data-i18n="uploadTracks">Subir rolas</button>
+            <button id="clear-local-tracks" class="hidden px-4 py-2 rounded-xl border border-amarea-fire/30 text-amarea-fire hover:bg-amarea-fire/10 text-xs font-display font-bold uppercase tracking-widest transition" data-i18n="clearLocal">Quitar locales</button>
           </div>
-          <div id="track-list" class="space-y-3"></div>
+          <div id="track-list" class="space-y-3 max-h-80 overflow-y-auto pr-2"></div>
         </div>
         <div id="mini-mixer" class="sticky top-28 h-fit rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 neon-box" data-skin="dark">
           <div class="flex justify-end gap-2 mb-2">
@@ -231,11 +245,11 @@
             <button data-skin="neon" class="skin-btn text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded border border-white/10 text-white/60 hover:text-amarea-pink hover:border-amarea-pink transition" title="Neón">N</button>
             <button data-skin="retro" class="skin-btn text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded border border-white/10 text-white/60 hover:text-amarea-gold hover:border-amarea-gold transition" title="Retro">R</button>
           </div>
-          <canvas id="visualizer" width="360" height="120" class="w-full h-32 rounded-xl bg-black/40 mb-4"></canvas>
+          <canvas id="visualizer" width="360" height="180" class="w-full h-48 rounded-2xl bg-black/40 mb-4"></canvas>
           <div id="now-playing" class="text-center mb-4">
-            <p class="text-xs text-white/40 uppercase tracking-widest mb-1">Ahora suena</p>
+            <p class="text-xs text-white/40 uppercase tracking-widest mb-1" data-i18n="nowPlaying">Ahora suena</p>
             <h3 id="current-track" class="text-xl font-display font-bold text-white truncate">—</h3>
-            <p id="current-artist" class="text-sm text-white/50">Selecciona un track</p>
+            <p id="current-artist" class="text-sm text-white/50" data-i18n="currentArtist">Selecciona un track</p>
           </div>
           <div class="flex flex-wrap justify-center items-center gap-3 mb-4">
             <button id="shuffle-btn" class="control-btn w-9 h-9 rounded-full border border-white/10 text-white/60 hover:text-amarea-cyan hover:border-amarea-cyan flex items-center justify-center text-xs" title="Shuffle">⇄</button>
@@ -252,99 +266,139 @@
             <span id="time-total">0:00</span>
           </div>
           <div class="mb-4">
-            <div class="flex justify-between text-[10px] font-display uppercase tracking-widest text-white/40 mb-1"><span>Volumen</span> <span id="volume-val">100%</span></div>
+            <div class="flex justify-between text-[10px] font-display uppercase tracking-widest text-white/40 mb-1"><span data-i18n="volume">Volumen</span> <span id="volume-val">100%</span></div>
             <input id="volume" type="range" min="0" max="1" step="0.05" value="1" class="w-full accent-amarea-pink">
           </div>
           <div class="eq grid grid-cols-3 gap-2 mb-4">
             <div class="eq-col">
-              <label for="eq-bass" class="block text-[9px] font-display uppercase tracking-widest text-white/40 text-center mb-1">Bass</label>
+              <label for="eq-bass" class="block text-[9px] font-display uppercase tracking-widest text-white/40 text-center mb-1" data-i18n="bass">Bass</label>
               <input id="eq-bass" type="range" min="-30" max="30" step="1" value="0" orient="vertical" class="eq-slider">
               <span class="block text-[9px] text-white/40 text-center mt-1" id="eq-bass-val">0</span>
             </div>
             <div class="eq-col">
-              <label for="eq-mid" class="block text-[9px] font-display uppercase tracking-widest text-white/40 text-center mb-1">Mid</label>
+              <label for="eq-mid" class="block text-[9px] font-display uppercase tracking-widest text-white/40 text-center mb-1" data-i18n="mid">Mid</label>
               <input id="eq-mid" type="range" min="-30" max="30" step="1" value="0" orient="vertical" class="eq-slider">
               <span class="block text-[9px] text-white/40 text-center mt-1" id="eq-mid-val">0</span>
             </div>
             <div class="eq-col">
-              <label for="eq-treble" class="block text-[9px] font-display uppercase tracking-widest text-white/40 text-center mb-1">Treble</label>
+              <label for="eq-treble" class="block text-[9px] font-display uppercase tracking-widest text-white/40 text-center mb-1" data-i18n="treble">Treble</label>
               <input id="eq-treble" type="range" min="-30" max="30" step="1" value="0" orient="vertical" class="eq-slider">
               <span class="block text-[9px] text-white/40 text-center mt-1" id="eq-treble-val">0</span>
             </div>
           </div>
 
           <div class="mb-4">
-            <button id="dj-mode-btn" class="w-full px-3 py-2 rounded border border-amarea-pink/30 text-amarea-pink hover:bg-amarea-pink/10 text-[10px] font-display uppercase tracking-widest transition">DJ Mix Mode</button>
+            <button id="dj-mode-btn" class="w-full px-3 py-2 rounded border border-amarea-pink/30 text-amarea-pink hover:bg-amarea-pink/10 text-[10px] font-display uppercase tracking-widest transition" data-i18n="djMixMode">DJ Mix Mode</button>
           </div>
           <div id="dj-console" class="hidden space-y-4 border-t border-white/10 pt-4 mt-4">
             <div class="grid grid-cols-2 gap-3">
               <div class="p-3 rounded-xl border border-white/10 bg-white/[0.02]">
-                <p class="text-[10px] text-white/40 uppercase tracking-widest mb-1">Deck A</p>
+                <p class="text-[10px] text-amarea-cyan uppercase tracking-widest mb-1">Deck A</p>
+                <div class="flex gap-1 mb-2">
+                  <select id="deck-a-select" class="flex-1 bg-black/40 border border-white/10 rounded px-2 py-1 text-[9px] text-white/80 focus:border-amarea-cyan outline-none truncate"></select>
+                  <input type="file" id="deck-a-file" accept="audio/*" class="hidden">
+                  <button id="deck-a-file-btn" class="px-2 py-1 rounded border border-white/10 text-[10px] text-white/50 hover:text-amarea-cyan hover:border-amarea-cyan transition">📂</button>
+                </div>
                 <p id="deck-a-title" class="text-sm text-white truncate mb-2">—</p>
-                <div class="text-[10px] text-white/30 font-mono"><span id="deck-a-time">0:00</span> / <span id="deck-a-total">0:00</span></div>
+                <div class="flex items-center gap-2">
+                  <button id="deck-a-play" class="w-8 h-8 rounded-full border border-amarea-cyan text-amarea-cyan text-xs hover:bg-amarea-cyan hover:text-black transition flex items-center justify-center">▶</button>
+                  <span id="deck-a-time" class="text-[10px] text-white/30 font-mono">0:00 / 0:00</span>
+                </div>
               </div>
               <div class="p-3 rounded-xl border border-white/10 bg-white/[0.02]">
-                <p class="text-[10px] text-white/40 uppercase tracking-widest mb-1">Deck B</p>
-                <input type="file" id="deck-b-file" accept="audio/*" class="hidden">
-                <button id="deck-b-file-btn" class="w-full mb-2 px-2 py-1.5 rounded border border-white/10 text-[9px] text-white/60 hover:text-amarea-cyan hover:border-amarea-cyan transition text-left truncate">Cargar archivo…</button>
+                <p class="text-[10px] text-amarea-pink uppercase tracking-widest mb-1">Deck B</p>
+                <div class="flex gap-1 mb-2">
+                  <select id="deck-b-select" class="flex-1 bg-black/40 border border-white/10 rounded px-2 py-1 text-[9px] text-white/80 focus:border-amarea-pink outline-none truncate"></select>
+                  <input type="file" id="deck-b-file" accept="audio/*" class="hidden">
+                  <button id="deck-b-file-btn" class="px-2 py-1 rounded border border-white/10 text-[10px] text-white/50 hover:text-amarea-pink hover:border-amarea-pink transition">📂</button>
+                </div>
                 <p id="deck-b-title" class="text-sm text-white truncate mb-2">—</p>
                 <div class="flex items-center gap-2">
                   <button id="deck-b-play" class="w-8 h-8 rounded-full border border-amarea-pink text-amarea-pink text-xs hover:bg-amarea-pink hover:text-black transition flex items-center justify-center">▶</button>
-                  <span id="deck-b-time" class="text-[10px] text-white/30 font-mono">0:00</span>
+                  <span id="deck-b-time" class="text-[10px] text-white/30 font-mono">0:00 / 0:00</span>
                 </div>
               </div>
             </div>
+
             <div>
               <div class="flex justify-between text-[9px] text-white/40 mb-1"><span class="uppercase tracking-widest">A</span><span class="uppercase tracking-widest">B</span></div>
               <input id="crossfader" type="range" min="0" max="1" step="0.01" value="0" class="w-full accent-amarea-pink">
             </div>
-            <canvas id="waveform" width="360" height="100" class="w-full h-28 rounded-xl bg-black/40"></canvas>
+
+            <div class="space-y-1">
+              <div class="flex justify-between text-[9px] text-amarea-cyan"><span class="uppercase tracking-widest">Wave A</span><span class="text-white/20" id="waveform-a-label">4.0x</span></div>
+              <canvas id="waveform-a" width="360" height="70" class="w-full h-[72px] rounded-xl bg-black/40"></canvas>
+              <div class="flex justify-between text-[9px] text-amarea-pink"><span class="uppercase tracking-widest">Wave B</span><span class="text-white/20" id="waveform-b-label">4.0x</span></div>
+              <canvas id="waveform-b" width="360" height="70" class="w-full h-[72px] rounded-xl bg-black/40"></canvas>
+            </div>
             <div class="flex items-center gap-2">
               <input id="waveform-zoom" type="range" min="1" max="40" step="0.5" value="4" class="flex-1 accent-amarea-cyan">
               <span id="waveform-zoom-val" class="text-[10px] text-white/40 w-10 text-right">4.0x</span>
             </div>
-          <div class="mb-4">
-            <div class="flex items-center justify-between text-[10px] uppercase tracking-widest text-white/40 mb-2"><span>FX</span></div>
-            <div class="flex gap-2 mb-3">
-              <button id="fx-delay" class="fx-btn px-3 py-1.5 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-cyan hover:border-amarea-cyan transition">Delay</button>
-              <button id="fx-crush" class="fx-btn px-3 py-1.5 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-pink hover:border-amarea-pink transition">Crush</button>
-              <button id="fx-stutter" class="fx-btn px-3 py-1.5 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-gold hover:border-amarea-gold transition">Stutter</button>
-            </div>
-            <div class="grid grid-cols-2 gap-3 mb-3">
-              <div>
-                <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Delay time</span> <span id="delay-time-val">0.30s</span></div>
-                <input id="delay-time" type="range" min="0.05" max="1" step="0.05" value="0.3" class="w-full accent-amarea-cyan">
+
+            <div class="p-3 rounded-xl border border-white/10 bg-white/[0.02]">
+              <div class="flex items-center justify-between text-[10px] uppercase tracking-widest text-white/40 mb-2"><span data-i18n="loop">Loop</span><span id="loop-status" class="text-amarea-gold">Off</span></div>
+              <div class="flex items-center gap-2 mb-2">
+                <input id="loop-bpm" type="number" value="128" min="60" max="200" class="w-16 bg-black/40 border border-white/10 rounded px-2 py-1 text-[10px] text-white text-center focus:border-amarea-gold outline-none">
+                <span class="text-[10px] text-white/30">BPM</span>
+                <span id="loop-length" class="text-[10px] text-white/30 ml-auto"></span>
               </div>
-              <div>
-                <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Feedback</span> <span id="delay-feedback-val">40%</span></div>
-                <input id="delay-feedback" type="range" min="0" max="0.95" step="0.05" value="0.4" class="w-full accent-amarea-cyan">
-              </div>
-              <div>
-                <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Delay mix</span> <span id="delay-mix-val">50%</span></div>
-                <input id="delay-mix" type="range" min="0" max="1" step="0.05" value="0.5" class="w-full accent-amarea-cyan">
-              </div>
-              <div>
-                <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Bits</span> <span id="crush-bits-val">8</span></div>
-                <input id="crush-bits" type="range" min="1" max="16" step="1" value="8" class="w-full accent-amarea-pink">
-              </div>
-              <div>
-                <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Crush mix</span> <span id="crush-mix-val">60%</span></div>
-                <input id="crush-mix" type="range" min="0" max="1" step="0.05" value="0.6" class="w-full accent-amarea-pink">
-              </div>
-              <div>
-                <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Stutter rate</span> <span id="stutter-rate-val">8 Hz</span></div>
-                <input id="stutter-rate" type="range" min="2" max="24" step="1" value="8" class="w-full accent-amarea-gold">
+              <div class="flex gap-2">
+                <button data-bars="1" class="loop-bar-btn flex-1 py-1 rounded border border-white/10 text-[10px] text-white/60 hover:border-amarea-gold hover:text-amarea-gold transition">1</button>
+                <button data-bars="2" class="loop-bar-btn flex-1 py-1 rounded border border-white/10 text-[10px] text-white/60 hover:border-amarea-gold hover:text-amarea-gold transition">2</button>
+                <button data-bars="4" class="loop-bar-btn flex-1 py-1 rounded border border-white/10 text-[10px] text-white/60 hover:border-amarea-gold hover:text-amarea-gold transition">4</button>
+                <button data-bars="8" class="loop-bar-btn flex-1 py-1 rounded border border-white/10 text-[10px] text-white/60 hover:border-amarea-gold hover:text-amarea-gold transition">8</button>
+                <button id="loop-clear" class="px-3 py-1 rounded border border-amarea-fire/30 text-[10px] text-amarea-fire hover:bg-amarea-fire/10 transition" data-i18n="loopOff">Off</button>
               </div>
             </div>
+
+            <div class="mb-4">
+              <div class="flex items-center justify-between text-[10px] uppercase tracking-widest text-white/40 mb-2"><span>FX</span></div>
+              <div class="flex flex-wrap gap-2 mb-3">
+                <button id="fx-delay" class="fx-btn px-3 py-1.5 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-cyan hover:border-amarea-cyan transition">Delay</button>
+                <button id="fx-reverb" class="fx-btn px-3 py-1.5 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-cyan hover:border-amarea-cyan transition">Reverb</button>
+                <button id="fx-crush" class="fx-btn px-3 py-1.5 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-pink hover:border-amarea-pink transition">Crush</button>
+                <button id="fx-stutter" class="fx-btn px-3 py-1.5 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-gold hover:border-amarea-gold transition">Stutter</button>
+              </div>
+              <div class="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Delay time</span> <span id="delay-time-val">0.30s</span></div>
+                  <input id="delay-time" type="range" min="0.05" max="1" step="0.05" value="0.3" class="w-full accent-amarea-cyan">
+                </div>
+                <div>
+                  <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Feedback</span> <span id="delay-feedback-val">40%</span></div>
+                  <input id="delay-feedback" type="range" min="0" max="0.95" step="0.05" value="0.4" class="w-full accent-amarea-cyan">
+                </div>
+                <div>
+                  <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Delay mix</span> <span id="delay-mix-val">50%</span></div>
+                  <input id="delay-mix" type="range" min="0" max="1" step="0.05" value="0.5" class="w-full accent-amarea-cyan">
+                </div>
+                <div>
+                  <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Reverb mix</span> <span id="reverb-mix-val">30%</span></div>
+                  <input id="reverb-mix" type="range" min="0" max="1" step="0.05" value="0.3" class="w-full accent-amarea-cyan">
+                </div>
+                <div>
+                  <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Bits</span> <span id="crush-bits-val">8</span></div>
+                  <input id="crush-bits" type="range" min="1" max="16" step="1" value="8" class="w-full accent-amarea-pink">
+                </div>
+                <div>
+                  <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Crush mix</span> <span id="crush-mix-val">60%</span></div>
+                  <input id="crush-mix" type="range" min="0" max="1" step="0.05" value="0.6" class="w-full accent-amarea-pink">
+                </div>
+                <div>
+                  <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Stutter rate</span> <span id="stutter-rate-val">8 Hz</span></div>
+                  <input id="stutter-rate" type="range" min="2" max="24" step="1" value="8" class="w-full accent-amarea-gold">
+                </div>
+              </div>
+            </div>
+
+            <button id="reset-mixer" class="w-full mb-4 px-3 py-2 rounded border border-white/10 text-[10px] font-display uppercase tracking-widest text-white/60 hover:text-amarea-pink hover:border-amarea-pink transition" data-i18n="resetAll">RESET ALL</button>
+
+            <canvas id="xy-pad" width="360" height="120" class="w-full h-32 rounded-xl bg-black/40 mb-2 touch-none cursor-crosshair"></canvas>
+            <p class="text-[9px] text-white/30 text-center uppercase tracking-widest mb-4" data-i18n="xyPadHint">XY Pad: filtro / velocidad</p>
+
+            <p id="skin-label" class="text-[10px] text-white/30 text-center uppercase tracking-widest">skin: dark · autoplay: off</p>
           </div>
-
-          <button id="reset-mixer" class="w-full mb-4 px-3 py-2 rounded border border-white/10 text-[10px] font-display uppercase tracking-widest text-white/60 hover:text-amarea-pink hover:border-amarea-pink transition">RESET ALL</button>
-
-          <canvas id="xy-pad" width="360" height="120" class="w-full h-32 rounded-xl bg-black/40 mb-2 touch-none cursor-crosshair"></canvas>
-          <p class="text-[9px] text-white/30 text-center uppercase tracking-widest mb-4">XY Pad: filtro / velocidad</p>
-
-          <p id="skin-label" class="text-[10px] text-white/30 text-center uppercase tracking-widest">skin: dark · autoplay: off</p>
-        </div>
       </div>
     </div>
     </section>
@@ -392,9 +446,9 @@
 
     <!-- BRIEF -->
     <section id="brief" class="tab-section px-6 py-24 md:py-32 max-w-6xl mx-auto">
-      <p class="text-amarea-violet text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Cuestionario</p>
-      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-6">Identidad, <span class="gradient-text">estructura y futuro</span></h2>
-      <p id="brief-instructions" class="text-white/50 mb-6 text-sm leading-relaxed">
+      <p class="text-amarea-violet text-xs font-display font-medium tracking-[0.3em] uppercase mb-4" data-i18n="briefLabel">Cuestionario</p>
+      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-6" data-i18n="briefTitle">Identidad, <span class="gradient-text">estructura y futuro</span></h2>
+      <p id="brief-instructions" class="text-white/50 mb-6 text-sm leading-relaxed" data-i18n="briefInstructions">
         161 preguntas para entender qué es AMAREA, qué quiere ser y cómo funciona. Cada integrante responde por separado. No hay respuestas correctas. Responde desde lo que piensas. Si no sabes algo, escribe "no sé".
       </p>
       <div id="brief-wizard" class="hidden rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 md:p-10 neon-box">
@@ -402,10 +456,10 @@
         <form id="brief-form" class="space-y-6">
           <div id="brief-step" class="min-h-[300px]"></div>
           <div class="flex flex-wrap gap-4 pt-6 border-t border-white/10">
-            <button type="button" id="brief-prev" class="px-6 py-3 rounded-xl border border-white/10 text-white/70 text-xs font-display font-bold uppercase tracking-widest hover:border-amarea-cyan hover:text-amarea-cyan transition hidden">Anterior</button>
-            <button type="button" id="brief-next" class="px-6 py-3 rounded-xl bg-amarea-cyan text-black text-xs font-display font-bold uppercase tracking-widest hover:bg-white transition">Siguiente</button>
-            <button type="button" id="brief-save" class="px-6 py-3 rounded-xl border border-amarea-gold text-amarea-gold text-xs font-display font-bold uppercase tracking-widest hover:bg-amarea-gold hover:text-black transition ml-auto">Guardar borrador</button>
-            <button type="submit" id="brief-submit" class="px-6 py-3 rounded-xl bg-amarea-pink text-black text-xs font-display font-bold uppercase tracking-widest hover:bg-white transition hidden">Enviar cuestionario</button>
+            <button type="button" id="brief-prev" class="px-6 py-3 rounded-xl border border-white/10 text-white/70 text-xs font-display font-bold uppercase tracking-widest hover:border-amarea-cyan hover:text-amarea-cyan transition hidden" data-i18n="briefBack">Anterior</button>
+            <button type="button" id="brief-next" class="px-6 py-3 rounded-xl bg-amarea-cyan text-black text-xs font-display font-bold uppercase tracking-widest hover:bg-white transition" data-i18n="briefNext">Siguiente</button>
+            <button type="button" id="brief-save" class="px-6 py-3 rounded-xl border border-amarea-gold text-amarea-gold text-xs font-display font-bold uppercase tracking-widest hover:bg-amarea-gold hover:text-black transition ml-auto" data-i18n="briefSave">Guardar borrador</button>
+            <button type="submit" id="brief-submit" class="px-6 py-3 rounded-xl bg-amarea-pink text-black text-xs font-display font-bold uppercase tracking-widest hover:bg-white transition hidden" data-i18n="briefSubmit">Enviar cuestionario</button>
           </div>
         </form>
       </div>
@@ -416,29 +470,41 @@
     <section id="admin" class="tab-section px-6 py-24 md:py-32 max-w-6xl mx-auto">
       <p class="text-amarea-fire text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Admin</p>
       <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8">Panel de <span class="gradient-text">control</span></h2>
-      <div class="grid md:grid-cols-2 gap-10">
-        <div>
-          <h3 class="text-2xl font-display font-bold mb-4">Cuestionarios recibidos</h3>
-          <div id="admin-briefs" class="space-y-4"></div>
-          <button id="export-briefs" class="mt-6 px-6 py-2 rounded-xl border border-amarea-cyan text-amarea-cyan text-xs font-display font-bold uppercase tracking-widest hover:bg-amarea-cyan hover:text-black transition">Exportar cuestionarios</button>
+      <p class="text-white/50 mb-8">Resumen de usuarios registrados y cuestionarios enviados.</p>
+
+      <div id="admin-stats" class="grid grid-cols-3 gap-4 mb-8"></div>
+
+      <div class="mb-6">
+        <input id="admin-search" type="text" placeholder="Buscar usuario..." class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-white/30 focus:border-amarea-cyan outline-none" data-i18n-placeholder="adminSearchPlaceholder">
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8 items-start">
+        <div class="md:col-span-1">
+          <h3 class="text-2xl font-display font-bold mb-4">Usuarios</h3>
+          <div id="admin-users" class="space-y-3 max-h-[60vh] overflow-y-auto pr-2"></div>
         </div>
-        <div>
-          <h3 class="text-2xl font-display font-bold mb-4">Usuarios registrados</h3>
-          <div id="admin-users" class="space-y-3"></div>
-          <button id="export-users" class="mt-6 px-6 py-2 rounded-xl border border-amarea-pink text-amarea-pink text-xs font-display font-bold uppercase tracking-widest hover:bg-amarea-pink hover:text-black transition">Exportar usuarios</button>
+        <div class="md:col-span-2">
+          <h3 class="text-2xl font-display font-bold mb-4">Cuestionarios</h3>
+          <div id="admin-briefs" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2"></div>
         </div>
+      </div>
+
+      <div class="mt-8 flex flex-wrap gap-4">
+        <button id="refresh-admin" class="px-6 py-2 rounded-xl border border-amarea-gold text-amarea-gold text-xs font-display font-bold uppercase tracking-widest hover:bg-amarea-gold hover:text-black transition" data-i18n="refreshAdmin">Actualizar</button>
+        <button id="export-briefs" class="px-6 py-2 rounded-xl border border-amarea-cyan text-amarea-cyan text-xs font-display font-bold uppercase tracking-widest hover:bg-amarea-cyan hover:text-black transition" data-i18n="exportBriefs">Exportar cuestionarios</button>
+        <button id="export-users" class="px-6 py-2 rounded-xl border border-amarea-pink text-amarea-pink text-xs font-display font-bold uppercase tracking-widest hover:bg-amarea-pink hover:text-black transition" data-i18n="exportUsers">Exportar usuarios</button>
       </div>
     </section>
 
     <!-- COMUNIDAD -->
     <section id="comunidad" class="tab-section px-6 py-24 md:py-32 max-w-4xl mx-auto">
-      <p class="text-amarea-pink text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Comunidad</p>
-      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8">El <span class="gradient-text">chat</span> de la tribu</h2>
-      <p class="text-white/50 mb-8">Conecta con otros asistentes, comparte momentos y entérate de lo que viene.</p>
+      <p class="text-amarea-pink text-xs font-display font-medium tracking-[0.3em] uppercase mb-4" data-i18n="navComunidad">Comunidad</p>
+      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8" data-i18n="chatTitle">El <span class="gradient-text">chat</span> de la tribu</h2>
+      <p class="text-white/50 mb-8" data-i18n="chatSubtitle">Conecta con otros asistentes, comparte momentos y entérate de lo que viene.</p>
       <div class="rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 h-[520px] flex flex-col neon-box">
         <div class="flex gap-3 mb-4">
-          <input id="chat-nick" type="text" placeholder="Tu nombre" maxlength="20" class="bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm focus:border-amarea-pink outline-none w-40">
-          <button id="set-nick" class="px-4 py-2 text-xs font-display font-bold uppercase tracking-widest rounded-xl border border-white/10 hover:border-amarea-pink transition">Entrar</button>
+          <input id="chat-nick" type="text" placeholder="Tu nombre" maxlength="20" class="bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm focus:border-amarea-pink outline-none w-40" data-i18n-placeholder="chatNick">
+          <button id="set-nick" class="px-4 py-2 text-xs font-display font-bold uppercase tracking-widest rounded-xl border border-white/10 hover:border-amarea-pink transition" data-i18n="chatLogin">Entrar</button>
         </div>
         <div id="chat-messages" class="flex-1 overflow-y-auto space-y-3 pr-2 mb-4"></div>
         <div id="chat-reply" class="hidden mb-2 text-xs text-white/50 flex items-center gap-2">
@@ -447,10 +513,10 @@
           <button id="chat-reply-cancel" class="text-white/40 hover:text-white ml-auto">×</button>
         </div>
         <div class="flex gap-3">
-          <input id="chat-input" type="text" placeholder="Escribe un mensaje..." maxlength="240" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-cyan outline-none" disabled>
-          <button id="chat-send" class="px-6 py-3 rounded-xl bg-amarea-cyan/10 text-amarea-cyan font-display font-bold uppercase tracking-widest text-xs hover:bg-amarea-cyan hover:text-black transition" disabled>Enviar</button>
+          <input id="chat-input" type="text" placeholder="Escribe un mensaje..." maxlength="240" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-cyan outline-none" disabled data-i18n-placeholder="chatPlaceholder">
+          <button id="chat-send" class="px-6 py-3 rounded-xl bg-amarea-cyan/10 text-amarea-cyan font-display font-bold uppercase tracking-widest text-xs hover:bg-amarea-cyan hover:text-black transition" disabled data-i18n="chatSend">Enviar</button>
         </div>
-        <p class="text-[10px] text-white/20 text-right mt-2 uppercase tracking-widest">Mensajes vivos: 90 días</p>
+        <p class="text-[10px] text-white/20 text-right mt-2 uppercase tracking-widest" data-i18n="chatTtl">Mensajes vivos: 90 días</p>
       </div>
 
       <!-- Mini reproductor -->
@@ -467,9 +533,9 @@
 
     <!-- PRODUCCION -->
     <section id="produccion" class="tab-section px-6 py-24 md:py-32 max-w-6xl mx-auto">
-      <p class="text-amarea-gold text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Toolkit</p>
-      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8">Conecta con la <span class="gradient-text">producción</span></h2>
-      <p class="text-white/50 max-w-2xl mb-10">Aquí se unen participantes, asistentes, residentes y el equipo de AMAREA. Sin datos personales obligatorios.</p>
+      <p class="text-amarea-gold text-xs font-display font-medium tracking-[0.3em] uppercase mb-4" data-i18n="productionLabel">Toolkit</p>
+      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8" data-i18n="productionTitle">Conecta con la <span class="gradient-text">producción</span></h2>
+      <p class="text-white/50 max-w-2xl mb-10" data-i18n="productionSubtitle">Aquí se unen participantes, asistentes, residentes y el equipo de AMAREA. Sin datos personales obligatorios.</p>
 
       <div id="prod-metrics" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12"></div>
 
@@ -575,26 +641,26 @@
 
     <!-- CONTACTO -->
     <section id="contacto" class="tab-section px-6 py-24 md:py-32 max-w-4xl mx-auto text-center">
-      <p class="text-amarea-gold text-xs font-display font-medium tracking-[0.3em] uppercase mb-4">Conexión</p>
-      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8">Hagamos <span class="gradient-text">magia</span></h2>
-      <p class="text-white/60 text-lg mb-10 max-w-2xl mx-auto">Producción de eventos, residencias, colaboraciones y experiencias inmersivas. Escríbenos o únete a la lista.</p>
+      <p class="text-amarea-gold text-xs font-display font-medium tracking-[0.3em] uppercase mb-4" data-i18n="contactoLabel">Conexión</p>
+      <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8" data-i18n="contactoTitle">Hagamos <span class="gradient-text">magia</span></h2>
+      <p class="text-white/60 text-lg mb-10 max-w-2xl mx-auto" data-i18n="contactoDescription">Producción de eventos, residencias, colaboraciones y experiencias inmersivas. Escríbenos o únete a la lista.</p>
       <div class="flex flex-wrap justify-center gap-6 mb-12 text-sm font-display font-medium tracking-widest uppercase">
         <a href="https://instagram.com/amareaoficial" target="_blank" rel="noopener" class="hover:text-amarea-pink transition">Instagram</a>
         <a href="https://instagram.com/craniareclaim" target="_blank" rel="noopener" class="hover:text-amarea-cyan transition">Crania</a>
         <a href="mailto:hello@amarea.mx" class="hover:text-amarea-gold transition">hello@amarea.mx</a>
       </div>
       <form id="join-form" class="max-w-md mx-auto flex gap-3 mb-12">
-        <input id="join-email" type="email" placeholder="tu@email.com" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-cyan outline-none" required>
-        <button type="submit" class="px-6 py-3 rounded-xl bg-amarea-pink text-black font-display font-bold uppercase tracking-widest text-xs hover:bg-white transition">Unirme</button>
+        <input id="join-email" type="email" placeholder="tu@email.com" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-cyan outline-none" required data-i18n-placeholder="joinEmail">
+        <button type="submit" class="px-6 py-3 rounded-xl bg-amarea-pink text-black font-display font-bold uppercase tracking-widest text-xs hover:bg-white transition" data-i18n="joinButton">Unirme</button>
       </form>
-      <p id="join-msg" class="text-sm text-amarea-cyan hidden mb-8">Bienvenido a la comunidad AMAREA.</p>
+      <p id="join-msg" class="text-sm text-amarea-cyan hidden mb-8" data-i18n="joinWelcome">Bienvenido a la comunidad AMAREA.</p>
       <p class="text-xs text-white/20 uppercase tracking-[0.3em]">San José del Cabo · Baja California Sur · México</p>
     </section>
 
     <footer class="px-6 py-12 border-t border-white/5 text-center">
       <p class="text-2xl font-mono font-black tracking-widest gradient-text mb-2">AMAREA</p>
-      <p class="text-xs text-white/20 uppercase tracking-widest mb-2">Hecho con purpurina, desierto y buena vibra · 2026</p>
-      <a href="privado.html" class="text-[10px] text-white/30 hover:text-amarea-cyan uppercase tracking-widest transition">Aviso de privacidad y panel interno</a>
+      <p class="text-xs text-white/20 uppercase tracking-widest mb-2" data-i18n="footerTagline">Hecho con purpurina, desierto y buena vibra · 2026</p>
+      <a href="privado.html" class="text-[10px] text-white/30 hover:text-amarea-cyan uppercase tracking-widest transition" data-i18n="footerPrivacy">Aviso de privacidad y panel interno</a>
     </footer>
   </main>
 
@@ -602,23 +668,24 @@
   <div id="auth-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm">
     <div class="w-full max-w-md p-8 rounded-3xl border border-white/10 bg-amarea-ink/90 neon-box relative">
       <button id="auth-close" class="absolute top-4 right-4 text-white/40 hover:text-white">✕</button>
-      <h2 id="auth-title" class="text-3xl font-display font-bold mb-2">Entrar</h2>
-      <p id="auth-subtitle" class="text-white/50 text-sm mb-6">Invitados pueden navegar. Clientes inician sesión.</p>
+      <h2 id="auth-title" class="text-3xl font-display font-bold mb-2" data-i18n="navEntrar">Entrar</h2>
+      <p id="auth-subtitle" class="text-white/50 text-sm mb-6" data-i18n="authSubtitle">Invitados pueden navegar. Clientes inician sesión.</p>
       <form id="auth-form" class="space-y-4">
-        <input id="auth-username" type="text" placeholder="Usuario" required class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-pink outline-none">
-        <input id="auth-password" type="password" placeholder="Contraseña" required class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-pink outline-none">
+        <input id="auth-username" type="text" placeholder="Usuario" required class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-pink outline-none" data-i18n-placeholder="authUsername">
+        <input id="auth-password" type="password" placeholder="Contraseña" required class="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-3 text-sm focus:border-amarea-pink outline-none" data-i18n-placeholder="authPassword">
         <div class="flex gap-3">
-          <button type="submit" class="flex-1 py-3 rounded-xl bg-amarea-pink text-black font-display font-bold uppercase tracking-widest text-sm hover:bg-white transition">Iniciar sesión</button>
-          <button type="button" id="auth-register" class="flex-1 py-3 rounded-xl border border-amarea-cyan text-amarea-cyan font-display font-bold uppercase tracking-widest text-sm hover:bg-amarea-cyan hover:text-black transition">Registrarme</button>
+          <button type="submit" class="flex-1 py-3 rounded-xl bg-amarea-pink text-black font-display font-bold uppercase tracking-widest text-sm hover:bg-white transition" data-i18n="authLogin">Iniciar sesión</button>
+          <button type="button" id="auth-register" class="flex-1 py-3 rounded-xl border border-amarea-cyan text-amarea-cyan font-display font-bold uppercase tracking-widest text-sm hover:bg-amarea-cyan hover:text-black transition" data-i18n="authRegister">Registrarme</button>
         </div>
       </form>
-      <button id="auth-guest" class="w-full mt-4 text-white/40 text-xs uppercase tracking-widest hover:text-white transition">Continuar como invitado</button>
+      <button id="auth-guest" class="w-full mt-4 text-white/40 text-xs uppercase tracking-widest hover:text-white transition" data-i18n="authGuest">Continuar como invitado</button>
       <p id="auth-error" class="hidden text-amarea-fire text-xs mt-4 text-center"></p>
     </div>
   </div>
 
   <script src="cuestionario.js"></script>
   <script src="config.js"></script>
+  <script src="i18n.js"></script>
   <script src="app.js"></script>
   <script src="features.js"></script>
 </body>

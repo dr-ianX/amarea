@@ -29,7 +29,7 @@
       const data = { email: v, date: new Date().toISOString(), deviceId: getDeviceId() };
       setJSON(STORAGE_NEWS, [...getJSON(STORAGE_NEWS), data]);
       logToSheet('newsletter', data);
-      notify('join-msg', 'Bienvenido a la comunidad AMAREA.');
+      notify('join-msg', (typeof tr === 'function' ? tr('joinWelcome', 'Bienvenido a la comunidad AMAREA.') : 'Bienvenido a la comunidad AMAREA.'));
       input.value = '';
       renderMetrics();
     });

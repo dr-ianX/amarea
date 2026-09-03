@@ -181,6 +181,44 @@ function doGet(e) {
         }
       });
       json = JSON.stringify(Object.fromEntries(roles));
+    } else if (e.parameter.view === 'admin') {
+      const usersByName = {};
+      const users = [];
+      const briefs = [];
+      rows.slice(1).forEach(r => {
+        const type = String(r[1] || '');
+        if (type === 'register' || type === 'set_role') {
+          const role = getField(r, 9, 'role') || 'guest';
+          let user = getField(r, 3, 'id');
+          if (!user && type === 'register') {
+            try { const p = JSON.parse(rawPayload(r)); user = p.username || p.id; } catch (e) {}
+          }
+          if (user) {
+            const ts = r[0] ? (r[0].toISOString ? r[0].toISOString() : String(r[0])) : '';
+            const email = getField(r, 8, 'email') || '';
+            if (!usersByName[user]) {
+              usersByName[user] = { username: user, role, date: ts, email };
+              users.push(usersByName[user]);
+            } else {
+              usersByName[user].role = role;
+              if (ts) usersByName[user].date = ts;
+              if (email) usersByName[user].email = email;
+            }
+          }
+        } else if (type === 'cuestionario') {
+          try {
+            const p = JSON.parse(rawPayload(r));
+            if (p && p.user && p.answers) {
+              briefs.push({
+                user: p.user,
+                date: p.date || (r[0] ? (r[0].toISOString ? r[0].toISOString() : String(r[0])) : ''),
+                answers: p.answers
+              });
+            }
+          } catch (e) {}
+        }
+      });
+      json = JSON.stringify({ users, briefs });
     } else if (e.parameter.view === 'content') {
       const content = {};
       rows.slice(1).reverse().forEach(r => {
