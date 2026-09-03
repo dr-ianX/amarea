@@ -93,13 +93,6 @@ function initAnalytics() {
 
 const DEFAULT_RESIDENTS = [
   {
-    name: 'dR.iAn',
-    role: 'colaborador',
-    bio: 'Arma este landing, diseña láseres, visuales e iluminación para las fiestas de AMAREA. Productor de techno y sets en vivo; a veces mezcla.',
-    image: 'assets/resident-drian.jpg',
-    links: { soundcloud: '#', instagram: 'https://instagram.com/drian.mx' }
-  },
-  {
     name: 'JOHANN',
     role: 'DJ principal',
     bio: 'Seleccionador implacable. Construye sets que navegan entre el house profundo y la techno con alma.',
@@ -110,6 +103,13 @@ const DEFAULT_RESIDENTS = [
     role: 'DJ principal',
     bio: 'Versátil y preciso. Lee la pista de baile como pocos y conduce la noche sin perder la sorpresa.',
     links: { instagram: '#', soundcloud: '#' }
+  },
+  {
+    name: 'dR.iAn',
+    role: 'colaborador',
+    bio: 'Láseres, visuales e iluminación en las fiestas de AMAREA. Productor de techno y sets en vivo; a veces mezcla.',
+    image: 'assets/logo.png',
+    links: { soundcloud: '#', instagram: 'https://instagram.com/drian.mx' }
   }
 ];
 let residents = [...DEFAULT_RESIDENTS];
@@ -180,11 +180,22 @@ let reverbNode = null;
 let reverbWet = null;
 let reverbOn = false;
 let reverbMix = 0.3;
+let lfo = null;
+let lfoGain = null;
+let flangerDelay = null;
+let flangerFeedback = null;
+let flangerMix = null;
 
 let loopOn = false;
 let loopStart = 0;
 let loopEnd = 0;
 let loopBpm = 128;
+
+let cueA = -1;
+let cueB = -1;
+let isScrubbingA = false, wasPlayingA = false;
+let isScrubbingB = false, wasPlayingB = false;
+let pitchA = 1, pitchB = 1;
 
 const VISUALIZER_MODES = ['circles','bars','wave','spiral','grid','particles','nebula','scope'];
 let visMode = 'circles';
@@ -245,23 +256,68 @@ window.addEventListener('scroll', () => {
 });
 
 // === RESIDENTS ===
+function saveResidents() {
+  siteContent.residentes = residents;
+  localStorage.setItem(STORAGE_CONTENT, JSON.stringify(siteContent));
+}
+
 function renderResidents() {
   const residentsGrid = document.getElementById('residents-grid');
   if (!residentsGrid) return;
   residentsGrid.innerHTML = '';
+  const canEdit = currentUser && currentUser.role === 'admin';
   residents.forEach((r, i) => {
     const div = document.createElement('div');
     div.className = 'resident-card rounded-2xl p-6';
     div.style.animationDelay = `${i * 80}ms`;
     const img = r.image ? `<div class="w-16 h-16 rounded-full bg-black/40 border border-white/10 mb-4 overflow-hidden"><img src="${r.image}" alt="${r.name}" class="w-full h-full object-cover" onerror="this.style.display='none'"></div>` : '';
+    const controls = canEdit ? `
+      <div class="flex gap-2 mt-4">
+        <button data-dir="up" data-index="${i}" class="res-move px-2 py-1 text-[10px] rounded border border-white/10 hover:border-amarea-cyan transition">↑</button>
+        <button data-dir="down" data-index="${i}" class="res-move px-2 py-1 text-[10px] rounded border border-white/10 hover:border-amarea-cyan transition">↓</button>
+        <button data-del="${i}" class="res-del px-2 py-1 text-[10px] rounded border border-amarea-fire/30 text-amarea-fire hover:bg-amarea-fire/10 transition">×</button>
+      </div>` : '';
     div.innerHTML = `
       ${img}
       <h3 class="text-2xl font-display font-bold text-white mb-1">${r.name}</h3>
-      <p class="text-xs font-mono text-amarea-cyan uppercase tracking-widest mb-4">${r.role}</p>
-      <p class="text-sm text-white/50 leading-relaxed">${r.bio || r.vibe}</p>
+      <p class="text-xs font-mono text-amarea-cyan uppercase tracking-widest mb-4 ${canEdit ? 'res-role outline-none focus:border-b focus:border-amarea-cyan' : ''}" ${canEdit ? 'contenteditable="true"' : ''} data-index="${i}">${r.role}</p>
+      <p class="text-sm text-white/50 leading-relaxed ${canEdit ? 'res-bio outline-none focus:border-b focus:border-amarea-cyan' : ''}" ${canEdit ? 'contenteditable="true"' : ''} data-index="${i}">${r.bio || r.vibe}</p>
+      ${controls}
     `;
     residentsGrid.appendChild(div);
   });
+
+  if (canEdit) {
+    residentsGrid.querySelectorAll('.res-role, .res-bio').forEach(el => {
+      el.addEventListener('blur', (e) => {
+        const i = parseInt(e.target.dataset.index, 10);
+        if (e.target.classList.contains('res-role')) residents[i].role = e.target.textContent.trim();
+        else residents[i].bio = e.target.textContent.trim();
+        saveResidents();
+      });
+    });
+    residentsGrid.querySelectorAll('.res-move').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const i = parseInt(e.target.dataset.index, 10);
+        const dir = e.target.dataset.dir;
+        const j = dir === 'up' ? i - 1 : i + 1;
+        if (j < 0 || j >= residents.length) return;
+        [residents[i], residents[j]] = [residents[j], residents[i]];
+        saveResidents();
+        renderResidents();
+      });
+    });
+    residentsGrid.querySelectorAll('.res-del').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const i = parseInt(e.target.dataset.index, 10);
+        if (confirm(tr('deleteResidentConfirm', '¿Eliminar este residente?'))) {
+          residents.splice(i, 1);
+          saveResidents();
+          renderResidents();
+        }
+      });
+    });
+  }
 }
 
 // === EVENTS ===
@@ -773,6 +829,21 @@ function initAudio() {
   reverbWet = audioCtx.createGain();
   reverbWet.gain.value = 0;
 
+  flangerDelay = audioCtx.createDelay(0.05);
+  flangerDelay.delayTime.value = 0.005;
+  lfo = audioCtx.createOscillator();
+  lfo.type = 'sine';
+  lfo.frequency.value = 0.5;
+  lfoGain = audioCtx.createGain();
+  lfoGain.gain.value = 0.003;
+  lfo.connect(lfoGain);
+  lfoGain.connect(flangerDelay.delayTime);
+  lfo.start();
+  flangerFeedback = audioCtx.createGain();
+  flangerFeedback.gain.value = 0.5;
+  flangerMix = audioCtx.createGain();
+  flangerMix.gain.value = 0;
+
   dryGain = audioCtx.createGain();
   dryGain.gain.value = 1;
   crushWet = audioCtx.createGain();
@@ -795,6 +866,12 @@ function initAudio() {
   delayNode.connect(delayWet);
 
   reverbNode.connect(reverbWet);
+
+  djFilter.connect(flangerDelay);
+  flangerDelay.connect(flangerFeedback);
+  flangerFeedback.connect(flangerDelay);
+  flangerDelay.connect(flangerMix);
+  flangerMix.connect(gainNode);
 
   dryGain.connect(gainNode);
   crushWet.connect(gainNode);
@@ -1049,7 +1126,8 @@ function resetMixer() {
   crossValue = 0;
   audio.volume = 1;
   deckB.volume = 1;
-  audio.playbackRate = 1;
+  pitchA = 1; pitchB = 1;
+  setPitch('a', 1); setPitch('b', 1);
   delayOn = false; crushOn = false; stutterOn = false; autoDj = false; reverbOn = false;
   stopAutoDj(); stopStutter();
   if (audio) audio.loop = false;
@@ -1058,6 +1136,8 @@ function resetMixer() {
     djFilter.frequency.setTargetAtTime(20000, audioCtx.currentTime, 0.1);
     djFilter.Q.setTargetAtTime(0, audioCtx.currentTime, 0.1);
   }
+  if (lfo && audioCtx) lfo.frequency.setTargetAtTime(0.5, audioCtx.currentTime, 0.1);
+  if (flangerMix && audioCtx) flangerMix.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
   if (masterGain && audioCtx) masterGain.gain.setTargetAtTime(1, audioCtx.currentTime, 0.05);
   saveMixerState();
   updateMixerUI();
@@ -1182,8 +1262,10 @@ function setXY(x, y) {
   const minF = 200, maxF = 20000;
   const freq = minF * Math.pow(maxF / minF, Math.max(0, Math.min(1, x)));
   djFilter.frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.05);
-  const rate = 0.5 + Math.max(0, Math.min(1, y)) * 2;
-  audio.playbackRate = rate;
+  if (lfo && flangerMix) {
+    lfo.frequency.setTargetAtTime(0.1 + Math.max(0, Math.min(1, y)) * 4.9, audioCtx.currentTime, 0.05);
+    flangerMix.gain.setTargetAtTime(Math.max(0, Math.min(1, y)) * 0.6, audioCtx.currentTime, 0.05);
+  }
   const pad = document.getElementById('xy-pad');
   if (pad) {
     const c = pad.getContext('2d');
@@ -1224,6 +1306,21 @@ document.getElementById('crush-bits')?.addEventListener('input', updateCrush);
 document.getElementById('crush-mix')?.addEventListener('input', updateCrush);
 document.getElementById('stutter-rate')?.addEventListener('input', updateStutter);
 document.getElementById('reset-mixer')?.addEventListener('click', resetMixer);
+
+bindWaveform('a', 'waveform-a');
+bindWaveform('b', 'waveform-b');
+
+['a', 'b'].forEach(deck => {
+  const el = document.getElementById('pitch-' + deck);
+  if (el) el.addEventListener('input', (e) => setPitch(deck, parseFloat(e.target.value)));
+});
+
+document.getElementById('deck-a-cue')?.addEventListener('click', () => jumpToCue('a'));
+document.getElementById('deck-b-cue')?.addEventListener('click', () => jumpToCue('b'));
+
+document.getElementById('loop-exit')?.addEventListener('click', exitLoop);
+document.getElementById('beat-sync')?.addEventListener('click', beatSync);
+
 bindDjPad();
 
 document.getElementById('dj-mode-btn')?.addEventListener('click', () => {
@@ -1484,8 +1581,132 @@ function drawWaveformFor(deck) {
   context.moveTo(headX, 0);
   context.lineTo(headX, h);
   context.stroke();
+  const cueTime = deck === 'a' ? cueA : cueB;
+  if (cueTime >= 0 && cueTime >= start && cueTime <= end) {
+    const cueX = (cueTime - start) / view * w;
+    context.strokeStyle = '#f2c94c';
+    context.lineWidth = 2;
+    context.beginPath();
+    context.moveTo(cueX, 0);
+    context.lineTo(cueX, h);
+    context.stroke();
+  }
   const label = document.getElementById('waveform-' + deck + '-label');
   if (label) label.textContent = waveformZoom.toFixed(1) + 'x';
+}
+
+function getWaveformView(deck) {
+  const buffer = deck === 'a' ? currentBufferA : currentBufferB;
+  const a = deck === 'a' ? audio : deckB;
+  if (!buffer || !a) return null;
+  const duration = buffer.duration;
+  const center = Math.max(0, Math.min(duration, a.currentTime || 0));
+  const view = Math.max(2, duration / waveformZoom);
+  let start = Math.max(0, center - view / 2);
+  if (start + view > duration) start = Math.max(0, duration - view);
+  return { duration, center, view, start };
+}
+
+function getWaveformTimeAtX(deck, canvas, clientX) {
+  const viewData = getWaveformView(deck);
+  if (!viewData || !canvas) return null;
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  return viewData.start + x * viewData.view;
+}
+
+function bindWaveform(deck, canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const media = deck === 'a' ? audio : deckB;
+  const isPlayingFlag = () => deck === 'a' ? isPlaying : deckBPlaying;
+  const setPlaying = (v) => { if (deck === 'a') isPlaying = v; else deckBPlaying = v; };
+  const scrubbingFlag = () => deck === 'a' ? isScrubbingA : isScrubbingB;
+  const setScrubbing = (v) => { if (deck === 'a') isScrubbingA = v; else isScrubbingB = v; };
+  const wasPlayingFlag = () => deck === 'a' ? wasPlayingA : wasPlayingB;
+  const setWasPlaying = (v) => { if (deck === 'a') wasPlayingA = v; else wasPlayingB = v; };
+
+  const updateTime = (clientX, isCue) => {
+    if (isCue) {
+      const t = getWaveformTimeAtX(deck, canvas, clientX);
+      if (t == null) return;
+      if (deck === 'a') cueA = t; else cueB = t;
+      drawWaveformFor(deck);
+      return;
+    }
+    if (!scrubbingFlag()) return;
+    const t = getWaveformTimeAtX(deck, canvas, clientX);
+    if (t == null) return;
+    if (media && media.duration) {
+      media.currentTime = Math.max(0, Math.min(media.duration, t));
+    }
+  };
+
+  canvas.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    const isCue = e.button === 2 || e.ctrlKey || e.metaKey;
+    if (isCue) {
+      updateTime(e.clientX, true);
+      return;
+    }
+    canvas.setPointerCapture(e.pointerId);
+    setScrubbing(true);
+    setWasPlaying(isPlayingFlag() && !media.paused);
+    if (!media.paused) media.pause();
+    updateTime(e.clientX, false);
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (scrubbingFlag() && (e.buttons & 1)) updateTime(e.clientX, false);
+  });
+
+  canvas.addEventListener('pointerup', (e) => {
+    if (scrubbingFlag()) {
+      setScrubbing(false);
+      if (wasPlayingFlag()) media.play().then(() => setPlaying(true)).catch(() => {});
+    }
+    if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+  });
+
+  canvas.addEventListener('pointerleave', (e) => {
+    if (scrubbingFlag()) {
+      setScrubbing(false);
+      if (wasPlayingFlag()) media.play().then(() => setPlaying(true)).catch(() => {});
+    }
+    if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+  });
+
+  canvas.addEventListener('contextmenu', (e) => { e.preventDefault(); });
+}
+
+function jumpToCue(deck) {
+  const media = deck === 'a' ? audio : deckB;
+  const cue = deck === 'a' ? cueA : cueB;
+  if (!media || cue < 0 || !media.duration) return;
+  media.currentTime = Math.max(0, Math.min(media.duration, cue));
+}
+
+function exitLoop() {
+  loopOn = false;
+  updateLoopUI();
+}
+
+function beatSync() {
+  if (!audio || !audio.duration || !deckB || !deckB.duration || !loopBpm) return;
+  const beatDur = 60 / Math.max(60, loopBpm);
+  const aNextBeat = audio.currentTime + (beatDur - (audio.currentTime % beatDur));
+  const bPhase = deckB.currentTime % beatDur;
+  deckB.currentTime = Math.max(0, aNextBeat - bPhase);
+}
+
+function setPitch(deck, value) {
+  const media = deck === 'a' ? audio : deckB;
+  if (!media) return;
+  if (deck === 'a') pitchA = value; else pitchB = value;
+  if (typeof media.preservesPitch !== 'undefined') media.preservesPitch = false;
+  media.playbackRate = value;
+  const label = document.getElementById('pitch-' + deck + '-val');
+  if (label) label.textContent = ((value - 1) * 100).toFixed(0) + '%';
 }
 
 function setLoop(bars) {

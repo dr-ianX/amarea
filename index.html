@@ -230,14 +230,14 @@
       <p class="text-amarea-cyan text-xs font-display font-medium tracking-[0.3em] uppercase mb-4" data-i18n="musicaLabel">Archivo sonoro</p>
       <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8" data-i18n="musicaTitle">Mixes & <span class="gradient-text">fiestas</span></h2>
       <p class="text-white/50 max-w-xl mb-10" data-i18n="musicSubtitle">Selecciona un set. El sonido se activa cuando tú quieres, con control total.</p>
-      <div class="grid lg:grid-cols-[1fr,520px] gap-10 items-start">
-        <div class="space-y-3">
+      <div class="grid lg:grid-cols-[1fr,2fr] gap-6 items-start">
+        <div class="space-y-3 min-w-0">
           <div class="flex gap-2">
             <input type="file" id="upload-tracks" accept="audio/*" multiple class="hidden">
             <button id="upload-tracks-btn" class="px-4 py-2 rounded-xl border border-amarea-cyan/30 text-amarea-cyan hover:bg-amarea-cyan/10 text-xs font-display font-bold uppercase tracking-widest transition" data-i18n="uploadTracks">Subir rolas</button>
             <button id="clear-local-tracks" class="hidden px-4 py-2 rounded-xl border border-amarea-fire/30 text-amarea-fire hover:bg-amarea-fire/10 text-xs font-display font-bold uppercase tracking-widest transition" data-i18n="clearLocal">Quitar locales</button>
           </div>
-          <div id="track-list" class="space-y-3 max-h-80 overflow-y-auto pr-2"></div>
+          <div id="track-list" class="space-y-3 max-h-[70vh] overflow-y-auto pr-2"></div>
         </div>
         <div id="mini-mixer" class="sticky top-28 h-fit rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 neon-box" data-skin="dark">
           <div class="flex justify-end gap-2 mb-2">
@@ -304,6 +304,11 @@
                   <button id="deck-a-play" class="w-8 h-8 rounded-full border border-amarea-cyan text-amarea-cyan text-xs hover:bg-amarea-cyan hover:text-black transition flex items-center justify-center">▶</button>
                   <span id="deck-a-time" class="text-[10px] text-white/30 font-mono">0:00 / 0:00</span>
                 </div>
+                <div class="mt-2">
+                  <div class="flex justify-between text-[9px] text-white/40 mb-1"><span data-i18n="pitchA">Pitch A</span> <span id="pitch-a-val">0%</span></div>
+                  <input id="pitch-a" type="range" min="0.5" max="1.5" step="0.01" value="1" class="w-full accent-amarea-cyan">
+                </div>
+                <button id="deck-a-cue" class="w-full mt-2 py-1 rounded border border-amarea-gold/30 text-amarea-gold text-[10px] hover:bg-amarea-gold/10 transition" data-i18n="cueButton">CUE</button>
               </div>
               <div class="p-3 rounded-xl border border-white/10 bg-white/[0.02]">
                 <p class="text-[10px] text-amarea-pink uppercase tracking-widest mb-1">Deck B</p>
@@ -317,6 +322,11 @@
                   <button id="deck-b-play" class="w-8 h-8 rounded-full border border-amarea-pink text-amarea-pink text-xs hover:bg-amarea-pink hover:text-black transition flex items-center justify-center">▶</button>
                   <span id="deck-b-time" class="text-[10px] text-white/30 font-mono">0:00 / 0:00</span>
                 </div>
+                <div class="mt-2">
+                  <div class="flex justify-between text-[9px] text-white/40 mb-1"><span data-i18n="pitchB">Pitch B</span> <span id="pitch-b-val">0%</span></div>
+                  <input id="pitch-b" type="range" min="0.5" max="1.5" step="0.01" value="1" class="w-full accent-amarea-pink">
+                </div>
+                <button id="deck-b-cue" class="w-full mt-2 py-1 rounded border border-amarea-gold/30 text-amarea-gold text-[10px] hover:bg-amarea-gold/10 transition" data-i18n="cueButton">CUE</button>
               </div>
             </div>
 
@@ -348,7 +358,11 @@
                 <button data-bars="2" class="loop-bar-btn flex-1 py-1 rounded border border-white/10 text-[10px] text-white/60 hover:border-amarea-gold hover:text-amarea-gold transition">2</button>
                 <button data-bars="4" class="loop-bar-btn flex-1 py-1 rounded border border-white/10 text-[10px] text-white/60 hover:border-amarea-gold hover:text-amarea-gold transition">4</button>
                 <button data-bars="8" class="loop-bar-btn flex-1 py-1 rounded border border-white/10 text-[10px] text-white/60 hover:border-amarea-gold hover:text-amarea-gold transition">8</button>
-                <button id="loop-clear" class="px-3 py-1 rounded border border-amarea-fire/30 text-[10px] text-amarea-fire hover:bg-amarea-fire/10 transition" data-i18n="loopOff">Off</button>
+                <button id="loop-exit" class="px-3 py-1 rounded border border-amarea-fire/30 text-[10px] text-amarea-fire hover:bg-amarea-fire/10 transition" data-i18n="loopExit">Exit</button>
+              </div>
+              <div class="flex gap-2 mt-2">
+                <button id="loop-clear" class="flex-1 py-1 rounded border border-amarea-fire/30 text-[10px] text-amarea-fire hover:bg-amarea-fire/10 transition" data-i18n="loopOff">Off</button>
+                <button id="beat-sync" class="flex-1 py-1 rounded border border-amarea-cyan/30 text-[10px] text-amarea-cyan hover:bg-amarea-cyan/10 transition" data-i18n="beatSync">Sync</button>
               </div>
             </div>
 
@@ -394,8 +408,8 @@
 
             <button id="reset-mixer" class="w-full mb-4 px-3 py-2 rounded border border-white/10 text-[10px] font-display uppercase tracking-widest text-white/60 hover:text-amarea-pink hover:border-amarea-pink transition" data-i18n="resetAll">RESET ALL</button>
 
-            <canvas id="xy-pad" width="360" height="120" class="w-full h-32 rounded-xl bg-black/40 mb-2 touch-none cursor-crosshair"></canvas>
-            <p class="text-[9px] text-white/30 text-center uppercase tracking-widest mb-4" data-i18n="xyPadHint">XY Pad: filtro / velocidad</p>
+            <canvas id="xy-pad" width="360" height="260" class="w-full h-64 rounded-xl bg-black/40 mb-2 touch-none cursor-crosshair"></canvas>
+            <p class="text-[9px] text-white/30 text-center uppercase tracking-widest mb-4" data-i18n="xyPadHint">XY Pad: filtro / flanger</p>
 
             <p id="skin-label" class="text-[10px] text-white/30 text-center uppercase tracking-widest">skin: dark · autoplay: off</p>
           </div>
