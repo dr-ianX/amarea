@@ -47,23 +47,54 @@
     .control-btn.active { color: #00f0ff !important; border-color: rgba(0,240,255,0.6) !important; box-shadow: 0 0 14px rgba(0,240,255,0.4) !important; }
     #autoplay-btn.control-btn.active { color: #f2c94c !important; border-color: rgba(242,201,76,0.6) !important; box-shadow: 0 0 14px rgba(242,201,76,0.4) !important; }
     #autodj-btn.control-btn.active { color: #ff006e !important; border-color: rgba(255,0,110,0.6) !important; box-shadow: 0 0 18px rgba(255,0,110,0.5) !important; }
-    #splash { animation: splashOut 2.4s ease-in-out forwards; }
-    .splash-logo { animation: logoIn 0.6s ease-out 0.2s forwards, logoGlow 1.4s ease-in-out 0.8s infinite alternate; filter: drop-shadow(0 0 20px rgba(0,240,255,0.4)); }
-    .splash-text { animation: textIn 0.8s ease-out 1s forwards, textOut 0.5s ease-in 1.9s forwards; opacity:0; }
-    @keyframes splashOut { 0%,70%{opacity:1; filter:blur(0) brightness(1);} 90%{opacity:0.8; filter:blur(10px) brightness(1.2);} 100%{opacity:0; filter:blur(24px) brightness(2); pointer-events:none; visibility:hidden;} }
-    @keyframes logoIn { from { opacity:0; transform:scale(0.75) translateY(30px); filter:blur(14px); } to { opacity:1; transform:scale(1) translateY(0); filter:blur(0); } }
-    @keyframes logoGlow { to { filter:drop-shadow(0 0 40px rgba(0,240,255,0.9)) brightness(1.15); transform:scale(1.03); } }
-    @keyframes textIn { to { opacity:1; letter-spacing:0.4em; text-shadow:0 0 16px rgba(0,240,255,0.5); } }
-    @keyframes textOut { to { opacity:0; transform:translateY(-14px); filter:blur(8px); } }
+    :root { --splash-out: 3.5s; --end-scale: 0.15; --end-blur: 50px; --end-bright: 2; --end-sat: 3; --end-hue: 0deg; --end-rot: 0deg; }
+    #splash { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; pointer-events: auto; }
+    #splash.leaving { animation: splashOut var(--splash-out) ease-in-out forwards; }
+    #splash.leaving .splash-logo { animation: logoShrink var(--splash-out) ease-in-out forwards; }
+    #splash.leaving .splash-text { animation: textOut var(--splash-out) ease-in-out forwards; }
+    .splash-logo { width: 90vw; height: 80vh; object-fit: contain; transform-origin: center; opacity: 0; transform: scale(3); filter: blur(20px) drop-shadow(0 0 20px rgba(0,240,255,0.4)); animation: logoPop 0.9s cubic-bezier(0.175,0.885,0.32,1.275) 0.1s forwards, logoGlow 2.4s ease-in-out 1s 2 alternate; }
+    .splash-text { opacity: 0; margin-top: 1.5rem; font-size: clamp(0.7rem, 1.4vw, 1rem); letter-spacing: 0.2em; color: #00f0ff; font-family: 'Orbitron', sans-serif; text-transform: uppercase; text-align: center; animation: textIn 0.9s ease-out 1.4s forwards; }
+    #splash::before, #splash::after { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; }
+    #splash::before { background: repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 5px); }
+    #splash.leaving::before { opacity: 1; animation: scanlines calc(var(--splash-out) * 0.8) linear; }
+    #splash[data-fx="glitch"]::after { opacity: 1; background: linear-gradient(90deg, rgba(255,0,110,0.08) 0 50%, rgba(0,240,255,0.08) 50% 100%); background-size: 3px 100%; animation: glitchSplit var(--splash-out) steps(10); }
+    #splash[data-fx="fracture"] .splash-logo { clip-path: polygon(0 0, 35% 0, 40% 20%, 70% 15%, 75% 40%, 100% 35%, 100% 70%, 60% 75%, 65% 100%, 0 100%); }
+    #splash[data-fx="rgb"] .splash-text { text-shadow: -4px 0 rgba(255,0,110,0.8), 4px 0 rgba(0,240,255,0.8); }
+    @keyframes splashOut { 0% { opacity: 1; filter: blur(0) brightness(1) saturate(1) hue-rotate(0); } 20% { opacity: 0.96; filter: blur(4px) brightness(1.5) saturate(2); } 100% { opacity: 0; filter: blur(var(--end-blur)) brightness(var(--end-bright)) saturate(var(--end-sat)) hue-rotate(var(--end-hue)); pointer-events: none; visibility: hidden; } }
+    @keyframes logoPop { to { opacity: 1; transform: scale(1); filter: blur(0) drop-shadow(0 0 20px rgba(0,240,255,0.4)); } }
+    @keyframes logoShrink { to { opacity: 0.4; transform: scale(var(--end-scale)) rotate(var(--end-rot)); } }
+    @keyframes logoGlow { to { filter: drop-shadow(0 0 60px rgba(0,240,255,0.9)) brightness(1.25); } }
+    @keyframes textIn { to { opacity: 1; letter-spacing: 0.4em; text-shadow: 0 0 20px rgba(0,240,255,0.6); } }
+    @keyframes textOut { to { opacity: 0; transform: translateY(-20px); filter: blur(8px); } }
+    @keyframes scanlines { 0% { transform: translateY(-5%); } 100% { transform: translateY(5%); } }
+    @keyframes glitchSplit { 0%,100% { clip-path: inset(0 0 0 0); } 15% { clip-path: inset(18% 0 32% 0); } 30% { clip-path: inset(8% 0 58% 0); } 45% { clip-path: inset(42% 0 12% 0); } 60% { clip-path: inset(0 0 55% 0); } 75% { clip-path: inset(28% 0 22% 0); } 90% { clip-path: inset(0 0 40% 0); } }
     #announcement { animation: bannerSlide 0.5s ease-out; }
     @keyframes bannerSlide { from { transform:translateY(-100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
   </style>
 </head>
 <body class="bg-amarea-black text-amarea-white font-sans antialiased overflow-x-hidden selection:bg-amarea-pink selection:text-white">
   <div id="splash" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black">
-    <img src="assets/logo.png" alt="dR.iAn" class="splash-logo w-48 md:w-72">
-    <p class="splash-text mt-6 text-amarea-cyan font-mono text-sm tracking-[0.3em] uppercase text-center">Made with LOVE by The Doctor</p>
+    <img src="assets/logo.png" alt="dR.iAn" class="splash-logo">
+    <p class="splash-text">Made with LOVE by The Doctor</p>
   </div>
+  <script>
+    (function(){
+      const splash = document.getElementById('splash');
+      if (!splash) return;
+      const effects = ['glitch','fracture','diffuse','scan','rgb'];
+      splash.dataset.fx = effects[Math.floor(Math.random() * effects.length)];
+      const out = 3.5 + Math.random() * 2.5;
+      const hold = 4.5 + Math.random() * 1.5;
+      splash.style.setProperty('--splash-out', out + 's');
+      splash.style.setProperty('--end-scale', (0.08 + Math.random() * 0.12).toFixed(3));
+      splash.style.setProperty('--end-blur', (30 + Math.random() * 40) + 'px');
+      splash.style.setProperty('--end-bright', (1.6 + Math.random() * 0.8).toFixed(2));
+      splash.style.setProperty('--end-sat', (2 + Math.random() * 5).toFixed(1));
+      splash.style.setProperty('--end-hue', Math.floor(Math.random() * 360) + 'deg');
+      splash.style.setProperty('--end-rot', (Math.random() * 16 - 8).toFixed(2) + 'deg');
+      setTimeout(() => splash.classList.add('leaving'), hold * 1000);
+    })();
+  </script>
   <div id="media-bg"></div>
   <div id="media-overlay"></div>
   <canvas id="dust" class="fixed inset-0 w-full h-full pointer-events-none z-0"></canvas>
@@ -186,7 +217,14 @@
       <h2 class="text-5xl md:text-7xl font-display font-bold leading-none mb-8">Mixes & <span class="gradient-text">fiestas</span></h2>
       <p class="text-white/50 max-w-xl mb-10">Selecciona un set. El sonido se activa cuando tú quieres, con control total.</p>
       <div class="grid lg:grid-cols-[1fr,420px] gap-10">
-        <div id="track-list" class="space-y-3"></div>
+        <div class="space-y-3">
+          <div class="flex gap-2">
+            <input type="file" id="upload-tracks" accept="audio/*" multiple class="hidden">
+            <button id="upload-tracks-btn" class="px-4 py-2 rounded-xl border border-amarea-cyan/30 text-amarea-cyan hover:bg-amarea-cyan/10 text-xs font-display font-bold uppercase tracking-widest transition">Subir rolas</button>
+            <button id="clear-local-tracks" class="hidden px-4 py-2 rounded-xl border border-amarea-fire/30 text-amarea-fire hover:bg-amarea-fire/10 text-xs font-display font-bold uppercase tracking-widest transition">Quitar locales</button>
+          </div>
+          <div id="track-list" class="space-y-3"></div>
+        </div>
         <div id="mini-mixer" class="sticky top-28 h-fit rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 neon-box" data-skin="dark">
           <div class="flex justify-end gap-2 mb-2">
             <button data-skin="dark" class="skin-btn text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded border border-white/10 text-white/60 hover:text-white hover:border-amarea-cyan transition" title="Oscuro">D</button>
@@ -236,6 +274,36 @@
           </div>
 
           <div class="mb-4">
+            <button id="dj-mode-btn" class="w-full px-3 py-2 rounded border border-amarea-pink/30 text-amarea-pink hover:bg-amarea-pink/10 text-[10px] font-display uppercase tracking-widest transition">DJ Mix Mode</button>
+          </div>
+          <div id="dj-console" class="hidden space-y-4 border-t border-white/10 pt-4 mt-4">
+            <div class="grid grid-cols-2 gap-3">
+              <div class="p-3 rounded-xl border border-white/10 bg-white/[0.02]">
+                <p class="text-[10px] text-white/40 uppercase tracking-widest mb-1">Deck A</p>
+                <p id="deck-a-title" class="text-sm text-white truncate mb-2">—</p>
+                <div class="text-[10px] text-white/30 font-mono"><span id="deck-a-time">0:00</span> / <span id="deck-a-total">0:00</span></div>
+              </div>
+              <div class="p-3 rounded-xl border border-white/10 bg-white/[0.02]">
+                <p class="text-[10px] text-white/40 uppercase tracking-widest mb-1">Deck B</p>
+                <input type="file" id="deck-b-file" accept="audio/*" class="hidden">
+                <button id="deck-b-file-btn" class="w-full mb-2 px-2 py-1.5 rounded border border-white/10 text-[9px] text-white/60 hover:text-amarea-cyan hover:border-amarea-cyan transition text-left truncate">Cargar archivo…</button>
+                <p id="deck-b-title" class="text-sm text-white truncate mb-2">—</p>
+                <div class="flex items-center gap-2">
+                  <button id="deck-b-play" class="w-8 h-8 rounded-full border border-amarea-pink text-amarea-pink text-xs hover:bg-amarea-pink hover:text-black transition flex items-center justify-center">▶</button>
+                  <span id="deck-b-time" class="text-[10px] text-white/30 font-mono">0:00</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-[9px] text-white/40 mb-1"><span class="uppercase tracking-widest">A</span><span class="uppercase tracking-widest">B</span></div>
+              <input id="crossfader" type="range" min="0" max="1" step="0.01" value="0" class="w-full accent-amarea-pink">
+            </div>
+            <canvas id="waveform" width="360" height="100" class="w-full h-28 rounded-xl bg-black/40"></canvas>
+            <div class="flex items-center gap-2">
+              <input id="waveform-zoom" type="range" min="1" max="40" step="0.5" value="4" class="flex-1 accent-amarea-cyan">
+              <span id="waveform-zoom-val" class="text-[10px] text-white/40 w-10 text-right">4.0x</span>
+            </div>
+          <div class="mb-4">
             <div class="flex items-center justify-between text-[10px] uppercase tracking-widest text-white/40 mb-2"><span>FX</span></div>
             <div class="flex gap-2 mb-3">
               <button id="fx-delay" class="fx-btn px-3 py-1.5 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-cyan hover:border-amarea-cyan transition">Delay</button>
@@ -278,6 +346,7 @@
           <p id="skin-label" class="text-[10px] text-white/30 text-center uppercase tracking-widest">skin: dark · autoplay: off</p>
         </div>
       </div>
+    </div>
     </section>
 
     <!-- RADAR -->
