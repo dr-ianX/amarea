@@ -101,6 +101,7 @@
                 <th class="p-4">Hora</th>
                 <th class="p-4">Tipo</th>
                 <th class="p-4">Usuario</th>
+                <th class="p-4">Mensaje</th>
                 <th class="p-4">Datos</th>
               </tr>
             </thead>
@@ -186,7 +187,7 @@
       const script = document.createElement('script');
       script.src = `${url}?callback=amareaRenderDashboard&token=${encodeURIComponent(API_TOKEN)}`;
       script.onerror = () => {
-        document.getElementById('rows').innerHTML = '<tr><td colspan="4" class="p-4 text-amarea-fire text-sm">No se pudo cargar el dashboard. Revisa la URL del Apps Script.</td></tr>';
+        document.getElementById('rows').innerHTML = '<tr><td colspan="5" class="p-4 text-amarea-fire text-sm">No se pudo cargar el dashboard. Revisa la URL del Apps Script.</td></tr>';
       };
       document.body.appendChild(script);
       document.getElementById('sheet-link').href = '#';
@@ -227,7 +228,11 @@
 
       const counts = {};
       rows.reverse().forEach((r) => {
-        const [timestamp, type, username, payload] = r;
+        const timestamp = r[0];
+        const type = r[1];
+        const username = r[2];
+        const message = r.length > 4 ? r[3] : '';
+        const payload = r.length > 4 ? r[4] : r[3];
         counts[type] = (counts[type] || 0) + 1;
 
         let parsed = {};
@@ -236,6 +241,7 @@
 
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-white/[0.03]';
+        const messageText = String(message).replace(/</g, '&lt;');
         const payloadText = (typeof payload === 'string' ? payload : JSON.stringify(payload)).replace(/</g, '&lt;');
         const blockBtn = (type === 'chat' && deviceId)
           ? `<button data-block="${deviceId}" class="mt-2 text-[10px] font-display font-bold uppercase tracking-widest text-amarea-fire hover:text-white transition border border-amarea-fire/30 rounded px-2 py-1">Bloquear dispositivo</button>`
@@ -244,6 +250,7 @@
           <td class="p-4 text-white/50 font-mono text-xs">${new Date(timestamp).toLocaleString('es-MX')}</td>
           <td class="p-4"><span class="text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded bg-white/5 text-amarea-cyan">${type}</span></td>
           <td class="p-4 text-white/80">${username}${deviceId ? `<p class="text-[9px] font-mono text-white/30 mt-1">ID: ${deviceId}</p>` : ''}</td>
+          <td class="p-4 max-w-sm text-white/80">${messageText}</td>
           <td class="p-4 max-w-sm">
             ${blockBtn}
             <details class="text-xs">

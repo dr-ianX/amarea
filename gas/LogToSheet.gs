@@ -19,14 +19,31 @@ function validateToken(e, body) {
   if (data.token !== getToken()) throw new Error('Forbidden');
 }
 
+const COLUMNS = ['timestamp', 'type', 'username', 'message', 'payload'];
+
 function getLogSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName('Log');
   if (!sheet) {
     sheet = ss.insertSheet('Log');
-    sheet.appendRow(['timestamp', 'type', 'username', 'payload']);
   }
+  sheet.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
   return sheet;
+}
+
+function extractMessage(type, payload) {
+  if (!payload) return '';
+  if (typeof payload === 'string') return payload;
+  if (type === 'chat' && payload.text) return payload.text;
+  if (type === 'delete_msg' && payload.id) return 'borrar: ' + payload.id;
+  if (type === 'join' && payload.email) return payload.email;
+  if (type === 'track_select') return (payload.title || '') + (payload.artist ? ' - ' + payload.artist : '');
+  if (type === 'tab' && payload.tab) return payload.tab;
+  if (type === 'pageview' && payload.path) return payload.path;
+  if (type === 'login' && payload.username) return payload.username;
+  if (type === 'register' && payload.username) return payload.username;
+  if (type === 'block' && payload.deviceId) return 'bloquear: ' + payload.deviceId;
+  return JSON.stringify(payload).slice(0, 500);
 }
 
 function pruneLog() {
@@ -64,7 +81,8 @@ function doPost(e) {
       if (payload.length > 50000) payload = payload.slice(0, 50000);
     }
 
-    sheet.appendRow([timestamp, type, username, payload]);
+    const message = extractMessage(type, data.payload);
+    sheet.appendRow([timestamp, type, username, message, payload]);
 
     return ContentService
       .createTextOutput(JSON.stringify({ result: 'ok' }))
@@ -93,7 +111,7 @@ function doGet(e) {
       rows.slice(1).forEach(r => {
         if (String(r[1]) === 'block') {
           try {
-            const p = JSON.parse(String(r[3]));
+            const p = JSON.parse(String(r[4] || r[3]));
             if (p.deviceId) blocked.add(p.deviceId);
           } catch (x) { /* skip malformed */ }
         }
@@ -104,7 +122,7 @@ function doGet(e) {
       const deletes = [];
       rows.slice(1).forEach(r => {
         const type = String(r[1]);
-        const raw = String(r[3] || '');
+        const raw = String(r[4] || r[3] || '');
         if (type === 'chat') {
           try {
             const p = JSON.parse(raw);
