@@ -66,12 +66,29 @@ function copy(source, dest) {
   process.stdout.write('  ' + dest + '\n');
 }
 
+function compressMusic(src, dest) {
+  const tmp = dest + '.tmp';
+  const args = [
+    '-y', '-i', src,
+    '-c:a', 'libmp3lame', '-b:a', '192k', '-ar', '44100', '-ac', '2',
+    '-f', 'mp3', tmp
+  ];
+  const result = spawnSync('ffmpeg', args, { stdio: 'pipe', encoding: 'utf8' });
+  if (result.error || result.status !== 0) {
+    if (result.stderr) process.stderr.write(result.stderr);
+    throw new Error(`ffmpeg falló para ${src}`);
+  }
+  fs.renameSync(tmp, dest);
+  process.stdout.write('  [compressed music] ' + dest + '\n');
+  return dest;
+}
+
 function compressVideo(src, dest) {
   const tmp = dest + '.tmp';
   const args = [
     '-y', '-i', src,
     '-c:v', 'libx264', '-crf', '24', '-preset', 'medium',
-    '-vf', "scale='min(1920,iw)':-2,format=yuv420p",
+    '-vf', "scale='min(1280,iw)':-2,format=yuv420p",
     '-movflags', '+faststart',
     '-c:a', 'aac', '-b:a', '128k',
     '-pix_fmt', 'yuv420p',
@@ -138,8 +155,14 @@ for (const v of selectedVideos) {
 }
 
 for (const m of selectedMusic) {
-  const dest = path.join(MUSIC_DEST, 'Summer26', m.name);
-  copy(m.full, dest);
+  const base = path.basename(m.name, path.extname(m.name));
+  const dest = path.join(MUSIC_DEST, 'Summer26', base + '.mp3');
+  if (NO_COMPRESS) {
+    copy(m.full, dest);
+  } else {
+    console.log('Comprimiendo música:', m.name);
+    compressMusic(m.full, dest);
+  }
   keep.add(dest.toLowerCase());
 }
 

@@ -64,6 +64,29 @@ function logToSheet(type, payload) {
   fetch(url, { method: 'POST', body, mode: 'no-cors' }).catch(() => {});
 }
 
+function track(type, payload) { logToSheet(type, payload); }
+function trackPageview() {
+  track('pageview', {
+    path: location.pathname + location.search,
+    referrer: document.referrer,
+    title: document.title
+  });
+}
+
+function initAnalytics() {
+  const ga = CONFIG.GA_ID;
+  if (!ga) return;
+  const s = document.createElement('script');
+  s.async = true;
+  s.src = `https://www.googletagmanager.com/gtag/js?id=${ga}`;
+  document.head.appendChild(s);
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  window.gtag = gtag;
+  gtag('js', new Date());
+  gtag('config', ga);
+}
+
 const residents = [
   { name: 'Akir B', role: 'DJ · Techno / Dark Disco', vibe: 'Sets profundos, texturas desérticas.' },
   { name: 'Lua Mora', role: 'DJ · Indie Dance / House', vibe: 'Conexión, calma y explosión controlada.' },
@@ -135,6 +158,7 @@ function switchTab(id) {
   updateActiveNav(id);
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if (mobileMenu) mobileMenu.classList.add('hidden');
+  track('tab', { tab: id });
 }
 
 tabLinks.forEach(link => {
@@ -482,6 +506,41 @@ let nickname = localStorage.getItem(STORAGE_NICK) || '';
 let chatData = JSON.parse(localStorage.getItem(STORAGE_CHAT) || '[]');
 let chatLast = 0;
 let replyTo = null;
+let chatAudioCtx = null;
+
+function playTone() {
+  if (!chatAudioCtx) chatAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (chatAudioCtx.state === 'suspended') chatAudioCtx.resume();
+  const osc = chatAudioCtx.createOscillator();
+  const gain = chatAudioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(220, chatAudioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(880, chatAudioCtx.currentTime + 0.08);
+  gain.gain.setValueAtTime(0.2, chatAudioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, chatAudioCtx.currentTime + 0.25);
+  osc.connect(gain);
+  gain.connect(chatAudioCtx.destination);
+  osc.start();
+  osc.stop(chatAudioCtx.currentTime + 0.25);
+  if (navigator.vibrate) navigator.vibrate(80);
+}
+
+function requestChatNotifications() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function showMsgNotification(msg) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  if (!document.hidden || msg.author === nickname) return;
+  try {
+    new Notification('Nuevo mensaje en AMAREA', {
+      body: `${msg.author}: ${msg.text}`,
+      icon: 'https://favicon.io/emoji/🌙' // se ignora si falla
+    });
+  } catch (e) {}
+}
 
 function hashColor(str) {
   let h = 0;
@@ -597,6 +656,7 @@ setNickBtn.addEventListener('click', () => {
     chatInput.disabled = false;
     chatSend.disabled = false;
     chatInput.focus();
+    requestChatNotifications();
     renderChat();
   }
 });
@@ -647,10 +707,12 @@ function loadChatFromSheets() {
   window[cb] = (res) => {
     if (!res || !Array.isArray(res.messages)) { delete window[cb]; return; }
     const byId = new Map(chatData.map(m => [m.id, m]));
+    const newRemote = [];
     let changed = false;
     res.messages.forEach(m => {
       if (m && m.id && !byId.has(m.id)) {
         byId.set(m.id, m);
+        newRemote.push(m);
         changed = true;
       }
     });
@@ -663,6 +725,10 @@ function loadChatFromSheets() {
       pruneChat();
       localStorage.setItem(STORAGE_CHAT, JSON.stringify(chatData));
       renderChat();
+      if (newRemote.length) {
+        playTone();
+        newRemote.forEach(m => showMsgNotification(m));
+      }
     }
     delete window[cb];
   };
@@ -1206,6 +1272,7 @@ function initMedia() {
 
 // === INIT ===
 seedAdmin();
+initAnalytics();
 initAuth();
 loadTracks();
 renderRadar();
@@ -1216,3 +1283,4 @@ initMedia();
 updateMixerUI();
 if (currentUser && currentUser.role === 'admin') renderAdmin();
 switchTab('inicio');
+trackPageview();

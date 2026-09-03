@@ -1,66 +1,12 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-03T07:03:45.290Z",
+  "generatedAt": "2026-09-03T07:42:08.725Z",
   "count": 15,
   "tracks": [
-    {
-      "title": "Summer26 (70)",
-      "artist": "Summer26",
-      "src": "musica/Summer26/Summer26%20(70).mp3",
-      "duration": "—"
-    },
-    {
-      "title": "Summer26 (4)",
-      "artist": "Summer26",
-      "src": "musica/Summer26/Summer26%20(4).mp3",
-      "duration": "—"
-    },
-    {
-      "title": "Summer26 (13)",
-      "artist": "Summer26",
-      "src": "musica/Summer26/Summer26%20(13).mp3",
-      "duration": "—"
-    },
-    {
-      "title": "Summer26 (44)",
-      "artist": "Summer26",
-      "src": "musica/Summer26/Summer26%20(44).mp3",
-      "duration": "—"
-    },
-    {
-      "title": "Summer26 (30)",
-      "artist": "Summer26",
-      "src": "musica/Summer26/Summer26%20(30).mp3",
-      "duration": "—"
-    },
-    {
-      "title": "Summer26 (53)",
-      "artist": "Summer26",
-      "src": "musica/Summer26/Summer26%20(53).mp3",
-      "duration": "—"
-    },
-    {
-      "title": "Summer26 (43)",
-      "artist": "Summer26",
-      "src": "musica/Summer26/Summer26%20(43).mp3",
-      "duration": "—"
-    },
     {
       "title": "Summer26 (37)",
       "artist": "Summer26",
       "src": "musica/Summer26/Summer26%20(37).mp3",
-      "duration": "—"
-    },
-    {
-      "title": "Summer26 (7)",
-      "artist": "Summer26",
-      "src": "musica/Summer26/Summer26%20(7).mp3",
-      "duration": "—"
-    },
-    {
-      "title": "Summer26 (12)",
-      "artist": "Summer26",
-      "src": "musica/Summer26/Summer26%20(12).mp3",
       "duration": "—"
     },
     {
@@ -70,27 +16,81 @@
       "duration": "—"
     },
     {
-      "title": "Summer26 (20)",
+      "title": "Summer26 (39)",
       "artist": "Summer26",
-      "src": "musica/Summer26/Summer26%20(20).mp3",
+      "src": "musica/Summer26/Summer26%20(39).mp3",
       "duration": "—"
     },
     {
-      "title": "Summer26 (58)",
+      "title": "Summer26 (63)",
       "artist": "Summer26",
-      "src": "musica/Summer26/Summer26%20(58).mp3",
+      "src": "musica/Summer26/Summer26%20(63).mp3",
       "duration": "—"
     },
     {
-      "title": "Summer26 (35)",
+      "title": "Summer26 (48)",
       "artist": "Summer26",
-      "src": "musica/Summer26/Summer26%20(35).mp3",
+      "src": "musica/Summer26/Summer26%20(48).mp3",
       "duration": "—"
     },
     {
-      "title": "Summer26 (22)",
+      "title": "Summer26 (26)",
       "artist": "Summer26",
-      "src": "musica/Summer26/Summer26%20(22).mp3",
+      "src": "musica/Summer26/Summer26%20(26).mp3",
+      "duration": "—"
+    },
+    {
+      "title": "Summer26 (55)",
+      "artist": "Summer26",
+      "src": "musica/Summer26/Summer26%20(55).mp3",
+      "duration": "—"
+    },
+    {
+      "title": "Summer26 (66)",
+      "artist": "Summer26",
+      "src": "musica/Summer26/Summer26%20(66).mp3",
+      "duration": "—"
+    },
+    {
+      "title": "Summer26 (64)",
+      "artist": "Summer26",
+      "src": "musica/Summer26/Summer26%20(64).mp3",
+      "duration": "—"
+    },
+    {
+      "title": "Summer26 (33)",
+      "artist": "Summer26",
+      "src": "musica/Summer26/Summer26%20(33).mp3",
+      "duration": "—"
+    },
+    {
+      "title": "Summer26 (67)",
+      "artist": "Summer26",
+      "src": "musica/Summer26/Summer26%20(67).mp3",
+      "duration": "—"
+    },
+    {
+      "title": "Summer26 (74)",
+      "artist": "Summer26",
+      "src": "musica/Summer26/Summer26%20(74).mp3",
+      "duration": "—"
+    },
+    {
+      "title": "Summer26 (36)",
+      "artist": "Summer26",
+      "src": "musica/Summer26/Summer26%20(36).mp3",
+      "duration": "—"
+    },
+    {
+      "title": "Summer26 (14)",
+      "artist": "Summer26",
+      "src": "musica/Summer26/Summer26%20(14).mp3",
+      "duration": "—"
+    },
+    {
+      "title": "Summer26 (45)",
+      "artist": "Summer26",
+      "src": "musica/Summer26/Summer26%20(45).mp3",
       "duration": "—"
     }
   ]

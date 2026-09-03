@@ -69,6 +69,27 @@ En la versión estática todo se guarda en el navegador con `localStorage`:
 
 Desde ese momento, chat, registros, logins y cuestionarios se registrarán en la hoja de cálculo. El panel `privado.html` muestra el aviso de privacidad y un dashboard interno exclusivo para el admin.
 
+## Variables de entorno (configuración segura)
+
+Estas variables se leen en **build** para generar `config.js`. No deben subirse al repo. En Render, agrégalas en **Environment → Secret Files / Environment Variables**:
+
+- `AMAREA_API_TOKEN` — token compartido entre el frontend y el Apps Script.
+- `AMAREA_GAS_URL` — URL del Web App de Google Apps Script.
+- `AMAREA_ADMIN_USERNAME` — usuario del admin (default: `admin`).
+- `AMAREA_ADMIN_PASSWORD` — contraseña del admin. Se hashea a SHA-256 en `config.js`.
+- `AMAREA_GA_ID` — ID de Google Analytics 4, opcional.
+- `AMAREA_CONTACT_EMAIL` — email al que llegarán los contactos por `mailto:`.
+
+Para local, copia `.env.example` a `.env`, carga las variables y corre `npm run build`:
+
+```bash
+# Windows (PowerShell)
+$env:AMAREA_API_TOKEN="..."
+$env:AMAREA_GAS_URL="..."
+$env:AMAREA_ADMIN_PASSWORD="..."
+npm run build
+```
+
 ## Multimedia dinámica
 
 La carpeta `multimedia/` detecta automáticamente fotos, clips y videos. Render ejecuta `npm run build` (que corre `build-media.js`) antes de publicar, generando `multimedia.json`. El navegador lee ese archivo y reproduce un fondo visual aleatorio que cambia en cada carga y cada pocos segundos.
