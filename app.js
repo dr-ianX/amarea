@@ -154,6 +154,11 @@ function switchTab(id) {
     switchTab('inicio');
     return;
   }
+  const inicio = document.getElementById('inicio');
+  if (inicio) {
+    if (id === 'inicio') inicio.classList.remove('hero-banner');
+    else inicio.classList.add('hero-banner');
+  }
   sections.forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   updateActiveNav(id);

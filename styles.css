@@ -84,6 +84,44 @@ body {
   display: block;
 }
 
+/* Hero banner (se colapsa en las demás pestañas) */
+#inicio {
+  transition: min-height 0.5s cubic-bezier(0.22, 1, 0.36, 1), padding 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: min-height;
+}
+
+#inicio.hero-banner {
+  min-height: 0;
+  height: 9rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  position: sticky;
+  top: 5rem;
+  z-index: 20;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  display: flex !important;
+}
+
+#inicio.hero-banner .hero-title {
+  margin-bottom: 0;
+  font-size: 2rem !important;
+  line-height: 1;
+  animation: none;
+}
+
+#inicio.hero-banner .hero-title span:last-child,
+#inicio.hero-banner > p,
+#inicio.hero-banner .max-w-2xl,
+#inicio.hero-banner .flex-wrap {
+  display: none;
+}
+
+#inicio.hero-banner .hero-title span:first-child {
+  font-size: 2.5rem !important;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
