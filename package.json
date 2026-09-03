@@ -4,11 +4,12 @@
   "private": true,
   "description": "AMAREA landing con multimedia dinámica y métricas en Google Sheets",
   "scripts": {
-    "build": "node build-media.js && node build-music.js",
+    "build": "node build-config.js && node build-media.js && node build-music.js",
     "sync": "node sync-relay.js",
     "sync-build": "node sync-relay.js && npm run build",
     "curate": "node curate.js",
-    "curate-clean-source": "node curate.js --delete-source"
+    "curate-clean-source": "node curate.js --delete-source",
+    "test": "node test.js"
   },
   "engines": {
     "node": ">=18"

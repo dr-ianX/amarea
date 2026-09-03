@@ -35,7 +35,7 @@
     });
   }
 
-  // Contacto con producción
+  // Contacto con producción (abre app nativa)
   function initContact() {
     const form = document.getElementById('prod-contact-form');
     if (!form) return;
@@ -51,9 +51,13 @@
         deviceId: getDeviceId()
       };
       if (!data.email || !data.message) { notify('prod-contact-msg', 'Completa correo y mensaje.'); return; }
-      setJSON(STORAGE_CONTACT, [...getJSON(STORAGE_CONTACT), data]);
+      const to = (window.AMAREA_CONFIG?.CONTACT_EMAIL || '').trim();
+      if (!to) { notify('prod-contact-msg', 'No hay email de contacto configurado.'); return; }
+      const subject = encodeURIComponent(`[AMAREA] Contacto - ${data.type}`);
+      const body = encodeURIComponent(`De: ${data.name}\nEmail: ${data.email}\nTipo: ${data.type}\n\n${data.message}`);
       logToSheet('contact', data);
-      notify('prod-contact-msg', 'Mensaje enviado. Te contactaremos pronto.');
+      window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+      notify('prod-contact-msg', 'Se abrió tu app de correo.');
       form.reset();
       renderMetrics();
     });

@@ -11,7 +11,11 @@ const STORAGE_GAS = 'amarea_gas_url';
 const STORAGE_MIXER = 'amarea_mixer_v1';
 const CHAT_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const STORAGE_DEVICE = 'amarea_device_v1';
-const API_TOKEN = 'amarea-token-2026-v1';
+const CONFIG = window.AMAREA_CONFIG || {};
+const API_TOKEN = CONFIG.API_TOKEN || '';
+const GAS_URL = CONFIG.GAS_URL || '';
+const ADMIN_USERNAME = CONFIG.ADMIN_USERNAME || '';
+const ADMIN_HASH = CONFIG.ADMIN_HASH || '';
 
 const djNews = [
   { title: 'Residente Akir B estrena set en CRANIA', date: '2026-02-01', tag: 'Residente', summary: 'Un viaje de techno oscuro y disco lunar grabado en vivo durante la última edición AMAREA.' },
@@ -39,15 +43,17 @@ function getDeviceId() {
 }
 getDeviceId();
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzYXwObgbTOpLOH-wAhxZbZ9szM10f2UjwS53yjzW65NxZ6vYt6WT7C2TY1ZixmMKFD/exec';
-const OLD_GAS_URL = 'https://script.google.com/macros/s/AKfycby64726s5X6Kjlu-xu5Hx0AnlA8AhBBQEhZCxJjzA8QCTyaF352DjG_qBgamNwgK7PJ/exec';
-const savedGas = localStorage.getItem(STORAGE_GAS);
-if (savedGas === OLD_GAS_URL) localStorage.setItem(STORAGE_GAS, GAS_URL);
+async function sha256(input) {
+  const enc = new TextEncoder().encode(input);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 const GAS_LOG_URL = () => localStorage.getItem(STORAGE_GAS) || GAS_URL;
 
 function logToSheet(type, payload) {
   const url = GAS_LOG_URL();
-  if (!url) return;
+  if (!url || !API_TOKEN) return;
   const body = JSON.stringify({
     token: API_TOKEN,
     type,
@@ -702,11 +708,7 @@ function getBriefs() { return JSON.parse(localStorage.getItem(STORAGE_BRIEFS) ||
 function setBriefs(list) { localStorage.setItem(STORAGE_BRIEFS, JSON.stringify(list)); }
 
 function seedAdmin() {
-  const users = getUsers();
-  if (!users.find(u => u.username === 'admin')) {
-    users.push({ username: 'admin', password: 'amarea2026', role: 'admin' });
-    setUsers(users);
-  }
+  // admin ya no se almacena en localStorage; se valida contra ADMIN_HASH
 }
 
 function saveCurrent() {
@@ -735,7 +737,19 @@ function updateAuthUI() {
   if (currentUser && currentUser.role === 'admin') renderAdmin();
 }
 
-function login(username, password) {
+async function login(username, password) {
+  if (ADMIN_USERNAME && ADMIN_HASH && username === ADMIN_USERNAME) {
+    const h = await sha256(password);
+    if (h === ADMIN_HASH) {
+      currentUser = { username, role: 'admin' };
+      saveCurrent();
+      updateAuthUI();
+      logToSheet('login', { username, role: 'admin' });
+      closeAuth();
+      return true;
+    }
+    return false;
+  }
   const users = getUsers();
   const found = users.find(u => u.username === username && u.password === password);
   if (found) {
@@ -752,6 +766,7 @@ function login(username, password) {
 function register(username, password) {
   const users = getUsers();
   if (users.find(u => u.username === username)) return false;
+  if (ADMIN_USERNAME && username === ADMIN_USERNAME) return false;
   users.push({ username, password, role: 'cliente' });
   setUsers(users);
   currentUser = { username, role: 'cliente' };
@@ -776,11 +791,11 @@ function initAuth() {
   authModal.addEventListener('click', (e) => { if (e.target === authModal) closeAuth(); });
   authGuest.addEventListener('click', closeAuth);
 
-  authForm.addEventListener('submit', (e) => {
+  authForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const u = document.getElementById('auth-username').value.trim();
     const p = document.getElementById('auth-password').value;
-    if (login(u, p)) { authForm.reset(); return; }
+    if (await login(u, p)) { authForm.reset(); return; }
     authError.textContent = 'Usuario o contraseña incorrectos.';
     authError.classList.remove('hidden');
   });

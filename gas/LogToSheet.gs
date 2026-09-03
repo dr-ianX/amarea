@@ -8,11 +8,15 @@
 //   6. Ejecutar como: tu cuenta. Acceder: Cualquiera, incluso anónimo.
 //   7. Copia la URL de la aplicación web y pégala en el input de /privado.html.
 
-const TOKEN = 'amarea-token-2026-v1';
+function getToken() {
+  const t = PropertiesService.getScriptProperties().getProperty('AMAREA_TOKEN');
+  if (!t) throw new Error('AMAREA_TOKEN not configured in script properties');
+  return t;
+}
 
 function validateToken(e, body) {
   const data = body || e.parameter || {};
-  if (data.token !== TOKEN) throw new Error('Forbidden');
+  if (data.token !== getToken()) throw new Error('Forbidden');
 }
 
 function getLogSheet() {
