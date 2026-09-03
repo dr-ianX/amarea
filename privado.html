@@ -390,6 +390,15 @@
     function getLocalUsers() { return JSON.parse(localStorage.getItem(STORAGE_USERS) || '[]'); }
     function setLocalUsers(users) { localStorage.setItem(STORAGE_USERS, JSON.stringify(users)); }
 
+    function refreshCurrentUser() {
+      const cur = JSON.parse(localStorage.getItem(STORAGE_CURRENT) || 'null');
+      if (!cur) return;
+      const found = getLocalUsers().find(u => u.username === cur.username);
+      if (found && (found.role !== cur.role || JSON.stringify(found.permissions || {}) !== JSON.stringify(cur.permissions || {}))) {
+        localStorage.setItem(STORAGE_CURRENT, JSON.stringify({ username: found.username, role: found.role, permissions: found.permissions || {} }));
+      }
+    }
+
     function mergeUsers(serverUsers, localUsers) {
       const byName = Object.fromEntries(localUsers.map(u => [u.username, u]));
       (serverUsers || []).forEach(u => {
@@ -410,7 +419,7 @@
     }
 
     function syncUsersToServer() {
-      postAction('users', getLocalUsers());
+      postAction('users', { users: getLocalUsers() });
     }
 
     function renderUsers(users) {
@@ -455,6 +464,7 @@
       users[idx].role = newRole;
       if (newPass && newPass.length >= 4) users[idx].password = newPass;
       setLocalUsers(users);
+      refreshCurrentUser();
       postAction('set_role', { id: oldName, newId: newName, role: newRole }, () => { syncUsersToServer(); loadUsers(currentUrl); });
     }
 
@@ -462,17 +472,19 @@
       if (!confirm(`¿Eliminar a ${username}?`)) return;
       let users = getLocalUsers().filter(u => u.username !== username);
       setLocalUsers(users);
+      refreshCurrentUser();
       postAction('delete_user', { id: username }, () => { syncUsersToServer(); loadUsers(currentUrl); });
     }
 
     function loadUsers(url) {
-      if (!url) { renderUsers(getLocalUsers()); return; }
+      if (!url) { renderUsers(getLocalUsers()); refreshCurrentUser(); return; }
       const cb = 'amareaUsers_' + Math.random().toString(36).slice(2, 9);
       window[cb] = (res) => {
         delete window[cb];
         const server = Array.isArray(res) ? res : [];
         const merged = mergeUsers(server, getLocalUsers());
         setLocalUsers(merged);
+        refreshCurrentUser();
         renderUsers(merged);
       };
       const script = document.createElement('script');
@@ -657,6 +669,7 @@
       if (users.find(u => u.username === username)) { alert('El usuario ya existe localmente.'); return; }
       users.push({ username, password, role, date: new Date().toISOString() });
       setLocalUsers(users);
+      refreshCurrentUser();
       syncUsersToServer();
       postAction('register', { id: username, role });
       alert(`Usuario ${username} creado con rol ${role}.`);

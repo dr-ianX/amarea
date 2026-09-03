@@ -240,48 +240,79 @@ function buildAdminData(rows) {
 }
 
 function getLatestUsers(rows) {
-  for (let i = rows.length - 1; i > 0; i--) {
-    const type = String(rows[i][1] || '');
-    if (type === 'users') {
-      try {
-        const list = JSON.parse(rawPayload(rows[i]));
-        if (Array.isArray(list)) return list.map(u => ({
-          username: u.username || '',
-          password: u.password || '',
-          role: u.role || 'invitado',
-          email: u.email || '',
-          date: u.date || (rows[i][0] ? (rows[i][0].toISOString ? rows[i][0].toISOString() : String(rows[i][0])) : ''),
-          permissions: u.permissions || {}
-        })).filter(u => u.username);
-      } catch (e) {}
-    }
-  }
-  // fallback: reconstruir desde register/set_role
   const usersByName = {};
   const users = [];
+
+  function ensureUser(name, role, ts, email, password, perms) {
+    if (!usersByName[name]) {
+      usersByName[name] = { username: name, role, date: ts, email: email || '', password: password || '', permissions: perms || {} };
+      users.push(usersByName[name]);
+    } else {
+      const e = usersByName[name];
+      if (role) e.role = role;
+      if (ts) e.date = ts;
+      if (email) e.email = email;
+      if (password && password.length >= 4) e.password = password;
+      if (perms && Object.keys(perms).length) e.permissions = perms;
+    }
+    return usersByName[name];
+  }
+
   rows.slice(1).forEach(r => {
     const type = String(r[1] || '');
+    if (type === 'users') {
+      try {
+        const p = JSON.parse(rawPayload(r));
+        const list = p.users || (Array.isArray(p) ? p : []);
+        if (Array.isArray(list)) {
+          // reiniciar con el snapshot y continuar aplicando eventos posteriores
+          Object.keys(usersByName).forEach(k => delete usersByName[k]);
+          users.length = 0;
+          list.forEach(u => {
+            const name = u.username;
+            if (!name) return;
+            const ts = u.date || (r[0] ? (r[0].toISOString ? r[0].toISOString() : String(r[0])) : '');
+            usersByName[name] = { username: name, role: u.role || 'invitado', date: ts, email: u.email || '', password: u.password || '', permissions: u.permissions || {} };
+            users.push(usersByName[name]);
+          });
+        }
+      } catch (e) {}
+      return;
+    }
+    if (type === 'delete_user') {
+      const user = getField(r, 3, 'id');
+      if (user && usersByName[user]) {
+        usersByName[user].deleted = true;
+      }
+      return;
+    }
     if (type === 'register' || type === 'set_role') {
       const role = getField(r, 9, 'role') || 'invitado';
       let user = getField(r, 3, 'id');
-      if (!user && type === 'register') {
-        try { const p = JSON.parse(rawPayload(r)); user = p.username || p.id; } catch (e) {}
-      }
-      if (user) {
-        const ts = r[0] ? (r[0].toISOString ? r[0].toISOString() : String(r[0])) : '';
-        const email = getField(r, 8, 'email') || '';
-        if (!usersByName[user]) {
-          usersByName[user] = { username: user, role, date: ts, email, password: '', permissions: {} };
-          users.push(usersByName[user]);
-        } else {
-          usersByName[user].role = role;
-          if (ts) usersByName[user].date = ts;
-          if (email) usersByName[user].email = email;
+      let rawObj = {};
+      try { rawObj = JSON.parse(rawPayload(r)); } catch (e) {}
+      if (!user && type === 'register') user = rawObj.username || rawObj.id;
+      if (!user) return;
+      const newId = rawObj.newId || '';
+      const ts = r[0] ? (r[0].toISOString ? r[0].toISOString() : String(r[0])) : '';
+      const email = getField(r, 8, 'email') || rawObj.email || '';
+      const perms = rawObj.permissions || {};
+      const password = rawObj.password || '';
+
+      if (newId && newId !== user) {
+        if (usersByName[user]) {
+          usersByName[newId] = usersByName[user];
+          delete usersByName[user];
+          usersByName[newId].username = newId;
+        } else if (!usersByName[newId]) {
+          ensureUser(newId, role, ts, email, password, perms);
         }
       }
+      const target = (newId && newId !== user) ? newId : user;
+      ensureUser(target, role, ts, email, password, perms);
     }
   });
-  return users;
+  return users.filter(u => !u.deleted);
 }
 
 function getLatestBriefs(rows) {
@@ -291,15 +322,14 @@ function getLatestBriefs(rows) {
     if (String(r[1] || '') === 'cuestionario') {
       try {
         const p = JSON.parse(rawPayload(r));
-        if (p && p.user && p.answers) {
-          const key = (p.user || '') + '|' + (p.date || '');
+        const answers = p.answers || p;
+        const user = getField(r, 3, 'id') || p.user || '';
+        const date = getField(r, 7, 'date') || p.date || (r[0] ? (r[0].toISOString ? r[0].toISOString() : String(r[0])) : '');
+        if (user && answers && Object.keys(answers).length) {
+          const key = user + '|' + date;
           if (seen.has(key)) return;
           seen.add(key);
-          briefs.push({
-            user: p.user,
-            date: p.date || (r[0] ? (r[0].toISOString ? r[0].toISOString() : String(r[0])) : ''),
-            answers: p.answers
-          });
+          briefs.push({ user, date, answers });
         }
       } catch (e) {}
     }

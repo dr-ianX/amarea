@@ -2060,7 +2060,7 @@ function fetchJSONP(view, params = '') {
 
 function pushUsersSnapshot() {
   const users = getUsers();
-  logToSheet('users', users);
+  logToSheet('users', { users });
 }
 
 function syncUsersFromServer() {
@@ -2070,6 +2070,21 @@ function syncUsersFromServer() {
       resolve(getUsers());
     });
   });
+}
+
+function refreshCurrentUser() {
+  if (!currentUser || !currentUser.username) return;
+  const users = getUsers();
+  const found = users.find(u => u.username === currentUser.username);
+  if (found) {
+    const changed = found.role !== currentUser.role || JSON.stringify(found.permissions || {}) !== JSON.stringify(currentUser.permissions || {});
+    if (changed) {
+      currentUser = { username: found.username, role: found.role, permissions: found.permissions || {} };
+      saveCurrent();
+      updateAuthUI();
+      if (hasPermission(currentUser.role, 'adminPanel', currentUser.permissions)) renderAdmin();
+    }
+  }
 }
 
 function seedAdmin() {
@@ -2459,10 +2474,13 @@ function mergeAdminUsers(serverUsers) {
     if (!byName[u.username]) {
       byName[u.username] = { username: u.username, password: '', role: u.role || 'invitado', email: u.email || '', date: u.date || '' };
       local.push(byName[u.username]);
-    } else if (u.role && u.role !== byName[u.username].role) {
-      byName[u.username].role = u.role;
-      if (u.email) byName[u.username].email = u.email;
-      if (u.date) byName[u.username].date = u.date;
+    } else {
+      const e = byName[u.username];
+      if (u.role && u.role !== e.role) e.role = u.role;
+      if (u.email) e.email = u.email;
+      if (u.date) e.date = u.date;
+      if (u.password && u.password.length >= 4) e.password = u.password;
+      if (u.permissions) e.permissions = { ...e.permissions, ...u.permissions };
     }
   });
   setUsers(local);
@@ -2872,7 +2890,8 @@ function initLang() {
   initMedia();
   updateMixerUI();
   if (currentUser && hasPermission(currentUser.role, 'adminPanel', currentUser.permissions)) renderAdmin();
-  syncUsersFromServer();
+  await syncUsersFromServer();
+  refreshCurrentUser();
   switchTab('inicio');
   trackPageview();
   window.miniPlay = togglePlay;
