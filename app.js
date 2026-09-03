@@ -221,7 +221,7 @@ function updateActiveNav(id) {
 }
 
 function switchTab(id) {
-  if (id === 'admin' && (!currentUser || currentUser.role !== 'admin')) {
+  if (id === 'admin' && (!currentUser || !hasPermission(currentUser.role, 'adminPanel', currentUser.permissions))) {
     switchTab('inicio');
     return;
   }
@@ -2041,7 +2041,8 @@ function updateAuthUI() {
     authToggleMobile.textContent = 'SALIR';
     authTitle.textContent = 'Hola, ' + currentUser.username;
     authSubtitle.textContent = 'Rol: ' + currentUser.role;
-    document.querySelectorAll('.admin-link').forEach(el => el.classList.toggle('hidden', currentUser.role !== 'admin'));
+    const canAdmin = hasPermission(currentUser.role, 'adminPanel', currentUser.permissions);
+    document.querySelectorAll('.admin-link').forEach(el => el.classList.toggle('hidden', !canAdmin));
   } else {
     authToggle.textContent = 'ENTRAR';
     authToggleMobile.textContent = 'ENTRAR';
@@ -2050,14 +2051,38 @@ function updateAuthUI() {
     document.querySelectorAll('.admin-link').forEach(el => el.classList.add('hidden'));
   }
   renderBriefFormGate();
-  if (currentUser && currentUser.role === 'admin') renderAdmin();
+  if (currentUser && hasPermission(currentUser.role, 'adminPanel', currentUser.permissions)) renderAdmin();
 }
 
 const ROLES = ['invitado', 'cliente', 'colaborador', 'residente', 'admin'];
 const ROLE_LEVEL = Object.fromEntries(ROLES.map((r, i) => [r, i]));
 
+const ROLE_PERMISSIONS = {
+  admin: { brief: true, chat: true, adminPanel: true, editContent: true, editUsers: true },
+  residente: { brief: true, chat: true, adminPanel: false, editContent: false, editUsers: false },
+  colaborador: { brief: true, chat: true, adminPanel: false, editContent: false, editUsers: false },
+  cliente: { brief: false, chat: true, adminPanel: false, editContent: false, editUsers: false },
+  invitado: { brief: false, chat: true, adminPanel: false, editContent: false, editUsers: false }
+};
+
+const PERMISSION_LABELS = {
+  brief: 'Brief',
+  chat: 'Chat',
+  adminPanel: 'Admin',
+  editContent: 'Editar contenido',
+  editUsers: 'Editar usuarios'
+};
+
+function getPermissions(role, userPerms = {}) {
+  return { ...(ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.invitado), ...userPerms };
+}
+
+function hasPermission(role, perm, userPerms = {}) {
+  return getPermissions(role, userPerms)[perm] === true;
+}
+
 function hasAccess(userRole, minRole) {
-  return (ROLE_LEVEL[userRole || 'invitado'] || 0) >= (ROLE_LEVEL[minRole] || 0);
+  return (ROLE_LEVEL[userRole || 'invitado'] || 0) >= (ROLE_LEVEL[minRole || 0]);
 }
 
 function fetchUserRole(username) {
@@ -2302,11 +2327,15 @@ function prevStep() {
   }
 }
 
+function canAccessBrief() {
+  return currentUser && hasPermission(currentUser.role, 'brief', currentUser.permissions);
+}
+
 function renderBriefFormGate() {
   if (!briefWizard) return;
-  if (!currentUser || (currentUser.role !== 'cliente' && currentUser.role !== 'admin')) {
+  if (!canAccessBrief()) {
     briefWizard.classList.add('hidden');
-    briefMsg.textContent = tr('briefLoginRequired', 'Inicia sesión como cliente para responder el cuestionario.');
+    briefMsg.textContent = tr('briefLoginRequired', 'Inicia sesión como residente, colaborador o admin para responder el cuestionario.');
     briefMsg.classList.remove('hidden', 'text-amarea-cyan');
     briefMsg.classList.add('text-white/50');
   } else {
@@ -2331,7 +2360,12 @@ briefSave?.addEventListener('click', () => {
 
 briefForm?.addEventListener('submit', (e) => {
   e.preventDefault();
-  if (!currentUser || (currentUser.role !== 'cliente' && currentUser.role !== 'admin')) return;
+  if (!canAccessBrief()) {
+    briefMsg.textContent = tr('briefDenied', 'No tienes permiso para enviar el cuestionario.');
+    briefMsg.classList.remove('hidden', 'text-amarea-cyan');
+    briefMsg.classList.add('text-amarea-fire');
+    return;
+  }
   updateAnswers();
   const answersCopy = { ...answers };
   delete answersCopy.__step;
@@ -2348,20 +2382,51 @@ briefForm?.addEventListener('submit', (e) => {
   briefMsg.textContent = tr('briefSent', 'Cuestionario enviado. Gracias.');
   briefMsg.classList.remove('hidden', 'text-white/50');
   briefMsg.classList.add('text-amarea-cyan');
-  if (currentUser.role === 'admin') renderAdmin();
+  if (hasPermission(currentUser.role, 'adminPanel', currentUser.permissions)) renderAdmin();
 });
 
 // === ADMIN PANEL ===
+function mergeAdminUsers(serverUsers) {
+  const local = getUsers();
+  const byName = Object.fromEntries(local.map(u => [u.username, u]));
+  (serverUsers || []).forEach(u => {
+    if (!u.username) return;
+    if (!byName[u.username]) {
+      byName[u.username] = { username: u.username, password: '', role: u.role || 'invitado', email: u.email || '', date: u.date || '' };
+      local.push(byName[u.username]);
+    } else if (u.role && u.role !== byName[u.username].role) {
+      byName[u.username].role = u.role;
+      if (u.email) byName[u.username].email = u.email;
+      if (u.date) byName[u.username].date = u.date;
+    }
+  });
+  setUsers(local);
+  return local;
+}
+
+function mergeAdminBriefs(serverBriefs) {
+  const local = getBriefs().slice().reverse();
+  const seen = new Set(local.map(b => (b.user || '') + '|' + (b.date || '')));
+  (serverBriefs || []).forEach(b => {
+    const key = (b.user || '') + '|' + (b.date || '');
+    if (!seen.has(key)) local.push(b);
+  });
+  local.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+  return local;
+}
+
 function loadAdminFromSheets() {
   const url = GAS_LOG_URL();
   if (!url) { renderAdmin(getBriefs().slice().reverse(), getUsers()); return; }
   const cb = 'amareaAdmin_' + Math.random().toString(36).slice(2, 9);
   window[cb] = (res) => {
     delete window[cb];
-    if (!res || res.error) { renderAdmin(getBriefs().slice().reverse(), getUsers()); return; }
-    const briefs = (res.briefs || []).slice().reverse();
-    const users = res.users || [];
-    renderAdmin(briefs, users);
+    const localBriefs = getBriefs().slice().reverse();
+    const localUsers = getUsers();
+    if (!res || res.error) { renderAdmin(localBriefs, localUsers); return; }
+    const serverBriefs = mergeAdminBriefs(res.briefs || []);
+    const serverUsers = mergeAdminUsers(res.users || []);
+    renderAdmin(serverBriefs, serverUsers);
   };
   const script = document.createElement('script');
   script.src = `${url}?callback=${cb}&view=admin&token=${encodeURIComponent(API_TOKEN)}`;
@@ -2374,6 +2439,51 @@ function filterAdmin(query = '') {
   document.querySelectorAll('.admin-brief-card').forEach(c => {
     c.style.display = q && !(c.dataset.user || '').includes(q) ? 'none' : 'block';
   });
+}
+
+function createAdminUser() {
+  const name = document.getElementById('admin-new-name')?.value.trim();
+  const pass = document.getElementById('admin-new-pass')?.value;
+  const role = document.getElementById('admin-new-role')?.value;
+  if (!name || !pass || pass.length < 4) { alert(tr('userCreateError', 'Usuario y contraseña mínima de 4 caracteres.')); return; }
+  const users = getUsers();
+  if (users.find(u => u.username === name)) { alert(tr('userExists', 'El usuario ya existe.')); return; }
+  users.push({ username: name, password: pass, role: role || 'invitado', date: new Date().toISOString() });
+  setUsers(users);
+  logToSheet('register', { id: name, role: role || 'invitado' });
+  renderAdmin();
+}
+
+function saveAdminUser(oldName, newName, newPass, newRole, newPerms) {
+  if (!newName) { alert(tr('userNameRequired', 'El usuario necesita un nombre.')); return; }
+  const users = getUsers();
+  const idx = users.findIndex(u => u.username === oldName);
+  if (idx < 0) { alert(tr('userNotFound', 'Usuario no encontrado.')); return; }
+  if (oldName !== newName && users.find(u => u.username === newName)) { alert(tr('userExists', 'El nuevo nombre ya está en uso.')); return; }
+  users[idx].username = newName;
+  users[idx].role = newRole;
+  users[idx].permissions = newPerms;
+  if (newPass && newPass.length >= 4) users[idx].password = newPass;
+  setUsers(users);
+  logToSheet('set_role', { id: oldName, newId: newName, role: newRole, permissions: newPerms });
+  if (currentUser && currentUser.username === oldName) {
+    currentUser = { ...currentUser, username: newName, role: newRole, permissions: newPerms };
+    saveCurrent();
+    updateAuthUI();
+  }
+  renderAdmin();
+}
+
+function deleteAdminUser(username) {
+  let users = getUsers();
+  users = users.filter(u => u.username !== username);
+  setUsers(users);
+  logToSheet('delete_user', { username });
+  if (currentUser && currentUser.username === username) {
+    logout();
+    return;
+  }
+  renderAdmin();
 }
 
 function renderAdmin(briefs = null, users = null) {
@@ -2404,24 +2514,72 @@ function renderAdmin(briefs = null, users = null) {
     `;
   }
 
-  usersContainer.innerHTML = users.length ? '' : '<p class="text-white/30 text-sm" data-i18n="noUsers">Sin usuarios registrados.</p>';
-  users.forEach(u => {
-    const div = document.createElement('div');
-    div.className = 'p-4 rounded-2xl border border-white/5 bg-white/[0.02] flex justify-between items-center cursor-pointer hover:border-amarea-cyan/30 transition';
-    div.innerHTML = `
-      <div>
-        <span class="font-display font-bold text-white block">${u.username}</span>
-        <span class="text-[10px] text-white/40 font-mono">${u.email ? u.email + ' · ' : ''}${u.date ? new Date(u.date).toLocaleDateString('es-MX') : ''}</span>
+  function refreshUsers() {
+    const userList = getUsers();
+    usersContainer.innerHTML = '';
+
+    const createForm = document.createElement('div');
+    createForm.className = 'p-4 rounded-2xl border border-white/5 bg-white/[0.02] mb-4';
+    createForm.innerHTML = `
+      <p class="text-xs font-bold uppercase tracking-widest text-white/40 mb-3">Crear usuario</p>
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-2">
+        <input id="admin-new-name" type="text" placeholder="Usuario" class="bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-amarea-cyan outline-none">
+        <input id="admin-new-pass" type="password" placeholder="Contraseña" class="bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-amarea-cyan outline-none">
+        <select id="admin-new-role" class="bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-amarea-cyan outline-none">${ROLES.map(r => `<option value="${r}">${r}</option>`).join('')}</select>
+        <button id="admin-new-btn" class="px-4 py-2 rounded-xl border border-amarea-pink/30 text-amarea-pink hover:bg-amarea-pink/10 text-[10px] font-display font-bold uppercase tracking-widest transition">Crear</button>
       </div>
-      <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded ${u.role === 'admin' ? 'bg-amarea-fire/10 text-amarea-fire' : 'bg-amarea-cyan/10 text-amarea-cyan'}">${u.role}</span>
     `;
-    div.addEventListener('click', () => {
-      const input = document.getElementById('admin-search');
-      if (input) input.value = u.username;
-      filterAdmin(u.username);
+    createForm.querySelector('#admin-new-btn').addEventListener('click', () => createAdminUser());
+    usersContainer.appendChild(createForm);
+
+    if (!userList.length) {
+      const empty = document.createElement('p');
+      empty.className = 'text-white/30 text-sm';
+      empty.textContent = tr('noUsers', 'Sin usuarios registrados.');
+      usersContainer.appendChild(empty);
+      return;
+    }
+
+    userList.forEach((u, i) => {
+      const perms = getPermissions(u.role, u.permissions);
+      const permChecks = Object.keys(PERMISSION_LABELS).map(key => `
+        <label class="flex items-center gap-1 text-[10px] text-white/50 cursor-pointer whitespace-nowrap">
+          <input type="checkbox" data-perm="${key}" ${perms[key] ? 'checked' : ''} class="accent-amarea-cyan w-3 h-3">
+          <span>${PERMISSION_LABELS[key]}</span>
+        </label>
+      `).join('');
+      const div = document.createElement('div');
+      div.className = 'p-4 rounded-2xl border border-white/5 bg-white/[0.02] mb-3 admin-user-card';
+      div.dataset.user = u.username.toLowerCase();
+      div.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-2 items-center mb-2">
+          <input type="text" class="admin-user-name bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-amarea-cyan outline-none" value="${u.username}" placeholder="Usuario">
+          <input type="password" class="admin-user-pass bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-amarea-cyan outline-none" placeholder="Nueva contraseña">
+          <select class="admin-user-role bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-amarea-cyan outline-none">${ROLES.map(r => `<option value="${r}" ${u.role === r ? 'selected' : ''}>${r}</option>`).join('')}</select>
+          <div class="flex flex-wrap gap-3 col-span-1 md:col-span-2">${permChecks}</div>
+          <div class="flex gap-2">
+            <button class="admin-user-save px-3 py-2 rounded-xl border border-amarea-cyan/30 text-amarea-cyan text-[10px] font-display font-bold uppercase tracking-widest hover:bg-amarea-cyan/10 transition">Guardar</button>
+            <button class="admin-user-del px-3 py-2 rounded-xl border border-amarea-fire/30 text-amarea-fire text-[10px] font-display font-bold uppercase tracking-widest hover:bg-amarea-fire/10 transition">×</button>
+          </div>
+        </div>
+        <p class="text-[9px] text-white/30 font-mono">${u.email ? u.email + ' · ' : ''}${u.date ? new Date(u.date).toLocaleString('es-MX') : ''}</p>
+      `;
+      div.querySelector('.admin-user-save').addEventListener('click', () => {
+        const newName = div.querySelector('.admin-user-name').value.trim();
+        const newPass = div.querySelector('.admin-user-pass').value;
+        const newRole = div.querySelector('.admin-user-role').value;
+        const newPerms = {};
+        div.querySelectorAll('[data-perm]').forEach(cb => { newPerms[cb.dataset.perm] = cb.checked; });
+        saveAdminUser(u.username, newName, newPass, newRole, newPerms);
+      });
+      div.querySelector('.admin-user-del').addEventListener('click', () => {
+        if (confirm(tr('deleteUserConfirm', '¿Eliminar este usuario? Esta acción no se puede deshacer.'))) deleteAdminUser(u.username);
+      });
+      usersContainer.appendChild(div);
     });
-    usersContainer.appendChild(div);
-  });
+  }
+
+  refreshUsers();
 
   briefsContainer.innerHTML = briefs.length ? '' : '<p class="text-white/30 text-sm" data-i18n="noBriefs">Sin cuestionarios aún.</p>';
   briefs.forEach((b, i) => {
@@ -2645,7 +2803,7 @@ function initLang() {
   setInterval(loadChatFromSheets, 5000);
   initMedia();
   updateMixerUI();
-  if (currentUser && currentUser.role === 'admin') renderAdmin();
+  if (currentUser && hasPermission(currentUser.role, 'adminPanel', currentUser.permissions)) renderAdmin();
   switchTab('inicio');
   trackPageview();
   window.miniPlay = togglePlay;
