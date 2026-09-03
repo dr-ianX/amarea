@@ -84,6 +84,7 @@
         <button id="tab-chat" class="tab-btn px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest text-white/70 hover:bg-white/5">Chat</button>
         <button id="tab-blocks" class="tab-btn px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest text-white/70 hover:bg-white/5">Bloqueos</button>
         <button id="tab-users" class="tab-btn px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest text-white/70 hover:bg-white/5">Usuarios</button>
+        <button id="tab-cuestionario" class="tab-btn px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest text-white/70 hover:bg-white/5">Cuestionario</button>
         <button id="tab-content" class="tab-btn px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest text-white/70 hover:bg-white/5">Contenido</button>
       </nav>
 
@@ -127,6 +128,15 @@
           <button id="role-set" class="px-4 py-2 rounded-xl border border-amarea-cyan/30 text-amarea-cyan hover:bg-amarea-cyan/10 text-xs font-display font-bold uppercase tracking-widest">Asignar rol</button>
         </div>
         <div id="users-list" class="space-y-2"></div>
+      </section>
+
+      <section id="cuestionario-view" class="hidden">
+        <h2 class="text-lg font-display font-bold text-white mb-4">Cuestionarios</h2>
+        <p class="text-white/50 text-sm mb-4">Lector exclusivo para admin. Exporta JSON y navega por respuestas.</p>
+        <div class="flex gap-3 mb-6">
+          <a href="admin-cuestionario.html" target="_blank" class="px-5 py-2 rounded-xl border border-amarea-cyan/30 text-amarea-cyan text-xs font-display font-bold uppercase tracking-widest hover:bg-amarea-cyan/10 transition">Abrir lector completo</a>
+        </div>
+        <iframe id="cuestionario-iframe" src="admin-cuestionario.html" class="w-full h-[70vh] rounded-2xl border border-white/10 bg-black/20"></iframe>
       </section>
 
       <section id="content-view" class="hidden">
@@ -287,7 +297,7 @@
       document.querySelectorAll('.tab-btn').forEach(b => {
         b.classList.toggle('active', b.id === `tab-${tab}`);
       });
-      ['dashboard-view','chat-view','blocks-view','users-view','content-view'].forEach(id => {
+      ['dashboard-view','chat-view','blocks-view','users-view','cuestionario-view','content-view'].forEach(id => {
         document.getElementById(id).classList.add('hidden');
       });
       if (tab === 'content') loadContent(currentUrl);
@@ -377,40 +387,103 @@
       document.body.appendChild(script);
     }
 
-    function loadUsers(url) {
-      if (!url) return;
-      const cb = 'amareaUsers_' + Math.random().toString(36).slice(2, 9);
-      window[cb] = (roles) => {
-        const list = document.getElementById('users-list');
-        list.innerHTML = '';
-        const entries = roles && typeof roles === 'object' ? Object.entries(roles) : [];
-        if (!entries.length) {
-          list.innerHTML = '<p class="text-sm text-white/40">No hay usuarios registrados.</p>';
+    function getLocalUsers() { return JSON.parse(localStorage.getItem(STORAGE_USERS) || '[]'); }
+    function setLocalUsers(users) { localStorage.setItem(STORAGE_USERS, JSON.stringify(users)); }
+
+    function mergeUsers(serverUsers, localUsers) {
+      const byName = Object.fromEntries(localUsers.map(u => [u.username, u]));
+      (serverUsers || []).forEach(u => {
+        if (!u.username) return;
+        if (!byName[u.username]) {
+          byName[u.username] = { username: u.username, password: u.password || '', role: u.role || 'invitado', email: u.email || '', date: u.date || '', permissions: u.permissions || {} };
+          localUsers.push(byName[u.username]);
         } else {
-          entries.forEach(([user, role]) => {
-            const div = document.createElement('div');
-            div.className = 'flex items-center justify-between bg-white/[0.03] border border-white/10 rounded-xl p-3';
-            div.innerHTML = `
-              <div class="min-w-0">
-                <span class="text-sm text-white/80 block truncate">${user}</span>
-                <span class="text-[10px] font-mono text-amarea-cyan uppercase tracking-widest">${role}</span>
-              </div>
-              <button data-user="${user}" class="role-edit px-3 py-1 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-cyan hover:border-amarea-cyan transition">Editar</button>
-            `;
-            list.appendChild(div);
-          });
+          const e = byName[u.username];
+          if (u.role) e.role = u.role;
+          if (u.password && u.password.length >= 4) e.password = u.password;
+          if (u.email) e.email = u.email;
+          if (u.date && (!e.date || new Date(u.date) > new Date(e.date))) e.date = u.date;
+          if (u.permissions) e.permissions = { ...e.permissions, ...u.permissions };
         }
+      });
+      return localUsers;
+    }
+
+    function syncUsersToServer() {
+      postAction('users', getLocalUsers());
+    }
+
+    function renderUsers(users) {
+      const list = document.getElementById('users-list');
+      list.innerHTML = '';
+      if (!users.length) {
+        list.innerHTML = '<p class="text-sm text-white/40">No hay usuarios registrados.</p>';
+        return;
+      }
+      const ROLES = ['invitado', 'cliente', 'colaborador', 'residente', 'admin'];
+      users.forEach(u => {
+        const div = document.createElement('div');
+        div.className = 'bg-white/[0.03] border border-white/10 rounded-xl p-4 mb-3';
+        div.innerHTML = `
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-center mb-2">
+            <input type="text" class="edit-name w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-amarea-cyan outline-none" value="${u.username}" placeholder="Usuario">
+            <input type="password" class="edit-pass w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-amarea-cyan outline-none" placeholder="Nueva contraseña">
+            <select class="edit-role w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-amarea-cyan outline-none">${ROLES.map(r => `<option value="${r}" ${u.role === r ? 'selected' : ''}>${r}</option>`).join('')}</select>
+            <button class="save-user px-3 py-2 rounded-lg border border-amarea-cyan/30 text-amarea-cyan text-[10px] font-display font-bold uppercase tracking-widest hover:bg-amarea-cyan/10 transition">Guardar</button>
+            <button class="del-user px-3 py-2 rounded-lg border border-amarea-fire/30 text-amarea-fire text-[10px] font-display font-bold uppercase tracking-widest hover:bg-amarea-fire/10 transition">Eliminar</button>
+          </div>
+          <p class="text-[9px] text-white/30 font-mono">${u.email || ''}${u.date ? ' · ' + new Date(u.date).toLocaleString('es-MX') : ''}</p>
+        `;
+        div.querySelector('.save-user').addEventListener('click', () => {
+          const name = div.querySelector('.edit-name').value.trim();
+          const pass = div.querySelector('.edit-pass').value;
+          const role = div.querySelector('.edit-role').value;
+          saveUser(u.username, name, pass, role);
+        });
+        div.querySelector('.del-user').addEventListener('click', () => deleteUser(u.username));
+        list.appendChild(div);
+      });
+    }
+
+    function saveUser(oldName, newName, newPass, newRole) {
+      if (!newName) { alert('El usuario necesita un nombre.'); return; }
+      const users = getLocalUsers();
+      const idx = users.findIndex(u => u.username === oldName);
+      if (idx < 0) { alert('Usuario no encontrado.'); return; }
+      if (oldName !== newName && users.find(u => u.username === newName)) { alert('El nombre ya existe.'); return; }
+      users[idx].username = newName;
+      users[idx].role = newRole;
+      if (newPass && newPass.length >= 4) users[idx].password = newPass;
+      setLocalUsers(users);
+      postAction('set_role', { id: oldName, newId: newName, role: newRole }, () => { syncUsersToServer(); loadUsers(currentUrl); });
+    }
+
+    function deleteUser(username) {
+      if (!confirm(`¿Eliminar a ${username}?`)) return;
+      let users = getLocalUsers().filter(u => u.username !== username);
+      setLocalUsers(users);
+      postAction('delete_user', { id: username }, () => { syncUsersToServer(); loadUsers(currentUrl); });
+    }
+
+    function loadUsers(url) {
+      if (!url) { renderUsers(getLocalUsers()); return; }
+      const cb = 'amareaUsers_' + Math.random().toString(36).slice(2, 9);
+      window[cb] = (res) => {
         delete window[cb];
+        const server = Array.isArray(res) ? res : [];
+        const merged = mergeUsers(server, getLocalUsers());
+        setLocalUsers(merged);
+        renderUsers(merged);
       };
       const script = document.createElement('script');
-      script.src = `${url}?callback=${cb}&view=user_roles&token=${encodeURIComponent(API_TOKEN)}`;
-      script.onerror = () => { delete window[cb]; };
+      script.src = `${url}?callback=${cb}&view=users&token=${encodeURIComponent(API_TOKEN)}`;
+      script.onerror = () => { delete window[cb]; renderUsers(getLocalUsers()); };
       document.body.appendChild(script);
     }
 
     function setRole(username, role) {
       if (!username || !role) return;
-      postAction('set_role', { id: username, role }, () => loadUsers(currentUrl));
+      postAction('set_role', { id: username, role }, () => { syncUsersToServer(); loadUsers(currentUrl); });
     }
 
     function pruneLog() {
@@ -510,7 +583,7 @@
       if (val) postAction('block', { deviceId: val }, () => { input.value = ''; loadBlocks(currentUrl); });
     });
 
-    ['metrics','chat','blocks','users','content'].forEach(t => {
+    ['metrics','chat','blocks','users','cuestionario','content'].forEach(t => {
       document.getElementById(`tab-${t}`)?.addEventListener('click', () => showTab(t));
     });
 
@@ -580,11 +653,12 @@
       const password = document.getElementById('new-pass')?.value;
       const role = document.getElementById('new-role')?.value || 'invitado';
       if (!username || !password) { alert('Usuario y contraseña requeridos.'); return; }
-      const users = JSON.parse(localStorage.getItem(STORAGE_USERS) || '[]');
+      const users = getLocalUsers();
       if (users.find(u => u.username === username)) { alert('El usuario ya existe localmente.'); return; }
-      users.push({ username, password, role });
-      localStorage.setItem(STORAGE_USERS, JSON.stringify(users));
-      setRole(username, role);
+      users.push({ username, password, role, date: new Date().toISOString() });
+      setLocalUsers(users);
+      syncUsersToServer();
+      postAction('register', { id: username, role });
       alert(`Usuario ${username} creado con rol ${role}.`);
       document.getElementById('new-user').value = '';
       document.getElementById('new-pass').value = '';

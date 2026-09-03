@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AMAREA — Lector de cuestionarios</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="config.js"></script>
+  <script src="cuestionario.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Space Grotesk', 'sans-serif'],
+            mono: ['Orbitron', 'sans-serif']
+          },
+          colors: {
+            amarea: {
+              black: '#030305',
+              coal: '#0a0a0f',
+              ink: '#111118',
+              pink: '#ff006e',
+              cyan: '#00f0ff',
+              violet: '#7000ff',
+              gold: '#f2c94c',
+              fire: '#ff6b35',
+              white: '#f6f6f7'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: #030305; color: #f6f6f7; font-family: 'Inter', sans-serif; }
+    .gradient-text { background: linear-gradient(90deg, #ff006e, #00f0ff, #7000ff); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .neon-box { box-shadow: 0 0 24px rgba(0,240,255,0.06); }
+    .answer-text { white-space: pre-wrap; }
+  </style>
+</head>
+<body class="antialiased min-h-screen">
+  <div class="max-w-6xl mx-auto px-6 py-10">
+    <header class="mb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-white/10 pb-6">
+      <div>
+        <h1 class="text-3xl md:text-4xl font-display font-bold tracking-tight gradient-text">Lector de cuestionarios</h1>
+        <p class="text-white/40 text-sm mt-1">Solo admin. Lee, busca y exporta las respuestas.</p>
+      </div>
+      <div class="flex gap-3">
+        <a href="index.html" class="px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest hover:border-amarea-cyan transition text-white/70">Sitio</a>
+        <a href="privado.html" class="px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest hover:border-amarea-pink transition text-white/70">Panel</a>
+      </div>
+    </header>
+
+    <div id="login-gate" class="hidden text-center py-20">
+      <p class="text-amarea-fire text-lg font-display font-bold mb-4">Acceso restringido</p>
+      <p class="text-white/50 mb-8">Entra como admin en el sitio y regresa aquí.</p>
+      <a href="index.html" class="px-6 py-3 rounded-xl bg-amarea-cyan text-black font-display font-bold uppercase tracking-widest text-xs hover:bg-white transition">Ir al inicio</a>
+    </div>
+
+    <div id="app" class="hidden">
+      <div class="flex flex-col md:flex-row gap-3 mb-6">
+        <input id="search" type="text" placeholder="Buscar usuario..." class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-amarea-cyan outline-none" />
+        <button id="refresh" class="px-6 py-3 rounded-xl border border-amarea-gold text-amarea-gold text-xs font-display font-bold uppercase tracking-widest hover:bg-amarea-gold hover:text-black transition">Actualizar</button>
+        <button id="export" class="px-6 py-3 rounded-xl border border-amarea-cyan text-amarea-cyan text-xs font-display font-bold uppercase tracking-widest hover:bg-amarea-cyan hover:text-black transition">Exportar JSON</button>
+      </div>
+
+      <div id="stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"></div>
+
+      <div id="briefs" class="space-y-4"></div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_CURRENT = 'amarea_current_v1';
+    const STORAGE_BRIEFS = 'amarea_briefs_v1';
+    const STORAGE_GAS = 'amarea_gas_url';
+    const CONFIG = window.AMAREA_CONFIG || {};
+    const API_TOKEN = CONFIG.API_TOKEN || '';
+    const GAS_URL = CONFIG.GAS_URL || '';
+
+    const current = JSON.parse(localStorage.getItem(STORAGE_CURRENT) || 'null');
+    if (!current || current.role !== 'admin') {
+      document.getElementById('login-gate').classList.remove('hidden');
+    } else {
+      document.getElementById('app').classList.remove('hidden');
+    }
+
+    const searchInput = document.getElementById('search');
+    const refreshBtn = document.getElementById('refresh');
+    const exportBtn = document.getElementById('export');
+    const briefsContainer = document.getElementById('briefs');
+    const statsContainer = document.getElementById('stats');
+
+    let allBriefs = [];
+
+    function getGAS() { return GAS_URL || localStorage.getItem(STORAGE_GAS) || ''; }
+    function getLocalBriefs() { return JSON.parse(localStorage.getItem(STORAGE_BRIEFS) || '[]'); }
+
+    function fetchJSONP(view) {
+      return new Promise((resolve) => {
+        const url = getGAS();
+        if (!url || !API_TOKEN) { resolve(null); return; }
+        const cb = 'amareaBriefs_' + Math.random().toString(36).slice(2, 9);
+        const t = setTimeout(() => { delete window[cb]; resolve(null); }, 10000);
+        window[cb] = (res) => { clearTimeout(t); delete window[cb]; resolve(res); };
+        const s = document.createElement('script');
+        s.src = `${url}?callback=${cb}&view=briefs&token=${encodeURIComponent(API_TOKEN)}`;
+        s.onerror = () => { clearTimeout(t); delete window[cb]; resolve(null); };
+        document.head.appendChild(s);
+      });
+    }
+
+    function mergeBriefs(local, server) {
+      const map = new Map();
+      [...local, ...(server || [])].forEach(b => {
+        const key = (b.user || '') + '|' + (b.date || '');
+        const existing = map.get(key);
+        if (!existing || Object.keys(b.answers || {}).length > Object.keys(existing.answers || {}).length) {
+          map.set(key, b);
+        }
+      });
+      return [...map.values()].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    }
+
+    async function load() {
+      briefsContainer.innerHTML = '<p class="text-white/30 text-sm">Cargando...</p>';
+      const local = getLocalBriefs();
+      const server = await fetchJSONP('briefs');
+      allBriefs = mergeBriefs(local, Array.isArray(server) ? server : []);
+      render(allBriefs);
+    }
+
+    function countAnswered(answers) {
+      return Object.values(answers || {}).filter(a => (a || '').toString().trim()).length;
+    }
+
+    function render(briefs) {
+      if (!briefs.length) {
+        briefsContainer.innerHTML = '<p class="text-white/30 text-sm">No hay cuestionarios aún.</p>';
+      } else {
+        briefsContainer.innerHTML = '';
+      }
+
+      const totalQuestions = CUESTIONARIO.reduce((s, sec) => s + sec.questions.length, 0);
+      const totalAnswers = briefs.reduce((s, b) => s + countAnswered(b.answers), 0);
+
+      statsContainer.innerHTML = `
+        <div class="p-4 rounded-2xl border border-white/5 bg-white/[0.02] text-center">
+          <p class="text-2xl font-display font-bold text-white">${briefs.length}</p>
+          <p class="text-[10px] text-white/40 uppercase tracking-widest">Cuestionarios</p>
+        </div>
+        <div class="p-4 rounded-2xl border border-white/5 bg-white/[0.02] text-center">
+          <p class="text-2xl font-display font-bold text-amarea-cyan">${totalAnswers}</p>
+          <p class="text-[10px] text-white/40 uppercase tracking-widest">Respuestas</p>
+        </div>
+        <div class="p-4 rounded-2xl border border-white/5 bg-white/[0.02] text-center">
+          <p class="text-2xl font-display font-bold text-amarea-gold">${totalQuestions}</p>
+          <p class="text-[10px] text-white/40 uppercase tracking-widest">Preguntas</p>
+        </div>
+        <div class="p-4 rounded-2xl border border-white/5 bg-white/[0.02] text-center">
+          <p class="text-2xl font-display font-bold text-amarea-pink">${Math.round(totalAnswers / (briefs.length * totalQuestions || 1) * 100)}<span class="text-sm">%</span></p>
+          <p class="text-[10px] text-white/40 uppercase tracking-widest">Progreso</p>
+        </div>
+      `;
+
+      briefs.forEach((b, i) => {
+        const answered = countAnswered(b.answers);
+        const percent = Math.round((answered / totalQuestions) * 100);
+        const div = document.createElement('div');
+        div.className = 'p-5 rounded-2xl border border-white/5 bg-white/[0.02] neon-box brief-card';
+        div.dataset.user = (b.user || '').toLowerCase();
+        div.innerHTML = `
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+            <div>
+              <p class="text-[10px] text-white/30 font-mono uppercase tracking-widest mb-1">${new Date(b.date).toLocaleString('es-MX')} · ${b.user}</p>
+              <p class="font-display font-bold text-white">Cuestionario · ${answered} de ${totalQuestions} respuestas</p>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="text-2xl font-display font-bold text-amarea-cyan">${percent}<span class="text-sm">%</span></span>
+              <button data-toggle="${i}" class="px-4 py-2 rounded-xl border border-amarea-cyan/30 text-amarea-cyan text-[10px] font-display font-bold uppercase tracking-widest hover:bg-amarea-cyan/10 transition">Ver respuestas</button>
+            </div>
+          </div>
+          <div class="w-full h-1 bg-white/5 rounded overflow-hidden mb-2">
+            <div class="h-full bg-amarea-cyan" style="width: ${percent}%"></div>
+          </div>
+          <div data-details="${i}" class="hidden mt-6 space-y-8 border-t border-white/5 pt-6"></div>
+        `;
+        briefsContainer.appendChild(div);
+      });
+
+      briefsContainer.querySelectorAll('[data-toggle]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const i = btn.dataset.toggle;
+          const details = briefsContainer.querySelector(`[data-details="${i}"]`);
+          if (!details) return;
+          if (details.classList.contains('hidden')) {
+            renderBriefDetails(briefs[i], details);
+            details.classList.remove('hidden');
+            btn.textContent = 'Ocultar respuestas';
+          } else {
+            details.classList.add('hidden');
+            btn.textContent = 'Ver respuestas';
+          }
+        });
+      });
+    }
+
+    function renderBriefDetails(brief, container) {
+      container.innerHTML = '';
+      CUESTIONARIO.forEach(sec => {
+        const section = document.createElement('div');
+        section.innerHTML = `<h3 class="text-lg font-display font-bold text-amarea-pink mb-4">${sec.title}</h3>`;
+        let hasAny = false;
+        sec.questions.forEach(q => {
+          const a = (brief.answers || {})[q.id] || '';
+          if (!a.trim()) return;
+          hasAny = true;
+          const qdiv = document.createElement('div');
+          qdiv.className = 'mb-4 border-l-2 border-amarea-cyan/20 pl-4';
+          qdiv.innerHTML = `
+            <p class="text-sm text-white/80 font-medium mb-1">${q.id.replace('q', '')}. ${q.text}</p>
+            <p class="text-sm text-white/60 italic answer-text">“${a.replace(/</g, '&lt;')}"</p>
+          `;
+          section.appendChild(qdiv);
+        });
+        if (hasAny) container.appendChild(section);
+      });
+      if (!container.innerHTML) {
+        container.innerHTML = '<p class="text-white/30 text-sm">Sin respuestas registradas.</p>';
+      }
+    }
+
+    function filter(query) {
+      const q = query.toLowerCase().trim();
+      document.querySelectorAll('.brief-card').forEach(c => {
+        c.style.display = q && !(c.dataset.user || '').includes(q) ? 'none' : 'block';
+      });
+    }
+
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify(allBriefs, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'amarea-cuestionarios-' + new Date().toISOString().slice(0, 10) + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    searchInput?.addEventListener('input', (e) => filter(e.target.value));
+    refreshBtn?.addEventListener('click', load);
+    exportBtn?.addEventListener('click', exportJSON);
+
+    if (current && current.role === 'admin') load();
+  </script>
+</body>
+</html>

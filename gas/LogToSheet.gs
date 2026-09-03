@@ -39,6 +39,17 @@ function payloadObject(data) {
   return data.payload;
 }
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+};
+
+function withCors(output) {
+  Object.entries(CORS_HEADERS).forEach(([k, v]) => output.setHeader(k, v));
+  return output;
+}
+
 function rawPayload(r) {
   return r.length >= COLUMNS.length ? String(r[COLUMNS.length - 1] || '') : String(r[r.length - 1] || '');
 }
@@ -101,14 +112,19 @@ function doPost(e) {
     row.push(extraStr);
     sheet.appendRow(row);
 
-    return ContentService
+    return withCors(ContentService
       .createTextOutput(JSON.stringify({ result: 'ok' }))
-      .setMimeType(ContentService.MimeType.JSON);
+      .setMimeType(ContentService.MimeType.JSON));
   } catch (err) {
-    return ContentService
+    return withCors(ContentService
       .createTextOutput(JSON.stringify({ result: 'error', error: String(err) }))
-      .setMimeType(ContentService.MimeType.JSON);
+      .setMimeType(ContentService.MimeType.JSON));
   }
+}
+
+function doOptions() {
+  return withCors(ContentService.createTextOutput('')
+    .setMimeType(ContentService.MimeType.JSON));
 }
 
 function doGet(e) {
@@ -182,43 +198,12 @@ function doGet(e) {
       });
       json = JSON.stringify(Object.fromEntries(roles));
     } else if (e.parameter.view === 'admin') {
-      const usersByName = {};
-      const users = [];
-      const briefs = [];
-      rows.slice(1).forEach(r => {
-        const type = String(r[1] || '');
-        if (type === 'register' || type === 'set_role') {
-          const role = getField(r, 9, 'role') || 'guest';
-          let user = getField(r, 3, 'id');
-          if (!user && type === 'register') {
-            try { const p = JSON.parse(rawPayload(r)); user = p.username || p.id; } catch (e) {}
-          }
-          if (user) {
-            const ts = r[0] ? (r[0].toISOString ? r[0].toISOString() : String(r[0])) : '';
-            const email = getField(r, 8, 'email') || '';
-            if (!usersByName[user]) {
-              usersByName[user] = { username: user, role, date: ts, email };
-              users.push(usersByName[user]);
-            } else {
-              usersByName[user].role = role;
-              if (ts) usersByName[user].date = ts;
-              if (email) usersByName[user].email = email;
-            }
-          }
-        } else if (type === 'cuestionario') {
-          try {
-            const p = JSON.parse(rawPayload(r));
-            if (p && p.user && p.answers) {
-              briefs.push({
-                user: p.user,
-                date: p.date || (r[0] ? (r[0].toISOString ? r[0].toISOString() : String(r[0])) : ''),
-                answers: p.answers
-              });
-            }
-          } catch (e) {}
-        }
-      });
+      const { users, briefs } = buildAdminData(rows);
       json = JSON.stringify({ users, briefs });
+    } else if (e.parameter.view === 'users') {
+      json = JSON.stringify(getLatestUsers(rows));
+    } else if (e.parameter.view === 'briefs') {
+      json = JSON.stringify(getLatestBriefs(rows));
     } else if (e.parameter.view === 'content') {
       const content = {};
       rows.slice(1).reverse().forEach(r => {
@@ -237,13 +222,87 @@ function doGet(e) {
     }
 
     const output = callback + '(' + json + ');';
-    return ContentService
+    return withCors(ContentService
       .createTextOutput(output)
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+      .setMimeType(ContentService.MimeType.JAVASCRIPT));
   } catch (err) {
     const output = callback + '(' + JSON.stringify({ error: String(err) }) + ');';
-    return ContentService
+    return withCors(ContentService
       .createTextOutput(output)
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+      .setMimeType(ContentService.MimeType.JAVASCRIPT));
   }
+}
+
+function buildAdminData(rows) {
+  const users = getLatestUsers(rows);
+  const briefs = getLatestBriefs(rows);
+  return { users, briefs };
+}
+
+function getLatestUsers(rows) {
+  for (let i = rows.length - 1; i > 0; i--) {
+    const type = String(rows[i][1] || '');
+    if (type === 'users') {
+      try {
+        const list = JSON.parse(rawPayload(rows[i]));
+        if (Array.isArray(list)) return list.map(u => ({
+          username: u.username || '',
+          password: u.password || '',
+          role: u.role || 'invitado',
+          email: u.email || '',
+          date: u.date || (rows[i][0] ? (rows[i][0].toISOString ? rows[i][0].toISOString() : String(rows[i][0])) : ''),
+          permissions: u.permissions || {}
+        })).filter(u => u.username);
+      } catch (e) {}
+    }
+  }
+  // fallback: reconstruir desde register/set_role
+  const usersByName = {};
+  const users = [];
+  rows.slice(1).forEach(r => {
+    const type = String(r[1] || '');
+    if (type === 'register' || type === 'set_role') {
+      const role = getField(r, 9, 'role') || 'invitado';
+      let user = getField(r, 3, 'id');
+      if (!user && type === 'register') {
+        try { const p = JSON.parse(rawPayload(r)); user = p.username || p.id; } catch (e) {}
+      }
+      if (user) {
+        const ts = r[0] ? (r[0].toISOString ? r[0].toISOString() : String(r[0])) : '';
+        const email = getField(r, 8, 'email') || '';
+        if (!usersByName[user]) {
+          usersByName[user] = { username: user, role, date: ts, email, password: '', permissions: {} };
+          users.push(usersByName[user]);
+        } else {
+          usersByName[user].role = role;
+          if (ts) usersByName[user].date = ts;
+          if (email) usersByName[user].email = email;
+        }
+      }
+    }
+  });
+  return users;
+}
+
+function getLatestBriefs(rows) {
+  const briefs = [];
+  const seen = new Set();
+  rows.slice(1).forEach(r => {
+    if (String(r[1] || '') === 'cuestionario') {
+      try {
+        const p = JSON.parse(rawPayload(r));
+        if (p && p.user && p.answers) {
+          const key = (p.user || '') + '|' + (p.date || '');
+          if (seen.has(key)) return;
+          seen.add(key);
+          briefs.push({
+            user: p.user,
+            date: p.date || (r[0] ? (r[0].toISOString ? r[0].toISOString() : String(r[0])) : ''),
+            answers: p.answers
+          });
+        }
+      } catch (e) {}
+    }
+  });
+  return briefs.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 }

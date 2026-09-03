@@ -2023,6 +2023,55 @@ function setUsers(users) { localStorage.setItem(STORAGE_USERS, JSON.stringify(us
 function getBriefs() { return JSON.parse(localStorage.getItem(STORAGE_BRIEFS) || '[]'); }
 function setBriefs(list) { localStorage.setItem(STORAGE_BRIEFS, JSON.stringify(list)); }
 
+function mergeServerUsers(serverUsers) {
+  const local = getUsers();
+  const byName = Object.fromEntries(local.map(u => [u.username, u]));
+  (serverUsers || []).forEach(u => {
+    if (!u.username) return;
+    if (!byName[u.username]) {
+      byName[u.username] = { username: u.username, password: u.password || '', role: u.role || 'invitado', email: u.email || '', date: u.date || '', permissions: u.permissions || {} };
+      local.push(byName[u.username]);
+    } else {
+      const existing = byName[u.username];
+      if (u.role) existing.role = u.role;
+      if (u.email) existing.email = u.email;
+      if (u.date && (!existing.date || new Date(u.date) > new Date(existing.date))) existing.date = u.date;
+      if (u.permissions) existing.permissions = { ...existing.permissions, ...u.permissions };
+      if (u.password && u.password.length >= 4) existing.password = u.password;
+    }
+  });
+  setUsers(local);
+  return local;
+}
+
+function fetchJSONP(view, params = '') {
+  return new Promise((resolve) => {
+    const url = GAS_LOG_URL();
+    if (!url || !API_TOKEN) { resolve(null); return; }
+    const cb = 'amareaJSONP_' + Math.random().toString(36).slice(2, 9);
+    const t = setTimeout(() => { delete window[cb]; resolve(null); }, 8000);
+    window[cb] = (res) => { clearTimeout(t); delete window[cb]; resolve(res); };
+    const s = document.createElement('script');
+    s.src = `${url}?callback=${cb}&view=${view}&token=${encodeURIComponent(API_TOKEN)}${params ? '&' + params : ''}`;
+    s.onerror = () => { clearTimeout(t); delete window[cb]; resolve(null); };
+    document.head.appendChild(s);
+  });
+}
+
+function pushUsersSnapshot() {
+  const users = getUsers();
+  logToSheet('users', users);
+}
+
+function syncUsersFromServer() {
+  return new Promise((resolve) => {
+    fetchJSONP('users').then(server => {
+      if (Array.isArray(server)) mergeServerUsers(server);
+      resolve(getUsers());
+    });
+  });
+}
+
 function seedAdmin() {
   // admin ya no se almacena en localStorage; se valida contra ADMIN_HASH
 }
@@ -2116,12 +2165,19 @@ async function login(username, password) {
     }
     return false;
   }
-  const users = getUsers();
-  const found = users.find(u => u.username === username && u.password === password);
+  let users = getUsers();
+  let found = users.find(u => u.username === username && u.password === password);
+  if (!found) {
+    const server = await fetchJSONP('users');
+    if (server && Array.isArray(server)) {
+      users = mergeServerUsers(server);
+      found = users.find(u => u.username === username && u.password === password);
+    }
+  }
   if (found) {
     const serverRole = await fetchUserRole(found.username);
     const role = serverRole || found.role || 'invitado';
-    currentUser = { username: found.username, role };
+    currentUser = { username: found.username, role, permissions: found.permissions || {} };
     saveCurrent();
     updateAuthUI();
     logToSheet('login', { id: found.username, role });
@@ -2131,16 +2187,19 @@ async function login(username, password) {
   return false;
 }
 
-function register(username, password) {
-  const users = getUsers();
+async function register(username, password) {
+  let users = getUsers();
   if (users.find(u => u.username === username)) return false;
   if (ADMIN_USERNAME && username === ADMIN_USERNAME) return false;
-  users.push({ username, password, role: 'invitado' });
+  const server = await fetchJSONP('users');
+  if (server && Array.isArray(server) && server.find(u => u.username === username)) return false;
+  users.push({ username, password, role: 'invitado', date: new Date().toISOString() });
   setUsers(users);
   currentUser = { username, role: 'invitado' };
   saveCurrent();
   updateAuthUI();
   logToSheet('register', { id: username, role: 'invitado' });
+  pushUsersSnapshot();
   closeAuth();
   return true;
 }
@@ -2168,7 +2227,7 @@ function initAuth() {
     authError.classList.remove('hidden');
   });
 
-  authRegister.addEventListener('click', () => {
+  authRegister.addEventListener('click', async () => {
     const u = document.getElementById('auth-username').value.trim();
     const p = document.getElementById('auth-password').value;
     if (u.length < 3 || p.length < 4) {
@@ -2176,7 +2235,7 @@ function initAuth() {
       authError.classList.remove('hidden');
       return;
     }
-    if (register(u, p)) { authForm.reset(); return; }
+    if (await register(u, p)) { authForm.reset(); return; }
     authError.textContent = 'El usuario ya existe.';
     authError.classList.remove('hidden');
   });
@@ -2367,13 +2426,19 @@ briefForm?.addEventListener('submit', (e) => {
     return;
   }
   updateAnswers();
-  const answersCopy = { ...answers };
-  delete answersCopy.__step;
-  const submission = { user: currentUser.username, date: new Date().toISOString(), answers: answersCopy };
+  const fullAnswers = {};
+  const serverAnswers = {};
+  Object.entries(answers).forEach(([k, v]) => {
+    if (k === '__step') return;
+    fullAnswers[k] = v;
+    if ((v || '').toString().trim()) serverAnswers[k] = v;
+  });
+  const date = new Date().toISOString();
+  const localSubmission = { user: currentUser.username, date, answers: fullAnswers };
   const list = getBriefs();
-  list.push(submission);
+  list.push(localSubmission);
   setBriefs(list);
-  logToSheet('cuestionario', submission);
+  logToSheet('cuestionario', { user: currentUser.username, date, answers: serverAnswers });
   localStorage.removeItem(draftKey());
   answers = {};
   currentStep = 0;
@@ -2451,6 +2516,7 @@ function createAdminUser() {
   users.push({ username: name, password: pass, role: role || 'invitado', date: new Date().toISOString() });
   setUsers(users);
   logToSheet('register', { id: name, role: role || 'invitado' });
+  pushUsersSnapshot();
   renderAdmin();
 }
 
@@ -2466,6 +2532,7 @@ function saveAdminUser(oldName, newName, newPass, newRole, newPerms) {
   if (newPass && newPass.length >= 4) users[idx].password = newPass;
   setUsers(users);
   logToSheet('set_role', { id: oldName, newId: newName, role: newRole, permissions: newPerms });
+  pushUsersSnapshot();
   if (currentUser && currentUser.username === oldName) {
     currentUser = { ...currentUser, username: newName, role: newRole, permissions: newPerms };
     saveCurrent();
@@ -2478,7 +2545,8 @@ function deleteAdminUser(username) {
   let users = getUsers();
   users = users.filter(u => u.username !== username);
   setUsers(users);
-  logToSheet('delete_user', { username });
+  logToSheet('delete_user', { id: username });
+  pushUsersSnapshot();
   if (currentUser && currentUser.username === username) {
     logout();
     return;
@@ -2804,6 +2872,7 @@ function initLang() {
   initMedia();
   updateMixerUI();
   if (currentUser && hasPermission(currentUser.role, 'adminPanel', currentUser.permissions)) renderAdmin();
+  syncUsersFromServer();
   switchTab('inicio');
   trackPageview();
   window.miniPlay = togglePlay;
