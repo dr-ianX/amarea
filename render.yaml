@@ -1,6 +1,5 @@
 services:
   - type: static
     name: amarea-landing
-    env: static
     buildCommand: "npm run build"
     staticPublishPath: .
