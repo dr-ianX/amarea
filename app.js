@@ -49,11 +49,12 @@ async function sha256(input) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-const GAS_LOG_URL = () => localStorage.getItem(STORAGE_GAS) || GAS_URL;
+const GAS_LOG_URL = () => GAS_URL || localStorage.getItem(STORAGE_GAS) || '';
 
 function logToSheet(type, payload) {
   const url = GAS_LOG_URL();
-  if (!url || !API_TOKEN) return;
+  if (!url) { console.warn('[AMAREA] AMAREA_GAS_URL vacío. No se puede loguear.'); return; }
+  if (!API_TOKEN) { console.warn('[AMAREA] AMAREA_API_TOKEN vacío. No se puede loguear.'); return; }
   const body = JSON.stringify({
     token: API_TOKEN,
     type,

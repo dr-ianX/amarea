@@ -136,11 +136,7 @@
       loginView.classList.add('hidden');
       panelView.classList.remove('hidden');
       authBox.innerHTML = `<span class="text-amarea-cyan">${currentUser.username}</span> · <a href="index.html" class="hover:text-white underline">Volver al sitio</a>`;
-      let gasUrl = localStorage.getItem(STORAGE_GAS);
-      if (!gasUrl) {
-        gasUrl = DEFAULT_GAS_URL;
-        localStorage.setItem(STORAGE_GAS, gasUrl);
-      }
+      let gasUrl = DEFAULT_GAS_URL || localStorage.getItem(STORAGE_GAS) || '';
       configView.classList.add('hidden');
       dashboardView.classList.remove('hidden');
       loadDashboard(gasUrl);
@@ -198,7 +194,7 @@
     }
 
     function blockDevice(deviceId) {
-      const url = localStorage.getItem(STORAGE_GAS) || DEFAULT_GAS_URL;
+      const url = DEFAULT_GAS_URL || localStorage.getItem(STORAGE_GAS) || '';
       fetch(url, {
         method: 'POST',
         body: JSON.stringify({ token: API_TOKEN, type: 'block', username: 'admin', payload: { deviceId } }),
@@ -208,7 +204,7 @@
     }
 
     function pruneLog() {
-      const url = localStorage.getItem(STORAGE_GAS) || DEFAULT_GAS_URL;
+      const url = DEFAULT_GAS_URL || localStorage.getItem(STORAGE_GAS) || '';
       const cb = 'amareaPrune_' + Math.random().toString(36).slice(2, 9);
       window[cb] = (res) => {
         alert(res?.removed ? `Se purgaron ${res.removed} registros. Se recargará el dashboard.` : 'No se encontraron registros mayores a 90 días.');

@@ -50,7 +50,7 @@ function pruneLog() {
 
 function doPost(e) {
   try {
-    const body = e.postData.contents;
+    const body = e.postData ? e.postData.contents : '{}';
     const data = body ? JSON.parse(body) : {};
     validateToken(e, data);
 
