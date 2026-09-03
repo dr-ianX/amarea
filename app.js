@@ -9,6 +9,7 @@ const STORAGE_CURRENT = 'amarea_current_v1';
 const STORAGE_DRAFT = 'amarea_draft_v1';
 const STORAGE_GAS = 'amarea_gas_url';
 const STORAGE_MIXER = 'amarea_mixer_v1';
+const STORAGE_CONTENT = 'amarea_content_v1';
 const CHAT_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const STORAGE_DEVICE = 'amarea_device_v1';
 const CONFIG = window.AMAREA_CONFIG || {};
@@ -17,17 +18,19 @@ const GAS_URL = CONFIG.GAS_URL || '';
 const ADMIN_USERNAME = CONFIG.ADMIN_USERNAME || '';
 const ADMIN_HASH = CONFIG.ADMIN_HASH || '';
 
-const djNews = [
+const DEFAULT_DJ_NEWS = [
   { title: 'Residente Akir B estrena set en CRANIA', date: '2026-02-01', tag: 'Residente', summary: 'Un viaje de techno oscuro y disco lunar grabado en vivo durante la última edición AMAREA.' },
   { title: 'Lua Mora prepara EP inspirado en la Baja', date: '2026-01-20', tag: 'Lanzamiento', summary: 'Tres tracks que traducen el viento del Pacífico en ritmos de house introspectivo.' },
   { title: 'Simbionte x Mentesaka: live AV', date: '2025-12-15', tag: 'Live', summary: 'Primera presentación conjunta de hardware, visuales generativos y escultura sonora.' }
 ];
+let djNews = [...DEFAULT_DJ_NEWS];
 
-const caboNews = [
+const DEFAULT_CABO_NEWS = [
   { title: 'CRANIA abre su residencia de artistas', date: '2026-01-18', tag: 'Venue', summary: 'Convocatoria abierta para productores, visuales y performers en San José del Cabo.' },
   { title: 'Temporada alta de eventos en Los Cabos', date: '2026-01-10', tag: 'Destino', summary: 'Aeropuerto SJD reporta récord de conectividad internacional para primavera.' },
   { title: 'Nueva ruta de gastronomía nocturna', date: '2026-01-05', tag: 'Cultura', summary: 'Bares y restaurantes del centro histórico suman experiencias after-hours.' }
 ];
+let caboNews = [...DEFAULT_CABO_NEWS];
 
 let currentUser = JSON.parse(localStorage.getItem(STORAGE_CURRENT) || 'null');
 let radarFilter = 'dj';
@@ -88,14 +91,14 @@ function initAnalytics() {
   gtag('config', ga);
 }
 
-const residents = [
-  { name: 'Akir B', role: 'DJ · Techno / Dark Disco', vibe: 'Sets profundos, texturas desérticas.' },
-  { name: 'Lua Mora', role: 'DJ · Indie Dance / House', vibe: 'Conexión, calma y explosión controlada.' },
-  { name: 'Simbionte', role: 'Live Act · Música electrónica', vibe: 'Hardware, improvisación y energía cruda.' },
-  { name: 'Mentesaka', role: 'Visual & Sound', vibe: 'Entornos inmersivos y diseño lumínico.' }
+const DEFAULT_RESIDENTS = [
+  { name: 'JU BODENSTEDT', role: 'DJ · Dark Disco / House', vibe: 'Presencia sólida en el line-up de AMAREA. Sonido con peso, groove y un borde más oscuro que prende la pista.' },
+  { name: 'JOHANN', role: 'DJ · Dance / Electronic', vibe: 'Cuatro décadas moviendo pistas entre Polonia, Alemania, Tokio y San Francisco. Conexión, historia y pura energía bailable.' },
+  { name: 'DR.IAN', role: 'The Doctor · Techno / Trance / Electro', vibe: 'dR.iAn: curator, mente y corazón detrás de AMAREA. The Doctor arma la experiencia. Made with LOVE by The Doctor.' }
 ];
+let residents = [...DEFAULT_RESIDENTS];
 
-var events = [
+const DEFAULT_EVENTS = [
   {
     title: 'AMAREA at CRANIA',
     date: '2026-02-06T21:00:00',
@@ -125,6 +128,7 @@ var events = [
     tag: 'Techno · Experiencia'
   }
 ];
+let events = [...DEFAULT_EVENTS];
 
 let tracks = [];
 let currentTrackIndex = -1;
@@ -185,54 +189,114 @@ window.addEventListener('scroll', () => {
 });
 
 // === RESIDENTS ===
-const residentsGrid = document.getElementById('residents-grid');
-residents.forEach((r, i) => {
-  const div = document.createElement('div');
-  div.className = 'resident-card rounded-2xl p-6';
-  div.style.animationDelay = `${i * 80}ms`;
-  div.innerHTML = `
-    <h3 class="text-2xl font-display font-bold text-white mb-1">${r.name}</h3>
-    <p class="text-xs font-mono text-amarea-cyan uppercase tracking-widest mb-4">${r.role}</p>
-    <p class="text-sm text-white/50 leading-relaxed">${r.vibe}</p>
-  `;
-  residentsGrid.appendChild(div);
-});
+function renderResidents() {
+  const residentsGrid = document.getElementById('residents-grid');
+  if (!residentsGrid) return;
+  residentsGrid.innerHTML = '';
+  residents.forEach((r, i) => {
+    const div = document.createElement('div');
+    div.className = 'resident-card rounded-2xl p-6';
+    div.style.animationDelay = `${i * 80}ms`;
+    div.innerHTML = `
+      <h3 class="text-2xl font-display font-bold text-white mb-1">${r.name}</h3>
+      <p class="text-xs font-mono text-amarea-cyan uppercase tracking-widest mb-4">${r.role}</p>
+      <p class="text-sm text-white/50 leading-relaxed">${r.vibe}</p>
+    `;
+    residentsGrid.appendChild(div);
+  });
+}
 
 // === EVENTS ===
-const eventsList = document.getElementById('events-list');
-const now = new Date();
+function renderEvents() {
+  const eventsList = document.getElementById('events-list');
+  if (!eventsList) return;
+  const now = new Date();
+  eventsList.innerHTML = '';
+  events.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach((ev, i) => {
+    const d = new Date(ev.date);
+    const isPast = d < now;
+    const dateStr = d.toLocaleDateString('es-MX', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+    const timeStr = d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 
-events.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach((ev, i) => {
-  const d = new Date(ev.date);
-  const isPast = d < now;
-  const dateStr = d.toLocaleDateString('es-MX', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-  const timeStr = d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
-
-  const div = document.createElement('div');
-  div.className = 'event-card rounded-2xl p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-4';
-  div.innerHTML = `
-    <div class="flex-1">
-      <div class="flex items-center gap-3 mb-2">
-        <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded bg-white/5 text-white/60">${ev.tag}</span>
-        <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded ${isPast ? 'bg-white/10 text-white/40' : 'bg-amarea-pink/10 text-amarea-pink'}">${isPast ? 'Pasado' : ev.status}</span>
+    const div = document.createElement('div');
+    div.className = 'event-card rounded-2xl p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-4';
+    div.innerHTML = `
+      <div class="flex-1">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded bg-white/5 text-white/60">${ev.tag}</span>
+          <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded ${isPast ? 'bg-white/10 text-white/40' : 'bg-amarea-pink/10 text-amarea-pink'}">${isPast ? 'Pasado' : ev.status}</span>
+        </div>
+        <h3 class="text-2xl md:text-3xl font-display font-bold text-white mb-1">${ev.title}</h3>
+        <p class="text-white/50 font-mono text-sm">${dateStr} · ${timeStr}</p>
+        <p class="text-white/40 text-sm mt-1">${ev.location}</p>
       </div>
-      <h3 class="text-2xl md:text-3xl font-display font-bold text-white mb-1">${ev.title}</h3>
-      <p class="text-white/50 font-mono text-sm">${dateStr} · ${timeStr}</p>
-      <p class="text-white/40 text-sm mt-1">${ev.location}</p>
-    </div>
-    <div class="flex gap-3">
-      ${!isPast ? `<a href="https://www.ticketfairy.com" target="_blank" rel="noopener" class="px-5 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest hover:border-amarea-cyan hover:text-amarea-cyan transition">Tickets</a>` : ''}
-      <button class="tab-cta px-5 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest hover:border-amarea-pink transition" data-tab="musica">Sets</button>
-    </div>
-  `;
-  div.querySelectorAll('.tab-cta').forEach(b => b.addEventListener('click', (e) => switchTab(e.target.dataset.tab)));
-  eventsList.appendChild(div);
-});
+      <div class="flex gap-3">
+        ${!isPast ? `<a href="https://www.ticketfairy.com" target="_blank" rel="noopener" class="px-5 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest hover:border-amarea-cyan hover:text-amarea-cyan transition">Tickets</a>` : ''}
+        <button class="tab-cta px-5 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest hover:border-amarea-pink transition" data-tab="musica">Sets</button>
+      </div>
+    `;
+    div.querySelectorAll('.tab-cta').forEach(b => b.addEventListener('click', (e) => switchTab(e.target.dataset.tab)));
+    eventsList.appendChild(div);
+  });
+}
+
+// === CMS / CONTENT LOADER ===
+let siteContent = JSON.parse(localStorage.getItem(STORAGE_CONTENT) || '{}');
+
+function applySiteContent() {
+  if (siteContent.residentes && Array.isArray(siteContent.residentes)) residents = siteContent.residentes;
+  if (siteContent.eventos && Array.isArray(siteContent.eventos)) events = siteContent.eventos;
+  if (siteContent.djNews && Array.isArray(siteContent.djNews)) djNews = siteContent.djNews;
+  if (siteContent.caboNews && Array.isArray(siteContent.caboNews)) caboNews = siteContent.caboNews;
+  if (siteContent.tracks && Array.isArray(siteContent.tracks)) { tracks = siteContent.tracks; renderTracks(); }
+  if (siteContent.site && typeof siteContent.site === 'object') {
+    if (siteContent.site.announcement) showAnnouncement(siteContent.site.announcement);
+    if (siteContent.site.heroTitle) {
+      const hero = document.querySelector('.hero-title');
+      if (hero) hero.innerHTML = siteContent.site.heroTitle;
+    }
+  }
+}
+
+function showAnnouncement(text) {
+  const bar = document.getElementById('announcement');
+  const txt = document.getElementById('announcement-text');
+  if (!bar || !txt) return;
+  txt.textContent = text;
+  bar.classList.remove('hidden');
+}
+
+function loadContent() {
+  return new Promise((resolve) => {
+    const url = GAS_LOG_URL();
+    if (!url || !API_TOKEN) { resolve(); return; }
+    const cb = 'amareaContent_' + Math.random().toString(36).slice(2, 9);
+    const t = setTimeout(() => { delete window[cb]; resolve(); }, 6000);
+    window[cb] = (content) => {
+      clearTimeout(t);
+      delete window[cb];
+      if (content && typeof content === 'object') {
+        siteContent = { ...siteContent, ...content };
+        localStorage.setItem(STORAGE_CONTENT, JSON.stringify(siteContent));
+        applySiteContent();
+        renderResidents();
+        renderEvents();
+        renderRadar();
+      }
+      resolve();
+    };
+    const s = document.createElement('script');
+    s.src = `${url}?callback=${cb}&view=content&token=${encodeURIComponent(API_TOKEN)}`;
+    s.onerror = () => { delete window[cb]; resolve(); };
+    document.head.appendChild(s);
+  });
+}
 
 // === MINI MIXER ===
 let mixerState = JSON.parse(localStorage.getItem(STORAGE_MIXER) || '{}');
 let shuffle = mixerState.shuffle || false;
 let autoplay = mixerState.autoplay || false;
+let repeat = mixerState.repeat || false;
 let mixerSkin = mixerState.skin || 'dark';
 let eq = mixerState.eq || { bass: 0, mid: 0, treble: 0 };
 let gainNode = null;
@@ -249,9 +313,17 @@ let crushWet = null;
 let dryGain = null;
 let autoDj = false;
 let autoDjTransition = false;
+let autoDjInterval = null;
+let autoDjTimer = null;
+let previewEnd = 0;
+let delayOn = false;
+let crushOn = false;
+let stutterOn = false;
+let stutterTimer = null;
+let stutterRate = 8;
 
 function saveMixerState() {
-  localStorage.setItem(STORAGE_MIXER, JSON.stringify({ shuffle, autoplay, skin: mixerSkin, eq }));
+  localStorage.setItem(STORAGE_MIXER, JSON.stringify({ shuffle, autoplay, repeat, skin: mixerSkin, eq }));
 }
 
 async function loadTracks() {
@@ -269,6 +341,7 @@ async function loadTracks() {
 
 function renderTracks() {
   const list = document.getElementById('track-list');
+  if (!list) return;
   list.innerHTML = '';
   if (!tracks.length) {
     list.innerHTML = '<p class="text-sm text-white/30 text-center py-10">No hay sets disponibles.</p>';
@@ -282,26 +355,39 @@ function renderTracks() {
         <h4 class="font-display font-bold text-white truncate">${t.title}</h4>
         <p class="text-xs text-white/50 font-mono">${t.artist} · ${t.duration || '—'}</p>
       </div>
-      <span class="text-2xl text-white/30">▶</span>
+      <div class="flex items-center gap-2">
+        <button class="preview-btn text-[10px] font-display uppercase tracking-widest text-white/40 hover:text-amarea-cyan border border-white/10 px-2 py-1 rounded" data-preview="${i}">15s</button>
+        <span class="text-2xl text-white/30">▶</span>
+      </div>
     `;
-    div.addEventListener('click', () => selectTrack(i));
+    div.addEventListener('click', (e) => { if (e.target.closest('.preview-btn')) return; selectTrack(i); });
+    div.querySelectorAll('.preview-btn').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); previewTrack(i); }));
     list.appendChild(div);
   });
 }
 
-function selectTrack(index) {
+function previewTrack(index, seconds = 15) {
+  if (!tracks[index]) return;
+  previewEnd = seconds;
+  selectTrack(index, true);
+  audio.currentTime = 0;
+}
+
+function selectTrack(index, preview = false) {
   if (!tracks.length) return;
+  if (!preview) previewEnd = 0;
   currentTrackIndex = index;
   const t = tracks[currentTrackIndex];
   audio.pause();
   audio.src = t.src;
+  audio.loop = repeat;
   const ct = document.getElementById('current-track');
   const ca = document.getElementById('current-artist');
   if (ct) ct.textContent = t.title;
   if (ca) ca.textContent = t.artist;
   renderTracks();
   document.getElementById('vinyl-hero')?.classList.remove('playing');
-  if (autoplay || autoDj) playAudio();
+  if (autoplay || autoDj || preview) playAudio();
   logToSheet('track_select', { title: t.title, artist: t.artist, index });
   updateMiniPlayer();
 }
@@ -368,20 +454,27 @@ function updateMiniPlayer() {
 
 function updateMixerUI() {
   const mixer = document.getElementById('mini-mixer');
-  mixer.dataset.skin = mixerSkin;
-  document.getElementById('shuffle-btn').classList.toggle('text-amarea-cyan', shuffle);
-  document.getElementById('shuffle-btn').classList.toggle('border-amarea-cyan', shuffle);
-  document.getElementById('autoplay-btn').classList.toggle('text-amarea-gold', autoplay);
-  document.getElementById('autoplay-btn').classList.toggle('border-amarea-gold', autoplay);
-  document.getElementById('skin-label').textContent = `skin: ${mixerSkin} · autoplay: ${autoplay ? 'on' : 'off'}`;
-  document.getElementById('eq-bass').value = eq.bass;
-  document.getElementById('eq-mid').value = eq.mid;
-  document.getElementById('eq-treble').value = eq.treble;
-  document.getElementById('eq-bass-val').textContent = eq.bass;
-  document.getElementById('eq-mid-val').textContent = eq.mid;
-  document.getElementById('eq-treble-val').textContent = eq.treble;
-  document.getElementById('volume').value = audio.volume;
-  document.getElementById('volume-val').textContent = Math.round(audio.volume * 100) + '%';
+  if (mixer) mixer.dataset.skin = mixerSkin;
+  document.getElementById('shuffle-btn')?.classList.toggle('active', shuffle);
+  document.getElementById('autoplay-btn')?.classList.toggle('active', autoplay);
+  document.getElementById('repeat-btn')?.classList.toggle('active', repeat);
+  document.getElementById('autodj-btn')?.classList.toggle('active', autoDj);
+  const skinLabel = document.getElementById('skin-label');
+  if (skinLabel) skinLabel.textContent = `skin: ${mixerSkin} · autoplay: ${autoplay ? 'on' : 'off'} · repeat: ${repeat ? 'on' : 'off'} · auto-dj: ${autoDj ? 'on' : 'off'}`;
+  ['bass','mid','treble'].forEach(k => {
+    const el = document.getElementById('eq-' + k);
+    if (el) el.value = eq[k];
+    const val = document.getElementById('eq-' + k + '-val');
+    if (val) val.textContent = eq[k];
+  });
+  const vol = document.getElementById('volume');
+  if (vol) vol.value = audio.volume;
+  const volVal = document.getElementById('volume-val');
+  if (volVal) volVal.textContent = Math.round(audio.volume * 100) + '%';
+  updateDelay();
+  updateCrush();
+  updateStutter(false);
+  updateAutoDj();
 }
 
 function setEQ() {
@@ -397,28 +490,28 @@ function setSkin(skin) {
   saveMixerState();
 }
 
-document.getElementById('play-btn').addEventListener('click', togglePlay);
-document.getElementById('next-btn').addEventListener('click', () => selectTrack(pickNextTrack()));
-document.getElementById('prev-btn').addEventListener('click', () => selectTrack(pickPrevTrack()));
-document.getElementById('shuffle-btn').addEventListener('click', () => {
-  shuffle = !shuffle;
-  updateMixerUI(); saveMixerState();
-});
-document.getElementById('autoplay-btn').addEventListener('click', () => {
-  autoplay = !autoplay;
-  updateMixerUI(); saveMixerState();
-});
+document.getElementById('play-btn')?.addEventListener('click', togglePlay);
+document.getElementById('next-btn')?.addEventListener('click', () => selectTrack(pickNextTrack()));
+document.getElementById('prev-btn')?.addEventListener('click', () => selectTrack(pickPrevTrack()));
+document.getElementById('shuffle-btn')?.addEventListener('click', () => { shuffle = !shuffle; updateMixerUI(); saveMixerState(); });
+document.getElementById('autoplay-btn')?.addEventListener('click', () => { autoplay = !autoplay; updateMixerUI(); saveMixerState(); });
+document.getElementById('repeat-btn')?.addEventListener('click', () => { repeat = !repeat; if (audio) audio.loop = repeat; updateMixerUI(); saveMixerState(); });
+document.getElementById('autodj-btn')?.addEventListener('click', toggleAutoDj);
 document.querySelectorAll('.skin-btn').forEach(b => b.addEventListener('click', () => setSkin(b.dataset.skin)));
 
-document.getElementById('volume').addEventListener('input', (e) => {
+document.getElementById('volume')?.addEventListener('input', (e) => {
   audio.volume = parseFloat(e.target.value);
-  document.getElementById('volume-val').textContent = Math.round(audio.volume * 100) + '%';
+  const volVal = document.getElementById('volume-val');
+  if (volVal) volVal.textContent = Math.round(audio.volume * 100) + '%';
 });
 
 ['bass','mid','treble'].forEach(k => {
-  document.getElementById('eq-' + k).addEventListener('input', (e) => {
+  const el = document.getElementById('eq-' + k);
+  if (!el) return;
+  el.addEventListener('input', (e) => {
     eq[k] = parseInt(e.target.value, 10);
-    document.getElementById('eq-' + k + '-val').textContent = eq[k];
+    const val = document.getElementById('eq-' + k + '-val');
+    if (val) val.textContent = eq[k];
     setEQ(); saveMixerState();
   });
 });
@@ -427,9 +520,13 @@ audio.addEventListener('ended', () => {
   if (autoDj) {
     autoDjTransition = false;
     selectTrack(pickNextTrack());
-    if (djFilter) djFilter.frequency.setTargetAtTime(20000, audioCtx.currentTime, 1);
+    if (djFilter) {
+      djFilter.frequency.setTargetAtTime(20000, audioCtx.currentTime, 1);
+      djFilter.Q.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+    }
     return;
   }
+  if (repeat) { audio.currentTime = 0; playAudio(); return; }
   if (!autoplay) return;
   selectTrack(pickNextTrack());
 });
@@ -437,21 +534,31 @@ audio.addEventListener('ended', () => {
 audio.addEventListener('timeupdate', () => {
   const progress = document.getElementById('progress');
   if (audio.duration) {
-    progress.value = (audio.currentTime / audio.duration) * 100;
-    document.getElementById('time-current').textContent = formatTime(audio.currentTime);
-    document.getElementById('time-total').textContent = formatTime(audio.duration);
+    if (progress) progress.value = (audio.currentTime / audio.duration) * 100;
+    const tc = document.getElementById('time-current');
+    if (tc) tc.textContent = formatTime(audio.currentTime);
+    const tt = document.getElementById('time-total');
+    if (tt) tt.textContent = formatTime(audio.duration);
+  }
+  if (previewEnd && audio.currentTime >= previewEnd) {
+    pauseAudio();
+    previewEnd = 0;
   }
   if (autoDj && audio.duration && !autoDjTransition && audio.currentTime > audio.duration - 8) {
     autoDjTransition = true;
-    if (djFilter) djFilter.frequency.setTargetAtTime(200, audioCtx.currentTime, 2);
+    if (djFilter) {
+      djFilter.Q.setTargetAtTime(10, audioCtx.currentTime, 0.5);
+      djFilter.frequency.setTargetAtTime(120, audioCtx.currentTime, 1.5);
+    }
   }
 });
 
 audio.addEventListener('loadedmetadata', () => {
-  document.getElementById('time-total').textContent = formatTime(audio.duration);
+  const tt = document.getElementById('time-total');
+  if (tt) tt.textContent = formatTime(audio.duration);
 });
 
-document.getElementById('progress').addEventListener('input', (e) => {
+document.getElementById('progress')?.addEventListener('input', (e) => {
   if (audio.duration) {
     audio.currentTime = (e.target.value / 100) * audio.duration;
   }
@@ -546,6 +653,7 @@ function initAudio() {
   analyser.connect(audioCtx.destination);
 
   setEQ();
+  updateMixerUI();
   drawVisualizer();
 }
 
@@ -583,31 +691,146 @@ function drawVisualizer() {
 }
 
 function updateDelay() {
-  if (!delayNode || !delayWet || !dryGain || !audioCtx) return;
-  const enabled = document.getElementById('fx-delay')?.classList.contains('active');
+  if (!delayNode || !delayWet || !feedbackNode || !dryGain || !audioCtx) return;
+  const enabled = delayOn;
   const time = parseFloat(document.getElementById('delay-time')?.value || 0.3);
-  const wet = enabled ? 0.35 : 0;
+  const feedback = parseFloat(document.getElementById('delay-feedback')?.value || 0.4);
+  const mix = parseFloat(document.getElementById('delay-mix')?.value || 0.5);
+  const crushMix = crushOn ? parseFloat(document.getElementById('crush-mix')?.value || 0.6) : 0;
+  const totalWet = (enabled ? mix : 0) + crushMix;
   delayNode.delayTime.setTargetAtTime(time, audioCtx.currentTime, 0.05);
-  delayWet.gain.setTargetAtTime(wet, audioCtx.currentTime, 0.05);
-  dryGain.gain.setTargetAtTime(enabled ? 0.8 : 1, audioCtx.currentTime, 0.05);
-  const valLabel = document.getElementById('delay-time-val');
-  if (valLabel) valLabel.textContent = time.toFixed(2) + 's';
+  feedbackNode.gain.setTargetAtTime(enabled ? feedback : 0, audioCtx.currentTime, 0.05);
+  delayWet.gain.setTargetAtTime(enabled ? mix : 0, audioCtx.currentTime, 0.05);
+  dryGain.gain.setTargetAtTime(Math.max(0.2, 1 - totalWet * 0.5), audioCtx.currentTime, 0.05);
+  const timeVal = document.getElementById('delay-time-val');
+  if (timeVal) timeVal.textContent = time.toFixed(2) + 's';
+  const fbVal = document.getElementById('delay-feedback-val');
+  if (fbVal) fbVal.textContent = Math.round(feedback * 100) + '%';
+  const mixVal = document.getElementById('delay-mix-val');
+  if (mixVal) mixVal.textContent = Math.round(mix * 100) + '%';
+  const btn = document.getElementById('fx-delay');
+  if (btn) btn.classList.toggle('active', enabled);
 }
 
 function updateCrush() {
-  if (!bitcrusherNode || !crushWet || !audioCtx) return;
-  const enabled = document.getElementById('fx-crush')?.classList.contains('active');
+  if (!bitcrusherNode || !crushWet || !dryGain || !audioCtx) return;
+  const enabled = crushOn;
   const bits = parseInt(document.getElementById('crush-bits')?.value || 8, 10);
+  const mix = parseFloat(document.getElementById('crush-mix')?.value || 0.6);
+  const delayMix = delayOn ? parseFloat(document.getElementById('delay-mix')?.value || 0.5) : 0;
+  const totalWet = (enabled ? mix : 0) + delayMix;
   bitcrusherNode.curve = makeCrushCurve(bits);
-  crushWet.gain.setTargetAtTime(enabled ? 0.5 : 0, audioCtx.currentTime, 0.05);
-  const valLabel = document.getElementById('crush-bits-val');
-  if (valLabel) valLabel.textContent = bits;
+  crushWet.gain.setTargetAtTime(enabled ? mix : 0, audioCtx.currentTime, 0.05);
+  dryGain.gain.setTargetAtTime(Math.max(0.2, 1 - totalWet * 0.5), audioCtx.currentTime, 0.05);
+  const bitsVal = document.getElementById('crush-bits-val');
+  if (bitsVal) bitsVal.textContent = bits;
+  const mixVal = document.getElementById('crush-mix-val');
+  if (mixVal) mixVal.textContent = Math.round(mix * 100) + '%';
+  const btn = document.getElementById('fx-crush');
+  if (btn) btn.classList.toggle('active', enabled);
+}
+
+function startStutter() {
+  if (stutterTimer) clearInterval(stutterTimer);
+  stutterTimer = setInterval(() => {
+    if (!stutterOn || !isPlaying || !gainNode || !audioCtx) return;
+    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gainNode.gain.setTargetAtTime(1, audioCtx.currentTime + 0.02, 0.03);
+  }, 1000 / stutterRate);
+}
+
+function stopStutter() {
+  if (stutterTimer) { clearInterval(stutterTimer); stutterTimer = null; }
+  if (gainNode && audioCtx) gainNode.gain.setTargetAtTime(1, audioCtx.currentTime, 0.05);
+}
+
+function updateStutter(updateTimer = true) {
+  stutterRate = parseInt(document.getElementById('stutter-rate')?.value || 8, 10);
+  const rateVal = document.getElementById('stutter-rate-val');
+  if (rateVal) rateVal.textContent = stutterRate + ' Hz';
+  const btn = document.getElementById('fx-stutter');
+  if (btn) btn.classList.toggle('active', stutterOn);
+  if (updateTimer) {
+    stopStutter();
+    if (stutterOn) startStutter();
+  }
+}
+
+function resetMixer() {
+  eq = { bass: 0, mid: 0, treble: 0 };
+  shuffle = false; autoplay = false; repeat = false;
+  mixerSkin = 'dark';
+  audio.volume = 1;
+  audio.playbackRate = 1;
+  delayOn = false; crushOn = false; stutterOn = false; autoDj = false;
+  stopAutoDj(); stopStutter();
+  if (audio) audio.loop = false;
+  if (djFilter && audioCtx) {
+    djFilter.frequency.setTargetAtTime(20000, audioCtx.currentTime, 0.1);
+    djFilter.Q.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+  }
+  saveMixerState();
+  updateMixerUI();
+}
+
+function stopAutoDj() {
+  if (autoDjTimer) { clearTimeout(autoDjTimer); autoDjTimer = null; }
+  if (autoDjInterval) { clearInterval(autoDjInterval); autoDjInterval = null; }
+}
+
+function scheduleAutoDjEffect() {
+  if (!autoDj || !isPlaying || !djFilter || !audioCtx) return;
+  const effect = Math.random();
+  const now = audioCtx.currentTime;
+  if (effect < 0.3) {
+    const f = 200 + Math.random() * 19800;
+    djFilter.frequency.setTargetAtTime(f, now, 0.3 + Math.random() * 0.8);
+    setTimeout(() => { if (djFilter) djFilter.frequency.setTargetAtTime(20000, audioCtx.currentTime, 1); }, 600 + Math.random() * 1200);
+  } else if (effect < 0.65) {
+    audio.playbackRate = 0.5 + Math.random();
+    setTimeout(() => { if (audio) audio.playbackRate = 1; }, 120 + Math.random() * 500);
+  } else {
+    if (gainNode) {
+      gainNode.gain.setValueAtTime(0.1, now);
+      gainNode.gain.setTargetAtTime(1, now + 0.03, 0.05);
+    }
+  }
+  autoDjTimer = setTimeout(scheduleAutoDjEffect, 3500 + Math.random() * 6500);
+}
+
+function startAutoDj() {
+  if (autoDjInterval) return;
+  autoDjInterval = setInterval(() => {
+    if (!autoDj || !isPlaying || !djFilter || !audioCtx) return;
+    if (Math.random() > 0.6) {
+      const base = 400 + Math.random() * 15000;
+      djFilter.frequency.setTargetAtTime(base, audioCtx.currentTime, 0.2 + Math.random() * 0.4);
+      setTimeout(() => { if (djFilter) djFilter.frequency.setTargetAtTime(20000, audioCtx.currentTime, 0.8); }, 400 + Math.random() * 800);
+    }
+  }, 2500);
+  scheduleAutoDjEffect();
 }
 
 function updateAutoDj() {
-  const btn = document.getElementById('fx-autodj');
+  const btn = document.getElementById('autodj-btn');
   if (btn) btn.classList.toggle('active', autoDj);
-  if (autoDj && !isPlaying && currentTrackIndex < 0) selectTrack(0);
+}
+
+function toggleAutoDj() {
+  autoDj = !autoDj;
+  updateAutoDj();
+  if (autoDj) {
+    if (currentTrackIndex < 0) selectTrack(0);
+    else if (!isPlaying) playAudio();
+    startAutoDj();
+  } else {
+    stopAutoDj();
+    if (audio) audio.playbackRate = 1;
+    if (djFilter && audioCtx) {
+      djFilter.frequency.setTargetAtTime(20000, audioCtx.currentTime, 0.5);
+      djFilter.Q.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+    }
+  }
 }
 
 function setXY(x, y) {
@@ -644,16 +867,17 @@ function bindDjPad() {
   pad.addEventListener('pointerup', () => { setXY(0.5, 0.5); });
 }
 
-function toggleAutoDj() {
-  autoDj = !autoDj;
-  updateAutoDj();
-}
-
-document.getElementById('fx-delay')?.addEventListener('click', () => { document.getElementById('fx-delay').classList.toggle('active'); updateDelay(); });
-document.getElementById('fx-crush')?.addEventListener('click', () => { document.getElementById('fx-crush').classList.toggle('active'); updateCrush(); });
-document.getElementById('fx-autodj')?.addEventListener('click', toggleAutoDj);
+document.getElementById('close-announcement')?.addEventListener('click', () => { document.getElementById('announcement')?.classList.add('hidden'); });
+document.getElementById('fx-delay')?.addEventListener('click', () => { delayOn = !delayOn; updateDelay(); });
+document.getElementById('fx-crush')?.addEventListener('click', () => { crushOn = !crushOn; updateCrush(); });
+document.getElementById('fx-stutter')?.addEventListener('click', () => { stutterOn = !stutterOn; updateStutter(); });
 document.getElementById('delay-time')?.addEventListener('input', updateDelay);
+document.getElementById('delay-feedback')?.addEventListener('input', updateDelay);
+document.getElementById('delay-mix')?.addEventListener('input', updateDelay);
 document.getElementById('crush-bits')?.addEventListener('input', updateCrush);
+document.getElementById('crush-mix')?.addEventListener('input', updateCrush);
+document.getElementById('stutter-rate')?.addEventListener('input', updateStutter);
+document.getElementById('reset-mixer')?.addEventListener('click', resetMixer);
 bindDjPad();
 
 // === CHAT ===
@@ -1462,20 +1686,26 @@ function initMedia() {
 }
 
 // === INIT ===
-seedAdmin();
-initAnalytics();
-initAuth();
-loadTracks();
-renderRadar();
-loadBlocked();
-loadChatFromSheets();
-setInterval(loadChatFromSheets, 5000);
-initMedia();
-updateMixerUI();
-if (currentUser && currentUser.role === 'admin') renderAdmin();
-switchTab('inicio');
-trackPageview();
-window.miniPlay = togglePlay;
-window.miniNext = () => selectTrack(pickNextTrack());
-window.miniPrev = () => selectTrack(pickPrevTrack());
-updateMiniPlayer();
+(async function init() {
+  applySiteContent();
+  renderResidents();
+  renderEvents();
+  await loadContent();
+  seedAdmin();
+  initAnalytics();
+  initAuth();
+  if (tracks.length) renderTracks(); else await loadTracks();
+  renderRadar();
+  loadBlocked();
+  loadChatFromSheets();
+  setInterval(loadChatFromSheets, 5000);
+  initMedia();
+  updateMixerUI();
+  if (currentUser && currentUser.role === 'admin') renderAdmin();
+  switchTab('inicio');
+  trackPageview();
+  window.miniPlay = togglePlay;
+  window.miniNext = () => selectTrack(pickNextTrack());
+  window.miniPrev = () => selectTrack(pickPrevTrack());
+  updateMiniPlayer();
+})();

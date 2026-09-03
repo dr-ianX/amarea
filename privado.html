@@ -79,11 +79,12 @@
         </div>
       </section>
 
-      <nav class="flex gap-2 mb-6" id="admin-nav">
+      <nav class="flex flex-wrap gap-2 mb-6" id="admin-nav">
         <button id="tab-metrics" class="tab-btn active px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest text-white/70 hover:bg-white/5">Métricas</button>
         <button id="tab-chat" class="tab-btn px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest text-white/70 hover:bg-white/5">Chat</button>
         <button id="tab-blocks" class="tab-btn px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest text-white/70 hover:bg-white/5">Bloqueos</button>
         <button id="tab-users" class="tab-btn px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest text-white/70 hover:bg-white/5">Usuarios</button>
+        <button id="tab-content" class="tab-btn px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest text-white/70 hover:bg-white/5">Contenido</button>
       </nav>
 
       <section id="chat-view" class="hidden">
@@ -102,6 +103,18 @@
 
       <section id="users-view" class="hidden">
         <h2 class="text-lg font-display font-bold text-white mb-4">Usuarios y roles</h2>
+        <div class="flex flex-col md:flex-row gap-2 mb-4 border-b border-white/10 pb-4">
+          <input type="text" id="new-user" placeholder="nuevo usuario" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:border-amarea-cyan outline-none" />
+          <input type="password" id="new-pass" placeholder="contraseña" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:border-amarea-cyan outline-none" />
+          <select id="new-role" class="bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:border-amarea-cyan outline-none">
+            <option value="invitado">Invitado</option>
+            <option value="cliente">Cliente</option>
+            <option value="colaborador">Colaborador</option>
+            <option value="residente">Residente</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button id="create-user" class="px-4 py-2 rounded-xl border border-amarea-pink/30 text-amarea-pink hover:bg-amarea-pink/10 text-xs font-display font-bold uppercase tracking-widest">Crear usuario</button>
+        </div>
         <div class="flex flex-col md:flex-row gap-2 mb-6">
           <input type="text" id="role-user" placeholder="usuario" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:border-amarea-pink outline-none" />
           <select id="role-select" class="bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:border-amarea-pink outline-none">
@@ -114,6 +127,31 @@
           <button id="role-set" class="px-4 py-2 rounded-xl border border-amarea-cyan/30 text-amarea-cyan hover:bg-amarea-cyan/10 text-xs font-display font-bold uppercase tracking-widest">Asignar rol</button>
         </div>
         <div id="users-list" class="space-y-2"></div>
+      </section>
+
+      <section id="content-view" class="hidden">
+        <h2 class="text-lg font-display font-bold text-white mb-4">Editor de contenido</h2>
+        <div class="flex flex-col md:flex-row gap-2 mb-4">
+          <select id="content-key" class="bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:border-amarea-pink outline-none">
+            <option value="site">site (hero, anuncio)</option>
+            <option value="residentes">residentes</option>
+            <option value="eventos">eventos</option>
+            <option value="djNews">djNews</option>
+            <option value="caboNews">caboNews</option>
+            <option value="tracks">tracks</option>
+          </select>
+          <button id="content-load" class="px-4 py-2 rounded-xl border border-amarea-cyan/30 text-amarea-cyan hover:bg-amarea-cyan/10 text-xs font-display font-bold uppercase tracking-widest">Cargar actual</button>
+          <button id="content-save" class="px-4 py-2 rounded-xl border border-amarea-pink/30 text-amarea-pink hover:bg-amarea-pink/10 text-xs font-display font-bold uppercase tracking-widest">Guardar en GAS</button>
+        </div>
+        <textarea id="content-json" class="w-full h-80 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:border-amarea-pink outline-none resize-y" placeholder="JSON..."></textarea>
+        <p class="text-[10px] text-white/40 mt-2">Guarda como JSON. Para anuncios usa <code>site</code> con <code>{"announcement":"..."}</code>.</p>
+        <div class="mt-6 border-t border-white/10 pt-6">
+          <h3 class="text-md font-display font-bold text-white mb-3">Comunicados</h3>
+          <div class="flex gap-2">
+            <input type="text" id="broadcast-text" placeholder="Texto del comunicado..." class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:border-amarea-pink outline-none" />
+            <button id="broadcast-send" class="px-4 py-2 rounded-xl border border-amarea-pink/30 text-amarea-pink hover:bg-amarea-pink/10 text-xs font-display font-bold uppercase tracking-widest">Publicar</button>
+          </div>
+        </div>
       </section>
 
       <section id="dashboard-view" class="hidden">
@@ -154,6 +192,7 @@
   <script>
     const STORAGE_CURRENT = 'amarea_current_v1';
     const STORAGE_GAS = 'amarea_gas_url';
+    const STORAGE_USERS = 'amarea_users_v1';
     const CONFIG = window.AMAREA_CONFIG || {};
     const DEFAULT_GAS_URL = CONFIG.GAS_URL || '';
     const API_TOKEN = CONFIG.API_TOKEN || '';
@@ -248,9 +287,10 @@
       document.querySelectorAll('.tab-btn').forEach(b => {
         b.classList.toggle('active', b.id === `tab-${tab}`);
       });
-      ['dashboard-view','chat-view','blocks-view','users-view'].forEach(id => {
+      ['dashboard-view','chat-view','blocks-view','users-view','content-view'].forEach(id => {
         document.getElementById(id).classList.add('hidden');
       });
+      if (tab === 'content') loadContent(currentUrl);
       const activeId = tab === 'metrics' ? 'dashboard-view' : `${tab}-view`;
       document.getElementById(activeId).classList.remove('hidden');
       if (tab === 'chat') loadChat(currentUrl);
@@ -470,7 +510,7 @@
       if (val) postAction('block', { deviceId: val }, () => { input.value = ''; loadBlocks(currentUrl); });
     });
 
-    ['metrics','chat','blocks','users'].forEach(t => {
+    ['metrics','chat','blocks','users','content'].forEach(t => {
       document.getElementById(`tab-${t}`)?.addEventListener('click', () => showTab(t));
     });
 
@@ -490,6 +530,71 @@
         document.getElementById('role-select').focus();
       }
     });
+
+    function loadContent(url) {
+      if (!url) return;
+      const key = document.getElementById('content-key')?.value || 'site';
+      const ta = document.getElementById('content-json');
+      if (ta) ta.value = 'Cargando...';
+      const cb = 'amareaContent_' + Math.random().toString(36).slice(2, 9);
+      window[cb] = (content) => {
+        delete window[cb];
+        const value = content && typeof content === 'object' ? content[key] : undefined;
+        if (ta) {
+          if (value !== undefined) { try { ta.value = JSON.stringify(value, null, 2); } catch(e){ ta.value = String(value); } }
+          else { ta.value = ''; }
+        }
+      };
+      const script = document.createElement('script');
+      script.src = `${url}?callback=${cb}&view=content&token=${encodeURIComponent(API_TOKEN)}`;
+      script.onerror = () => { delete window[cb]; if (ta) ta.value = 'Error al cargar.'; };
+      document.body.appendChild(script);
+    }
+
+    function saveContent() {
+      const url = DEFAULT_GAS_URL || localStorage.getItem(STORAGE_GAS) || '';
+      const key = document.getElementById('content-key')?.value;
+      const ta = document.getElementById('content-json');
+      if (!key || !ta) return;
+      let value;
+      try { value = JSON.parse(ta.value); } catch(e) { alert('JSON inválido'); return; }
+      postAction('content', { text: key, json: JSON.stringify(value) }, () => {
+        alert('Contenido guardado. Puede tardar unos segundos en reflejarse.');
+        loadContent(url);
+      });
+    }
+
+    function sendBroadcast() {
+      const text = document.getElementById('broadcast-text')?.value.trim();
+      if (!text) return;
+      const url = DEFAULT_GAS_URL || localStorage.getItem(STORAGE_GAS) || '';
+      postAction('content', { text: 'site', json: JSON.stringify({ announcement: text }) }, () => {
+        document.getElementById('broadcast-text').value = '';
+        alert('Comunicado publicado.');
+        loadContent(url);
+      });
+    }
+
+    function createUser() {
+      const username = document.getElementById('new-user')?.value.trim();
+      const password = document.getElementById('new-pass')?.value;
+      const role = document.getElementById('new-role')?.value || 'invitado';
+      if (!username || !password) { alert('Usuario y contraseña requeridos.'); return; }
+      const users = JSON.parse(localStorage.getItem(STORAGE_USERS) || '[]');
+      if (users.find(u => u.username === username)) { alert('El usuario ya existe localmente.'); return; }
+      users.push({ username, password, role });
+      localStorage.setItem(STORAGE_USERS, JSON.stringify(users));
+      setRole(username, role);
+      alert(`Usuario ${username} creado con rol ${role}.`);
+      document.getElementById('new-user').value = '';
+      document.getElementById('new-pass').value = '';
+      loadUsers(currentUrl);
+    }
+
+    document.getElementById('content-load')?.addEventListener('click', () => loadContent(currentUrl));
+    document.getElementById('content-save')?.addEventListener('click', saveContent);
+    document.getElementById('broadcast-send')?.addEventListener('click', sendBroadcast);
+    document.getElementById('create-user')?.addEventListener('click', createUser);
 
     checkAdmin();
   </script>

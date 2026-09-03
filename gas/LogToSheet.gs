@@ -181,6 +181,19 @@ function doGet(e) {
         }
       });
       json = JSON.stringify(Object.fromEntries(roles));
+    } else if (e.parameter.view === 'content') {
+      const content = {};
+      rows.slice(1).reverse().forEach(r => {
+        const type = String(r[1]);
+        if (type === 'content') {
+          const key = getField(r, 6, 'text');
+          if (key && !(key in content)) {
+            const raw = rawPayload(r);
+            try { content[key] = JSON.parse(raw); } catch (e) { content[key] = raw; }
+          }
+        }
+      });
+      json = JSON.stringify(content);
     } else {
       json = JSON.stringify(rows);
     }

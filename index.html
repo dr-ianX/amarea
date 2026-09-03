@@ -39,13 +39,31 @@
     }
   </script>
   <style>
-    .fx-btn.active { color: #00f0ff; border-color: rgba(0,240,255,0.5); }
-    #fx-crush.fx-btn.active { color: #ff006e; border-color: rgba(255,0,110,0.5); }
-    #fx-autodj.fx-btn.active { color: #f2c94c; border-color: rgba(242,201,76,0.5); }
+    .fx-btn.active { color: #00f0ff !important; border-color: rgba(0,240,255,0.6) !important; box-shadow: 0 0 12px rgba(0,240,255,0.35) !important; }
+    #fx-crush.fx-btn.active { color: #ff006e !important; border-color: rgba(255,0,110,0.6) !important; box-shadow: 0 0 12px rgba(255,0,110,0.35) !important; }
+    #fx-stutter.fx-btn.active { color: #f2c94c !important; border-color: rgba(242,201,76,0.6) !important; box-shadow: 0 0 12px rgba(242,201,76,0.35) !important; }
     #xy-pad { touch-action: none; }
+    .control-btn { transition: all .15s ease; }
+    .control-btn.active { color: #00f0ff !important; border-color: rgba(0,240,255,0.6) !important; box-shadow: 0 0 14px rgba(0,240,255,0.4) !important; }
+    #autoplay-btn.control-btn.active { color: #f2c94c !important; border-color: rgba(242,201,76,0.6) !important; box-shadow: 0 0 14px rgba(242,201,76,0.4) !important; }
+    #autodj-btn.control-btn.active { color: #ff006e !important; border-color: rgba(255,0,110,0.6) !important; box-shadow: 0 0 18px rgba(255,0,110,0.5) !important; }
+    #splash { animation: splashOut 2.4s ease-in-out forwards; }
+    .splash-logo { animation: logoIn 0.6s ease-out 0.2s forwards, logoGlow 1.4s ease-in-out 0.8s infinite alternate; filter: drop-shadow(0 0 20px rgba(0,240,255,0.4)); }
+    .splash-text { animation: textIn 0.8s ease-out 1s forwards, textOut 0.5s ease-in 1.9s forwards; opacity:0; }
+    @keyframes splashOut { 0%,70%{opacity:1; filter:blur(0) brightness(1);} 90%{opacity:0.8; filter:blur(10px) brightness(1.2);} 100%{opacity:0; filter:blur(24px) brightness(2); pointer-events:none; visibility:hidden;} }
+    @keyframes logoIn { from { opacity:0; transform:scale(0.75) translateY(30px); filter:blur(14px); } to { opacity:1; transform:scale(1) translateY(0); filter:blur(0); } }
+    @keyframes logoGlow { to { filter:drop-shadow(0 0 40px rgba(0,240,255,0.9)) brightness(1.15); transform:scale(1.03); } }
+    @keyframes textIn { to { opacity:1; letter-spacing:0.4em; text-shadow:0 0 16px rgba(0,240,255,0.5); } }
+    @keyframes textOut { to { opacity:0; transform:translateY(-14px); filter:blur(8px); } }
+    #announcement { animation: bannerSlide 0.5s ease-out; }
+    @keyframes bannerSlide { from { transform:translateY(-100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
   </style>
 </head>
 <body class="bg-amarea-black text-amarea-white font-sans antialiased overflow-x-hidden selection:bg-amarea-pink selection:text-white">
+  <div id="splash" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black">
+    <img src="assets/logo.png" alt="dR.iAn" class="splash-logo w-48 md:w-72">
+    <p class="splash-text mt-6 text-amarea-cyan font-mono text-sm tracking-[0.3em] uppercase text-center">Made with LOVE by The Doctor</p>
+  </div>
   <div id="media-bg"></div>
   <div id="media-overlay"></div>
   <canvas id="dust" class="fixed inset-0 w-full h-full pointer-events-none z-0"></canvas>
@@ -91,6 +109,11 @@
       </div>
     </div>
   </nav>
+
+  <div id="announcement" class="hidden fixed top-20 left-0 right-0 z-30 bg-amarea-pink/10 border-b border-amarea-pink/30 text-amarea-pink text-xs font-display font-bold uppercase tracking-widest text-center py-2 px-4">
+    <span id="announcement-text"></span>
+    <button id="close-announcement" class="ml-2 text-white/60 hover:text-white">×</button>
+  </div>
 
   <main class="relative z-10 min-h-screen pt-20">
     <!-- INICIO -->
@@ -176,12 +199,14 @@
             <h3 id="current-track" class="text-xl font-display font-bold text-white truncate">—</h3>
             <p id="current-artist" class="text-sm text-white/50">Selecciona un track</p>
           </div>
-          <div class="flex justify-center items-center gap-4 mb-4">
-            <button id="shuffle-btn" class="w-9 h-9 rounded-full border border-white/10 text-white/60 hover:text-amarea-cyan hover:border-amarea-cyan flex items-center justify-center text-xs" title="Shuffle">⇄</button>
-            <button id="prev-btn" class="text-white/60 hover:text-amarea-cyan transition">«</button>
+          <div class="flex flex-wrap justify-center items-center gap-3 mb-4">
+            <button id="shuffle-btn" class="control-btn w-9 h-9 rounded-full border border-white/10 text-white/60 hover:text-amarea-cyan hover:border-amarea-cyan flex items-center justify-center text-xs" title="Shuffle">⇄</button>
+            <button id="prev-btn" class="control-btn text-white/60 hover:text-amarea-cyan transition">«</button>
             <button id="play-btn" class="w-14 h-14 rounded-full bg-amarea-pink text-black font-bold text-xl hover:scale-110 transition flex items-center justify-center">▶</button>
-            <button id="next-btn" class="text-white/60 hover:text-amarea-cyan transition">»</button>
-            <button id="autoplay-btn" class="w-9 h-9 rounded-full border border-white/10 text-white/60 hover:text-amarea-gold hover:border-amarea-gold flex items-center justify-center text-xs" title="Autoplay desactivado">A</button>
+            <button id="next-btn" class="control-btn text-white/60 hover:text-amarea-cyan transition">»</button>
+            <button id="repeat-btn" class="control-btn w-9 h-9 rounded-full border border-white/10 text-white/60 hover:text-amarea-cyan hover:border-amarea-cyan flex items-center justify-center text-xs" title="Loop">↻</button>
+            <button id="autoplay-btn" class="control-btn w-9 h-9 rounded-full border border-white/10 text-white/60 hover:text-amarea-gold hover:border-amarea-gold flex items-center justify-center text-xs" title="Autoplay desactivado">A</button>
+            <button id="autodj-btn" class="control-btn w-9 h-9 rounded-full border border-white/10 text-white/60 hover:text-amarea-pink hover:border-amarea-pink flex items-center justify-center text-xs" title="Auto-DJ">DJ</button>
           </div>
           <input id="progress" type="range" min="0" max="100" value="0" class="w-full mb-3 accent-amarea-cyan opacity-50 hover:opacity-100 transition">
           <div class="flex justify-between text-xs text-white/30 font-mono mb-4">
@@ -195,17 +220,17 @@
           <div class="eq grid grid-cols-3 gap-2 mb-4">
             <div class="eq-col">
               <label for="eq-bass" class="block text-[9px] font-display uppercase tracking-widest text-white/40 text-center mb-1">Bass</label>
-              <input id="eq-bass" type="range" min="-12" max="12" step="1" value="0" orient="vertical" class="eq-slider">
+              <input id="eq-bass" type="range" min="-30" max="30" step="1" value="0" orient="vertical" class="eq-slider">
               <span class="block text-[9px] text-white/40 text-center mt-1" id="eq-bass-val">0</span>
             </div>
             <div class="eq-col">
               <label for="eq-mid" class="block text-[9px] font-display uppercase tracking-widest text-white/40 text-center mb-1">Mid</label>
-              <input id="eq-mid" type="range" min="-12" max="12" step="1" value="0" orient="vertical" class="eq-slider">
+              <input id="eq-mid" type="range" min="-30" max="30" step="1" value="0" orient="vertical" class="eq-slider">
               <span class="block text-[9px] text-white/40 text-center mt-1" id="eq-mid-val">0</span>
             </div>
             <div class="eq-col">
               <label for="eq-treble" class="block text-[9px] font-display uppercase tracking-widest text-white/40 text-center mb-1">Treble</label>
-              <input id="eq-treble" type="range" min="-12" max="12" step="1" value="0" orient="vertical" class="eq-slider">
+              <input id="eq-treble" type="range" min="-30" max="30" step="1" value="0" orient="vertical" class="eq-slider">
               <span class="block text-[9px] text-white/40 text-center mt-1" id="eq-treble-val">0</span>
             </div>
           </div>
@@ -215,19 +240,37 @@
             <div class="flex gap-2 mb-3">
               <button id="fx-delay" class="fx-btn px-3 py-1.5 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-cyan hover:border-amarea-cyan transition">Delay</button>
               <button id="fx-crush" class="fx-btn px-3 py-1.5 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-pink hover:border-amarea-pink transition">Crush</button>
-              <button id="fx-autodj" class="fx-btn px-3 py-1.5 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-gold hover:border-amarea-gold transition">Auto-DJ</button>
+              <button id="fx-stutter" class="fx-btn px-3 py-1.5 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-gold hover:border-amarea-gold transition">Stutter</button>
             </div>
             <div class="grid grid-cols-2 gap-3 mb-3">
               <div>
-                <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Tiempo</span> <span id="delay-time-val">0.30s</span></div>
+                <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Delay time</span> <span id="delay-time-val">0.30s</span></div>
                 <input id="delay-time" type="range" min="0.05" max="1" step="0.05" value="0.3" class="w-full accent-amarea-cyan">
+              </div>
+              <div>
+                <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Feedback</span> <span id="delay-feedback-val">40%</span></div>
+                <input id="delay-feedback" type="range" min="0" max="0.95" step="0.05" value="0.4" class="w-full accent-amarea-cyan">
+              </div>
+              <div>
+                <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Delay mix</span> <span id="delay-mix-val">50%</span></div>
+                <input id="delay-mix" type="range" min="0" max="1" step="0.05" value="0.5" class="w-full accent-amarea-cyan">
               </div>
               <div>
                 <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Bits</span> <span id="crush-bits-val">8</span></div>
                 <input id="crush-bits" type="range" min="1" max="16" step="1" value="8" class="w-full accent-amarea-pink">
               </div>
+              <div>
+                <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Crush mix</span> <span id="crush-mix-val">60%</span></div>
+                <input id="crush-mix" type="range" min="0" max="1" step="0.05" value="0.6" class="w-full accent-amarea-pink">
+              </div>
+              <div>
+                <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Stutter rate</span> <span id="stutter-rate-val">8 Hz</span></div>
+                <input id="stutter-rate" type="range" min="2" max="24" step="1" value="8" class="w-full accent-amarea-gold">
+              </div>
             </div>
           </div>
+
+          <button id="reset-mixer" class="w-full mb-4 px-3 py-2 rounded border border-white/10 text-[10px] font-display uppercase tracking-widest text-white/60 hover:text-amarea-pink hover:border-amarea-pink transition">RESET ALL</button>
 
           <canvas id="xy-pad" width="360" height="120" class="w-full h-32 rounded-xl bg-black/40 mb-2 touch-none cursor-crosshair"></canvas>
           <p class="text-[9px] text-white/30 text-center uppercase tracking-widest mb-4">XY Pad: filtro / velocidad</p>
