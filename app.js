@@ -94,8 +94,8 @@ function initAnalytics() {
 const DEFAULT_RESIDENTS = [
   {
     name: 'dR.iAn',
-    role: 'fundador',
-    bio: 'Productor y curador sonoro. Cada set es una narrativa en constante transformación.',
+    role: 'colaborador',
+    bio: 'Arma este landing, diseña láseres, visuales e iluminación para las fiestas de AMAREA. Productor de techno y sets en vivo; a veces mezcla.',
     image: 'assets/resident-drian.jpg',
     links: { soundcloud: '#', instagram: 'https://instagram.com/drian.mx' }
   },
