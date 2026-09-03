@@ -231,18 +231,20 @@
         const timestamp = r[0];
         const type = r[1];
         const username = r[2];
-        const message = r.length > 4 ? r[3] : '';
-        const payload = r.length > 4 ? r[4] : r[3];
+        const message = [r[6], r[10], r[12], r[8], r[14], r[9], r[4], r[3], r[5]].find(v => v) || '';
+        const deviceId = r.length > 5 ? r[5] : '';
         counts[type] = (counts[type] || 0) + 1;
 
-        let parsed = {};
-        try { parsed = JSON.parse(payload); } catch (e) {}
-        const deviceId = parsed.deviceId || '';
+        const detail = {};
+        const detailKeys = ['id','author','deviceId','text','date','email','role','path','referrer','title','artist','tab','replyTo','index'];
+        detailKeys.forEach((k, i) => { const v = r[3 + i]; if (v !== '' && v != null) detail[k] = v; });
+        const extraRaw = r.length > 17 ? r[17] : r[r.length - 1];
+        try { Object.assign(detail, JSON.parse(extraRaw)); } catch (e) {}
 
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-white/[0.03]';
         const messageText = String(message).replace(/</g, '&lt;');
-        const payloadText = (typeof payload === 'string' ? payload : JSON.stringify(payload)).replace(/</g, '&lt;');
+        const payloadText = JSON.stringify(detail).replace(/</g, '&lt;');
         const blockBtn = (type === 'chat' && deviceId)
           ? `<button data-block="${deviceId}" class="mt-2 text-[10px] font-display font-bold uppercase tracking-widest text-amarea-fire hover:text-white transition border border-amarea-fire/30 rounded px-2 py-1">Bloquear dispositivo</button>`
           : '';

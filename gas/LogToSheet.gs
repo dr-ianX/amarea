@@ -19,7 +19,7 @@ function validateToken(e, body) {
   if (data.token !== getToken()) throw new Error('Forbidden');
 }
 
-const COLUMNS = ['timestamp', 'type', 'username', 'message', 'payload'];
+const COLUMNS = ['timestamp', 'type', 'username', 'id', 'author', 'deviceId', 'text', 'date', 'email', 'role', 'path', 'referrer', 'title', 'artist', 'tab', 'replyTo', 'index', 'extra'];
 
 function getLogSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -31,19 +31,28 @@ function getLogSheet() {
   return sheet;
 }
 
-function extractMessage(type, payload) {
-  if (!payload) return '';
-  if (typeof payload === 'string') return payload;
-  if (type === 'chat' && payload.text) return payload.text;
-  if (type === 'delete_msg' && payload.id) return 'borrar: ' + payload.id;
-  if (type === 'join' && payload.email) return payload.email;
-  if (type === 'track_select') return (payload.title || '') + (payload.artist ? ' - ' + payload.artist : '');
-  if (type === 'tab' && payload.tab) return payload.tab;
-  if (type === 'pageview' && payload.path) return payload.path;
-  if (type === 'login' && payload.username) return payload.username;
-  if (type === 'register' && payload.username) return payload.username;
-  if (type === 'block' && payload.deviceId) return 'bloquear: ' + payload.deviceId;
-  return JSON.stringify(payload).slice(0, 500);
+function payloadObject(data) {
+  if (!data.payload) return {};
+  if (typeof data.payload === 'string') {
+    try { return JSON.parse(data.payload); } catch (e) { return { value: data.payload }; }
+  }
+  return data.payload;
+}
+
+function rawPayload(r) {
+  return r.length >= COLUMNS.length ? String(r[COLUMNS.length - 1] || '') : String(r[r.length - 1] || '');
+}
+
+function parseFallback(r) {
+  try { return JSON.parse(rawPayload(r)); } catch (e) { return {}; }
+}
+
+function getField(r, colIndex, fallbackKey) {
+  if (r.length > colIndex) {
+    const v = r[colIndex];
+    if (v !== '' && v != null) return v;
+  }
+  return parseFallback(r)[fallbackKey] || '';
 }
 
 function pruneLog() {
@@ -75,14 +84,22 @@ function doPost(e) {
     const timestamp = new Date();
     const type = String(data.type || '');
     const username = String(data.username || 'guest');
-    let payload = '';
-    if (data.payload) {
-      payload = typeof data.payload === 'string' ? data.payload : JSON.stringify(data.payload);
-      if (payload.length > 50000) payload = payload.slice(0, 50000);
-    }
+    const payload = payloadObject(data);
+    const extra = {};
+    Object.keys(payload).forEach(k => extra[k] = payload[k]);
 
-    const message = extractMessage(type, data.payload);
-    sheet.appendRow([timestamp, type, username, message, payload]);
+    const row = [timestamp, type, username];
+    COLUMNS.slice(3, -1).forEach(k => {
+      if (Object.prototype.hasOwnProperty.call(extra, k)) {
+        row.push(String(extra[k]));
+        delete extra[k];
+      } else {
+        row.push('');
+      }
+    });
+    const extraStr = JSON.stringify(extra).slice(0, 50000);
+    row.push(extraStr);
+    sheet.appendRow(row);
 
     return ContentService
       .createTextOutput(JSON.stringify({ result: 'ok' }))
@@ -110,10 +127,8 @@ function doGet(e) {
       const blocked = new Set();
       rows.slice(1).forEach(r => {
         if (String(r[1]) === 'block') {
-          try {
-            const p = JSON.parse(String(r[4] || r[3]));
-            if (p.deviceId) blocked.add(p.deviceId);
-          } catch (x) { /* skip malformed */ }
+          const deviceId = getField(r, 5, 'deviceId');
+          if (deviceId) blocked.add(deviceId);
         }
       });
       json = JSON.stringify([...blocked]);
@@ -122,17 +137,23 @@ function doGet(e) {
       const deletes = [];
       rows.slice(1).forEach(r => {
         const type = String(r[1]);
-        const raw = String(r[4] || r[3] || '');
         if (type === 'chat') {
-          try {
-            const p = JSON.parse(raw);
-            if (p && p.id) messages.push(p);
-          } catch (x) { /* skip malformed */ }
+          const id = getField(r, 3, 'id');
+          if (id) {
+            const msg = {
+              id,
+              author: getField(r, 4, 'author'),
+              deviceId: getField(r, 5, 'deviceId'),
+              text: getField(r, 6, 'text'),
+              date: getField(r, 7, 'date')
+            };
+            const replyTo = getField(r, 15, 'replyTo');
+            if (replyTo) msg.replyTo = replyTo;
+            messages.push(msg);
+          }
         } else if (type === 'delete_msg') {
-          try {
-            const p = JSON.parse(raw);
-            if (p && p.id) deletes.push(p.id);
-          } catch (x) { /* skip malformed */ }
+          const id = getField(r, 3, 'id');
+          if (id) deletes.push(id);
         }
       });
       const byId = new Map();
