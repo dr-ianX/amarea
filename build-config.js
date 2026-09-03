@@ -2,7 +2,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path');
 
-const gasUrl = process.env.AMAREA_GAS_URL || 'https://script.google.com/macros/s/AKfycbzYXwObgbTOpLOH-wAhxZbZ9szM10f2UjwS53yjzW65NxZ6vYt6WT7C2TY1ZixmMKFD/exec';
+const gasUrl = process.env.AMAREA_GAS_URL || '';
 const apiToken = process.env.AMAREA_API_TOKEN || '';
 const adminUsername = process.env.AMAREA_ADMIN_USERNAME || 'admin';
 const adminPassword = process.env.AMAREA_ADMIN_PASSWORD || '';
