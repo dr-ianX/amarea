@@ -38,6 +38,12 @@
       }
     }
   </script>
+  <style>
+    .fx-btn.active { color: #00f0ff; border-color: rgba(0,240,255,0.5); }
+    #fx-crush.fx-btn.active { color: #ff006e; border-color: rgba(255,0,110,0.5); }
+    #fx-autodj.fx-btn.active { color: #f2c94c; border-color: rgba(242,201,76,0.5); }
+    #xy-pad { touch-action: none; }
+  </style>
 </head>
 <body class="bg-amarea-black text-amarea-white font-sans antialiased overflow-x-hidden selection:bg-amarea-pink selection:text-white">
   <div id="media-bg"></div>
@@ -203,6 +209,29 @@
               <span class="block text-[9px] text-white/40 text-center mt-1" id="eq-treble-val">0</span>
             </div>
           </div>
+
+          <div class="mb-4">
+            <div class="flex items-center justify-between text-[10px] uppercase tracking-widest text-white/40 mb-2"><span>FX</span></div>
+            <div class="flex gap-2 mb-3">
+              <button id="fx-delay" class="fx-btn px-3 py-1.5 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-cyan hover:border-amarea-cyan transition">Delay</button>
+              <button id="fx-crush" class="fx-btn px-3 py-1.5 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-pink hover:border-amarea-pink transition">Crush</button>
+              <button id="fx-autodj" class="fx-btn px-3 py-1.5 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-gold hover:border-amarea-gold transition">Auto-DJ</button>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Tiempo</span> <span id="delay-time-val">0.30s</span></div>
+                <input id="delay-time" type="range" min="0.05" max="1" step="0.05" value="0.3" class="w-full accent-amarea-cyan">
+              </div>
+              <div>
+                <div class="flex justify-between text-[9px] text-white/40 mb-1"><span>Bits</span> <span id="crush-bits-val">8</span></div>
+                <input id="crush-bits" type="range" min="1" max="16" step="1" value="8" class="w-full accent-amarea-pink">
+              </div>
+            </div>
+          </div>
+
+          <canvas id="xy-pad" width="360" height="120" class="w-full h-32 rounded-xl bg-black/40 mb-2 touch-none cursor-crosshair"></canvas>
+          <p class="text-[9px] text-white/30 text-center uppercase tracking-widest mb-4">XY Pad: filtro / velocidad</p>
+
           <p id="skin-label" class="text-[10px] text-white/30 text-center uppercase tracking-widest">skin: dark · autoplay: off</p>
         </div>
       </div>

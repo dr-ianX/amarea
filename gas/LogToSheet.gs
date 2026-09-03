@@ -164,6 +164,23 @@ function doGet(e) {
       const limit = e.parameter.admin === '1' ? 1000 : 200;
       const page = last ? list.filter(m => new Date(m.date).getTime() > last).slice(-100) : list.slice(-limit);
       json = JSON.stringify({ messages: page, deletes });
+    } else if (e.parameter.view === 'user_roles') {
+      const roles = new Map();
+      rows.slice(1).forEach(r => {
+        const type = String(r[1]);
+        if (type === 'register' || type === 'set_role') {
+          const role = getField(r, 9, 'role');
+          let user = getField(r, 3, 'id');
+          if (!user && type === 'register') {
+            try {
+              const p = JSON.parse(rawPayload(r));
+              user = p.username || p.id;
+            } catch (e) {}
+          }
+          if (user && role) roles.set(user, role);
+        }
+      });
+      json = JSON.stringify(Object.fromEntries(roles));
     } else {
       json = JSON.stringify(rows);
     }

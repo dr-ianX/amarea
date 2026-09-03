@@ -239,6 +239,16 @@ let gainNode = null;
 let bassFilter = null;
 let midFilter = null;
 let trebleFilter = null;
+let djFilter = null;
+let delayNode = null;
+let delayInput = null;
+let feedbackNode = null;
+let delayWet = null;
+let bitcrusherNode = null;
+let crushWet = null;
+let dryGain = null;
+let autoDj = false;
+let autoDjTransition = false;
 
 function saveMixerState() {
   localStorage.setItem(STORAGE_MIXER, JSON.stringify({ shuffle, autoplay, skin: mixerSkin, eq }));
@@ -291,7 +301,7 @@ function selectTrack(index) {
   if (ca) ca.textContent = t.artist;
   renderTracks();
   document.getElementById('vinyl-hero')?.classList.remove('playing');
-  if (autoplay) playAudio();
+  if (autoplay || autoDj) playAudio();
   logToSheet('track_select', { title: t.title, artist: t.artist, index });
   updateMiniPlayer();
 }
@@ -414,6 +424,12 @@ document.getElementById('volume').addEventListener('input', (e) => {
 });
 
 audio.addEventListener('ended', () => {
+  if (autoDj) {
+    autoDjTransition = false;
+    selectTrack(pickNextTrack());
+    if (djFilter) djFilter.frequency.setTargetAtTime(20000, audioCtx.currentTime, 1);
+    return;
+  }
   if (!autoplay) return;
   selectTrack(pickNextTrack());
 });
@@ -424,6 +440,10 @@ audio.addEventListener('timeupdate', () => {
     progress.value = (audio.currentTime / audio.duration) * 100;
     document.getElementById('time-current').textContent = formatTime(audio.currentTime);
     document.getElementById('time-total').textContent = formatTime(audio.duration);
+  }
+  if (autoDj && audio.duration && !autoDjTransition && audio.currentTime > audio.duration - 8) {
+    autoDjTransition = true;
+    if (djFilter) djFilter.frequency.setTargetAtTime(200, audioCtx.currentTime, 2);
   }
 });
 
@@ -448,6 +468,17 @@ function formatTime(s) {
 const canvas = document.getElementById('visualizer');
 const ctx = canvas.getContext('2d');
 
+function makeCrushCurve(bits) {
+  const steps = Math.max(1, Math.pow(2, bits) - 1);
+  const samples = 44100;
+  const curve = new Float32Array(samples);
+  for (let i = 0; i < samples; i++) {
+    const x = i * 2 / (samples - 1) - 1;
+    curve[i] = Math.round((x + 1) / 2 * steps) / steps * 2 - 1;
+  }
+  return curve;
+}
+
 function initAudio() {
   if (audioCtx) return;
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -466,12 +497,51 @@ function initAudio() {
   trebleFilter = audioCtx.createBiquadFilter();
   trebleFilter.type = 'highshelf';
   trebleFilter.frequency.value = 10000;
+
+  djFilter = audioCtx.createBiquadFilter();
+  djFilter.type = 'lowpass';
+  djFilter.frequency.value = 20000;
+  djFilter.Q.value = 0;
+
+  bitcrusherNode = audioCtx.createWaveShaper();
+  bitcrusherNode.curve = makeCrushCurve(8);
+  bitcrusherNode.oversample = 'none';
+
+  delayNode = audioCtx.createDelay(2);
+  delayNode.delayTime.value = 0.3;
+  delayInput = audioCtx.createGain();
+  delayInput.gain.value = 0.5;
+  feedbackNode = audioCtx.createGain();
+  feedbackNode.gain.value = 0.4;
+  delayWet = audioCtx.createGain();
+  delayWet.gain.value = 0;
+
+  dryGain = audioCtx.createGain();
+  dryGain.gain.value = 1;
+  crushWet = audioCtx.createGain();
+  crushWet.gain.value = 0;
+
   gainNode = audioCtx.createGain();
 
   source.connect(bassFilter);
   bassFilter.connect(midFilter);
   midFilter.connect(trebleFilter);
-  trebleFilter.connect(gainNode);
+  trebleFilter.connect(djFilter);
+
+  djFilter.connect(dryGain);
+  djFilter.connect(bitcrusherNode);
+  bitcrusherNode.connect(crushWet);
+
+  djFilter.connect(delayInput);
+  delayInput.connect(delayNode);
+  delayNode.connect(feedbackNode);
+  feedbackNode.connect(delayInput);
+  delayNode.connect(delayWet);
+
+  dryGain.connect(gainNode);
+  crushWet.connect(gainNode);
+  delayWet.connect(gainNode);
+
   gainNode.connect(analyser);
   analyser.connect(audioCtx.destination);
 
@@ -511,6 +581,80 @@ function drawVisualizer() {
 
   animationId = requestAnimationFrame(drawVisualizer);
 }
+
+function updateDelay() {
+  if (!delayNode || !delayWet || !dryGain || !audioCtx) return;
+  const enabled = document.getElementById('fx-delay')?.classList.contains('active');
+  const time = parseFloat(document.getElementById('delay-time')?.value || 0.3);
+  const wet = enabled ? 0.35 : 0;
+  delayNode.delayTime.setTargetAtTime(time, audioCtx.currentTime, 0.05);
+  delayWet.gain.setTargetAtTime(wet, audioCtx.currentTime, 0.05);
+  dryGain.gain.setTargetAtTime(enabled ? 0.8 : 1, audioCtx.currentTime, 0.05);
+  const valLabel = document.getElementById('delay-time-val');
+  if (valLabel) valLabel.textContent = time.toFixed(2) + 's';
+}
+
+function updateCrush() {
+  if (!bitcrusherNode || !crushWet || !audioCtx) return;
+  const enabled = document.getElementById('fx-crush')?.classList.contains('active');
+  const bits = parseInt(document.getElementById('crush-bits')?.value || 8, 10);
+  bitcrusherNode.curve = makeCrushCurve(bits);
+  crushWet.gain.setTargetAtTime(enabled ? 0.5 : 0, audioCtx.currentTime, 0.05);
+  const valLabel = document.getElementById('crush-bits-val');
+  if (valLabel) valLabel.textContent = bits;
+}
+
+function updateAutoDj() {
+  const btn = document.getElementById('fx-autodj');
+  if (btn) btn.classList.toggle('active', autoDj);
+  if (autoDj && !isPlaying && currentTrackIndex < 0) selectTrack(0);
+}
+
+function setXY(x, y) {
+  if (!djFilter || !audio || !audioCtx) return;
+  const minF = 200, maxF = 20000;
+  const freq = minF * Math.pow(maxF / minF, Math.max(0, Math.min(1, x)));
+  djFilter.frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.05);
+  const rate = 0.5 + Math.max(0, Math.min(1, y)) * 2;
+  audio.playbackRate = rate;
+  const pad = document.getElementById('xy-pad');
+  if (pad) {
+    const c = pad.getContext('2d');
+    c.clearRect(0, 0, pad.width, pad.height);
+    c.fillStyle = 'rgba(0, 240, 255, 0.25)';
+    c.beginPath();
+    c.arc(x * pad.width, (1 - y) * pad.height, 8, 0, Math.PI * 2);
+    c.fill();
+  }
+}
+
+function bindDjPad() {
+  const pad = document.getElementById('xy-pad');
+  if (!pad) return;
+  const handle = (e) => {
+    const rect = pad.getBoundingClientRect();
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    let x = (cx - rect.left) / rect.width;
+    let y = 1 - (cy - rect.top) / rect.height;
+    setXY(Math.max(0, Math.min(1, x)), Math.max(0, Math.min(1, y)));
+  };
+  pad.addEventListener('pointerdown', (e) => { pad.setPointerCapture(e.pointerId); handle(e); });
+  pad.addEventListener('pointermove', (e) => { if (e.buttons) handle(e); });
+  pad.addEventListener('pointerup', () => { setXY(0.5, 0.5); });
+}
+
+function toggleAutoDj() {
+  autoDj = !autoDj;
+  updateAutoDj();
+}
+
+document.getElementById('fx-delay')?.addEventListener('click', () => { document.getElementById('fx-delay').classList.toggle('active'); updateDelay(); });
+document.getElementById('fx-crush')?.addEventListener('click', () => { document.getElementById('fx-crush').classList.toggle('active'); updateCrush(); });
+document.getElementById('fx-autodj')?.addEventListener('click', toggleAutoDj);
+document.getElementById('delay-time')?.addEventListener('input', updateDelay);
+document.getElementById('crush-bits')?.addEventListener('input', updateCrush);
+bindDjPad();
 
 // === CHAT ===
 const chatNick = document.getElementById('chat-nick');
@@ -823,6 +967,31 @@ function updateAuthUI() {
   if (currentUser && currentUser.role === 'admin') renderAdmin();
 }
 
+const ROLES = ['invitado', 'cliente', 'colaborador', 'residente', 'admin'];
+const ROLE_LEVEL = Object.fromEntries(ROLES.map((r, i) => [r, i]));
+
+function hasAccess(userRole, minRole) {
+  return (ROLE_LEVEL[userRole || 'invitado'] || 0) >= (ROLE_LEVEL[minRole] || 0);
+}
+
+function fetchUserRole(username) {
+  return new Promise((resolve) => {
+    const url = GAS_LOG_URL();
+    if (!url || !API_TOKEN) { resolve(null); return; }
+    const cb = 'amareaRole_' + Math.random().toString(36).slice(2, 9);
+    const t = setTimeout(() => { delete window[cb]; resolve(null); }, 5000);
+    window[cb] = (roles) => {
+      clearTimeout(t);
+      delete window[cb];
+      resolve(roles && typeof roles === 'object' && roles[username] ? roles[username] : null);
+    };
+    const s = document.createElement('script');
+    s.src = `${url}?callback=${cb}&view=user_roles&token=${encodeURIComponent(API_TOKEN)}`;
+    s.onerror = () => { clearTimeout(t); delete window[cb]; resolve(null); };
+    document.head.appendChild(s);
+  });
+}
+
 async function login(username, password) {
   if (ADMIN_USERNAME && ADMIN_HASH && username === ADMIN_USERNAME) {
     const h = await sha256(password);
@@ -830,7 +999,7 @@ async function login(username, password) {
       currentUser = { username, role: 'admin' };
       saveCurrent();
       updateAuthUI();
-      logToSheet('login', { username, role: 'admin' });
+      logToSheet('login', { id: username, role: 'admin' });
       closeAuth();
       return true;
     }
@@ -839,10 +1008,12 @@ async function login(username, password) {
   const users = getUsers();
   const found = users.find(u => u.username === username && u.password === password);
   if (found) {
-    currentUser = { username: found.username, role: found.role };
+    const serverRole = await fetchUserRole(found.username);
+    const role = serverRole || found.role || 'invitado';
+    currentUser = { username: found.username, role };
     saveCurrent();
     updateAuthUI();
-    logToSheet('login', { username: found.username, role: found.role });
+    logToSheet('login', { id: found.username, role });
     closeAuth();
     return true;
   }
@@ -853,12 +1024,12 @@ function register(username, password) {
   const users = getUsers();
   if (users.find(u => u.username === username)) return false;
   if (ADMIN_USERNAME && username === ADMIN_USERNAME) return false;
-  users.push({ username, password, role: 'cliente' });
+  users.push({ username, password, role: 'invitado' });
   setUsers(users);
-  currentUser = { username, role: 'cliente' };
+  currentUser = { username, role: 'invitado' };
   saveCurrent();
   updateAuthUI();
-  logToSheet('register', { username, role: 'cliente' });
+  logToSheet('register', { id: username, role: 'invitado' });
   closeAuth();
   return true;
 }

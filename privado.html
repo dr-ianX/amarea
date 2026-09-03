@@ -83,6 +83,7 @@
         <button id="tab-metrics" class="tab-btn active px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest text-white/70 hover:bg-white/5">Métricas</button>
         <button id="tab-chat" class="tab-btn px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest text-white/70 hover:bg-white/5">Chat</button>
         <button id="tab-blocks" class="tab-btn px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest text-white/70 hover:bg-white/5">Bloqueos</button>
+        <button id="tab-users" class="tab-btn px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest text-white/70 hover:bg-white/5">Usuarios</button>
       </nav>
 
       <section id="chat-view" class="hidden">
@@ -97,6 +98,22 @@
           <button id="block-add" class="px-4 py-2 rounded-xl border border-amarea-fire/30 text-amarea-fire hover:bg-amarea-fire/10 text-xs font-display font-bold uppercase tracking-widest">Bloquear</button>
         </div>
         <div id="block-list" class="space-y-2"></div>
+      </section>
+
+      <section id="users-view" class="hidden">
+        <h2 class="text-lg font-display font-bold text-white mb-4">Usuarios y roles</h2>
+        <div class="flex flex-col md:flex-row gap-2 mb-6">
+          <input type="text" id="role-user" placeholder="usuario" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:border-amarea-pink outline-none" />
+          <select id="role-select" class="bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:border-amarea-pink outline-none">
+            <option value="invitado">Invitado</option>
+            <option value="cliente">Cliente</option>
+            <option value="colaborador">Colaborador</option>
+            <option value="residente">Residente</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button id="role-set" class="px-4 py-2 rounded-xl border border-amarea-cyan/30 text-amarea-cyan hover:bg-amarea-cyan/10 text-xs font-display font-bold uppercase tracking-widest">Asignar rol</button>
+        </div>
+        <div id="users-list" class="space-y-2"></div>
       </section>
 
       <section id="dashboard-view" class="hidden">
@@ -231,13 +248,14 @@
       document.querySelectorAll('.tab-btn').forEach(b => {
         b.classList.toggle('active', b.id === `tab-${tab}`);
       });
-      ['dashboard-view','chat-view','blocks-view'].forEach(id => {
+      ['dashboard-view','chat-view','blocks-view','users-view'].forEach(id => {
         document.getElementById(id).classList.add('hidden');
       });
       const activeId = tab === 'metrics' ? 'dashboard-view' : `${tab}-view`;
       document.getElementById(activeId).classList.remove('hidden');
       if (tab === 'chat') loadChat(currentUrl);
       if (tab === 'blocks') loadBlocks(currentUrl);
+      if (tab === 'users') loadUsers(currentUrl);
     }
 
     function postAction(type, payload, onDone) {
@@ -317,6 +335,42 @@
       script.src = `${url}?callback=${cb}&view=blocks&token=${encodeURIComponent(API_TOKEN)}`;
       script.onerror = () => { delete window[cb]; };
       document.body.appendChild(script);
+    }
+
+    function loadUsers(url) {
+      if (!url) return;
+      const cb = 'amareaUsers_' + Math.random().toString(36).slice(2, 9);
+      window[cb] = (roles) => {
+        const list = document.getElementById('users-list');
+        list.innerHTML = '';
+        const entries = roles && typeof roles === 'object' ? Object.entries(roles) : [];
+        if (!entries.length) {
+          list.innerHTML = '<p class="text-sm text-white/40">No hay usuarios registrados.</p>';
+        } else {
+          entries.forEach(([user, role]) => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-between bg-white/[0.03] border border-white/10 rounded-xl p-3';
+            div.innerHTML = `
+              <div class="min-w-0">
+                <span class="text-sm text-white/80 block truncate">${user}</span>
+                <span class="text-[10px] font-mono text-amarea-cyan uppercase tracking-widest">${role}</span>
+              </div>
+              <button data-user="${user}" class="role-edit px-3 py-1 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-cyan hover:border-amarea-cyan transition">Editar</button>
+            `;
+            list.appendChild(div);
+          });
+        }
+        delete window[cb];
+      };
+      const script = document.createElement('script');
+      script.src = `${url}?callback=${cb}&view=user_roles&token=${encodeURIComponent(API_TOKEN)}`;
+      script.onerror = () => { delete window[cb]; };
+      document.body.appendChild(script);
+    }
+
+    function setRole(username, role) {
+      if (!username || !role) return;
+      postAction('set_role', { id: username, role }, () => loadUsers(currentUrl));
     }
 
     function pruneLog() {
@@ -416,8 +470,25 @@
       if (val) postAction('block', { deviceId: val }, () => { input.value = ''; loadBlocks(currentUrl); });
     });
 
-    ['metrics','chat','blocks'].forEach(t => {
+    ['metrics','chat','blocks','users'].forEach(t => {
       document.getElementById(`tab-${t}`)?.addEventListener('click', () => showTab(t));
+    });
+
+    document.getElementById('role-set')?.addEventListener('click', () => {
+      const user = document.getElementById('role-user').value.trim();
+      const role = document.getElementById('role-select').value;
+      if (user && role) {
+        setRole(user, role);
+        document.getElementById('role-user').value = '';
+      }
+    });
+
+    document.getElementById('users-list')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (btn?.dataset.user) {
+        document.getElementById('role-user').value = btn.dataset.user;
+        document.getElementById('role-select').focus();
+      }
     });
 
     checkAdmin();
