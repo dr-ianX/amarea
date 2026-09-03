@@ -115,7 +115,11 @@
     const STORAGE_CURRENT = 'amarea_current_v1';
     const STORAGE_GAS = 'amarea_gas_url';
     const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbzYXwObgbTOpLOH-wAhxZbZ9szM10f2UjwS53yjzW65NxZ6vYt6WT7C2TY1ZixmMKFD/exec';
+    const OLD_GAS_URL = 'https://script.google.com/macros/s/AKfycby64726s5X6Kjlu-xu5Hx0AnlA8AhBBQEhZCxJjzA8QCTyaF352DjG_qBgamNwgK7PJ/exec';
     const API_TOKEN = 'amarea-token-2026-v1';
+
+    const savedGas = localStorage.getItem(STORAGE_GAS);
+    if (savedGas === OLD_GAS_URL) localStorage.setItem(STORAGE_GAS, DEFAULT_GAS_URL);
 
     const loginView = document.getElementById('login-view');
     const panelView = document.getElementById('panel-view');

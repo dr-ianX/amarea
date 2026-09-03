@@ -40,6 +40,9 @@ function getDeviceId() {
 getDeviceId();
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzYXwObgbTOpLOH-wAhxZbZ9szM10f2UjwS53yjzW65NxZ6vYt6WT7C2TY1ZixmMKFD/exec';
+const OLD_GAS_URL = 'https://script.google.com/macros/s/AKfycby64726s5X6Kjlu-xu5Hx0AnlA8AhBBQEhZCxJjzA8QCTyaF352DjG_qBgamNwgK7PJ/exec';
+const savedGas = localStorage.getItem(STORAGE_GAS);
+if (savedGas === OLD_GAS_URL) localStorage.setItem(STORAGE_GAS, GAS_URL);
 const GAS_LOG_URL = () => localStorage.getItem(STORAGE_GAS) || GAS_URL;
 
 function logToSheet(type, payload) {
