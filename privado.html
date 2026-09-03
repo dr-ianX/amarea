@@ -30,6 +30,7 @@
     body { background: #050505; color: #fff; font-family: 'Space Grotesk', sans-serif; }
     .grain { position: fixed; inset: 0; opacity: 0.06; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"); }
     .neon { text-shadow: 0 0 12px currentColor; }
+    .tab-btn.active { color: #00f0ff; border-color: rgba(0,240,255,0.5); }
   </style>
 </head>
 <body class="min-h-screen relative overflow-x-hidden">
@@ -76,6 +77,26 @@
           <input type="text" id="gas-url" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-amarea-pink outline-none" />
           <button id="save-gas" class="px-5 py-3 rounded-xl border border-amarea-pink/30 text-amarea-pink hover:bg-amarea-pink/10 text-sm font-display font-bold uppercase tracking-widest transition">Guardar URL</button>
         </div>
+      </section>
+
+      <nav class="flex gap-2 mb-6" id="admin-nav">
+        <button id="tab-metrics" class="tab-btn active px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest text-white/70 hover:bg-white/5">Métricas</button>
+        <button id="tab-chat" class="tab-btn px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest text-white/70 hover:bg-white/5">Chat</button>
+        <button id="tab-blocks" class="tab-btn px-4 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest text-white/70 hover:bg-white/5">Bloqueos</button>
+      </nav>
+
+      <section id="chat-view" class="hidden">
+        <h2 class="text-lg font-display font-bold text-white mb-4">Chat</h2>
+        <div id="chat-list" class="space-y-3"></div>
+      </section>
+
+      <section id="blocks-view" class="hidden">
+        <h2 class="text-lg font-display font-bold text-white mb-4">Bloqueos</h2>
+        <div class="flex gap-2 mb-6">
+          <input type="text" id="block-input" placeholder="deviceId" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:border-amarea-pink outline-none" />
+          <button id="block-add" class="px-4 py-2 rounded-xl border border-amarea-fire/30 text-amarea-fire hover:bg-amarea-fire/10 text-xs font-display font-bold uppercase tracking-widest">Bloquear</button>
+        </div>
+        <div id="block-list" class="space-y-2"></div>
       </section>
 
       <section id="dashboard-view" class="hidden">
@@ -127,6 +148,7 @@
     const authBox = document.getElementById('auth-box');
 
     let currentUser = JSON.parse(localStorage.getItem(STORAGE_CURRENT) || 'null');
+    let currentUrl = '';
 
     function checkAdmin() {
       if (!currentUser || currentUser.role !== 'admin') {
@@ -138,6 +160,7 @@
       panelView.classList.remove('hidden');
       authBox.innerHTML = `<span class="text-amarea-cyan">${currentUser.username}</span> · <a href="index.html" class="hover:text-white underline">Volver al sitio</a>`;
       let gasUrl = DEFAULT_GAS_URL || localStorage.getItem(STORAGE_GAS) || '';
+      currentUrl = gasUrl;
       configView.classList.add('hidden');
       dashboardView.classList.remove('hidden');
       loadDashboard(gasUrl);
@@ -204,6 +227,98 @@
       setTimeout(() => loadDashboard(url), 1000);
     }
 
+    function showTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.toggle('active', b.id === `tab-${tab}`);
+      });
+      ['dashboard-view','chat-view','blocks-view'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      const activeId = tab === 'metrics' ? 'dashboard-view' : `${tab}-view`;
+      document.getElementById(activeId).classList.remove('hidden');
+      if (tab === 'chat') loadChat(currentUrl);
+      if (tab === 'blocks') loadBlocks(currentUrl);
+    }
+
+    function postAction(type, payload, onDone) {
+      const url = DEFAULT_GAS_URL || localStorage.getItem(STORAGE_GAS) || '';
+      if (!url) return;
+      fetch(url, {
+        method: 'POST',
+        body: JSON.stringify({ token: API_TOKEN, type, username: 'admin', payload }),
+        mode: 'no-cors'
+      }).catch(() => {});
+      setTimeout(() => { if (typeof onDone === 'function') onDone(); }, 1200);
+    }
+
+    function deleteMessage(id) { postAction('delete_msg', { id }, () => loadChat(currentUrl)); }
+
+    function loadChat(url) {
+      if (!url) return;
+      const cb = 'amareaChatAdmin_' + Math.random().toString(36).slice(2, 9);
+      window[cb] = (res) => {
+        if (!res || !Array.isArray(res.messages)) { delete window[cb]; return; }
+        const list = document.getElementById('chat-list');
+        list.innerHTML = '';
+        if (!res.messages.length) {
+          list.innerHTML = '<p class="text-sm text-white/40">No hay mensajes.</p>';
+        } else {
+          res.messages.slice().reverse().forEach(m => {
+            const div = document.createElement('div');
+            div.className = 'bg-white/[0.03] border border-white/10 rounded-xl p-4';
+            const text = String(m.text || '').replace(/</g, '&lt;');
+            const author = String(m.author || '').replace(/</g, '&lt;');
+            const date = new Date(m.date).toLocaleString('es-MX');
+            div.innerHTML = `
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-mono text-amarea-cyan">${author}</span>
+                <span class="text-[10px] text-white/40 font-mono">${date}</span>
+              </div>
+              <p class="text-sm text-white/80 mb-2">${text}</p>
+              <div class="flex gap-2">
+                <button data-del="${m.id}" class="px-3 py-1 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-fire hover:border-amarea-fire transition">Borrar</button>
+                ${m.deviceId ? `<button data-ban="${m.deviceId}" class="px-3 py-1 rounded border border-white/10 text-[10px] text-white/60 hover:text-amarea-fire hover:border-amarea-fire transition">Banear dispositivo</button>` : ''}
+              </div>
+              ${m.deviceId ? `<p class="text-[9px] font-mono text-white/30 mt-2">ID: ${m.deviceId}</p>` : ''}
+            `;
+            list.appendChild(div);
+          });
+        }
+        delete window[cb];
+      };
+      const script = document.createElement('script');
+      script.src = `${url}?callback=${cb}&view=chat&admin=1&token=${encodeURIComponent(API_TOKEN)}`;
+      script.onerror = () => { delete window[cb]; };
+      document.body.appendChild(script);
+    }
+
+    function loadBlocks(url) {
+      if (!url) return;
+      const cb = 'amareaBlocksAdmin_' + Math.random().toString(36).slice(2, 9);
+      window[cb] = (ids) => {
+        const list = document.getElementById('block-list');
+        list.innerHTML = '';
+        if (!Array.isArray(ids) || !ids.length) {
+          list.innerHTML = '<p class="text-sm text-white/40">No hay dispositivos bloqueados.</p>';
+        } else {
+          ids.forEach(id => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-between bg-white/[0.03] border border-white/10 rounded-xl p-3';
+            div.innerHTML = `
+              <span class="text-xs font-mono text-white/70 truncate max-w-[70%]">${id}</span>
+              <button data-unban="${id}" class="px-3 py-1 rounded border border-amarea-cyan/30 text-[10px] text-amarea-cyan hover:bg-amarea-cyan/10 transition">Desbanear</button>
+            `;
+            list.appendChild(div);
+          });
+        }
+        delete window[cb];
+      };
+      const script = document.createElement('script');
+      script.src = `${url}?callback=${cb}&view=blocks&token=${encodeURIComponent(API_TOKEN)}`;
+      script.onerror = () => { delete window[cb]; };
+      document.body.appendChild(script);
+    }
+
     function pruneLog() {
       const url = DEFAULT_GAS_URL || localStorage.getItem(STORAGE_GAS) || '';
       const cb = 'amareaPrune_' + Math.random().toString(36).slice(2, 9);
@@ -222,7 +337,7 @@
 
     window.amareaRenderDashboard = function(rows) {
       if (!Array.isArray(rows) || !rows.length) return;
-      const headers = rows.shift();
+      rows.shift();
       const tbody = document.getElementById('rows');
       tbody.innerHTML = '';
 
@@ -282,6 +397,28 @@
         stats.appendChild(div);
       });
     };
+
+    document.getElementById('chat-list')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      if (btn.dataset.del && confirm('¿Borrar mensaje?')) deleteMessage(btn.dataset.del);
+      else if (btn.dataset.ban && confirm('¿Banear dispositivo?')) postAction('block', { deviceId: btn.dataset.ban }, () => loadChat(currentUrl));
+    });
+
+    document.getElementById('block-list')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (btn?.dataset.unban) postAction('unblock', { deviceId: btn.dataset.unban }, () => loadBlocks(currentUrl));
+    });
+
+    document.getElementById('block-add')?.addEventListener('click', () => {
+      const input = document.getElementById('block-input');
+      const val = input.value.trim();
+      if (val) postAction('block', { deviceId: val }, () => { input.value = ''; loadBlocks(currentUrl); });
+    });
+
+    ['metrics','chat','blocks'].forEach(t => {
+      document.getElementById(`tab-${t}`)?.addEventListener('click', () => showTab(t));
+    });
 
     checkAdmin();
   </script>

@@ -124,14 +124,15 @@ function doGet(e) {
       const removed = pruneLog();
       json = JSON.stringify({ result: 'ok', removed });
     } else if (e.parameter.view === 'blocks') {
-      const blocked = new Set();
+      const deviceActions = new Map();
       rows.slice(1).forEach(r => {
-        if (String(r[1]) === 'block') {
+        const type = String(r[1]);
+        if (type === 'block' || type === 'unblock') {
           const deviceId = getField(r, 5, 'deviceId');
-          if (deviceId) blocked.add(deviceId);
+          if (deviceId) deviceActions.set(deviceId, type);
         }
       });
-      json = JSON.stringify([...blocked]);
+      json = JSON.stringify([...deviceActions.entries()].filter(([, t]) => t === 'block').map(([id]) => id));
     } else if (e.parameter.view === 'chat') {
       const messages = [];
       const deletes = [];
@@ -160,7 +161,8 @@ function doGet(e) {
       messages.forEach(m => { if (!deletes.includes(m.id)) byId.set(m.id, m); });
       const list = [...byId.values()].sort((a, b) => new Date(a.date) - new Date(b.date));
       const last = parseInt(e.parameter.last) || 0;
-      const page = last ? list.filter(m => new Date(m.date).getTime() > last).slice(-100) : list.slice(-200);
+      const limit = e.parameter.admin === '1' ? 1000 : 200;
+      const page = last ? list.filter(m => new Date(m.date).getTime() > last).slice(-100) : list.slice(-limit);
       json = JSON.stringify({ messages: page, deletes });
     } else {
       json = JSON.stringify(rows);
