@@ -279,12 +279,15 @@ function selectTrack(index) {
   const t = tracks[currentTrackIndex];
   audio.pause();
   audio.src = t.src;
-  document.getElementById('current-track').textContent = t.title;
-  document.getElementById('current-artist').textContent = t.artist;
+  const ct = document.getElementById('current-track');
+  const ca = document.getElementById('current-artist');
+  if (ct) ct.textContent = t.title;
+  if (ca) ca.textContent = t.artist;
   renderTracks();
   document.getElementById('vinyl-hero')?.classList.remove('playing');
   if (autoplay) playAudio();
   logToSheet('track_select', { title: t.title, artist: t.artist, index });
+  updateMiniPlayer();
 }
 
 function pickNextTrack() {
@@ -333,7 +336,18 @@ function togglePlay() {
 
 function updatePlayButton() {
   const btn = document.getElementById('play-btn');
-  btn.textContent = isPlaying ? '⏸' : '▶';
+  if (btn) btn.textContent = isPlaying ? '⏸' : '▶';
+  updateMiniPlayer();
+}
+
+function updateMiniPlayer() {
+  const t = tracks[currentTrackIndex] || null;
+  const title = document.getElementById('mini-title');
+  const artist = document.getElementById('mini-artist');
+  const play = document.getElementById('mini-play');
+  if (title) title.textContent = t ? t.title : '—';
+  if (artist) artist.textContent = t ? `${t.artist} · ${t.duration || '—'}` : 'Selecciona un track';
+  if (play) play.textContent = isPlaying ? '⏸' : '▶';
 }
 
 function updateMixerUI() {
@@ -1284,3 +1298,7 @@ updateMixerUI();
 if (currentUser && currentUser.role === 'admin') renderAdmin();
 switchTab('inicio');
 trackPageview();
+window.miniPlay = togglePlay;
+window.miniNext = () => selectTrack(pickNextTrack());
+window.miniPrev = () => selectTrack(pickPrevTrack());
+updateMiniPlayer();

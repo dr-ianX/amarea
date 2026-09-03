@@ -311,6 +311,17 @@
         </div>
         <p class="text-[10px] text-white/20 text-right mt-2 uppercase tracking-widest">Mensajes vivos: 90 días</p>
       </div>
+
+      <!-- Mini reproductor -->
+      <div id="mini-player" class="mt-6 rounded-2xl border border-white/5 bg-black/40 backdrop-blur-xl p-4 flex items-center gap-4">
+        <button onclick="window.miniPrev()" class="text-white/60 hover:text-amarea-cyan transition text-xl" title="Anterior">⏮</button>
+        <button id="mini-play" onclick="window.miniPlay()" class="w-10 h-10 rounded-full border border-amarea-pink text-amarea-pink hover:bg-amarea-pink hover:text-black transition flex items-center justify-center text-lg" title="Play/Pausa">▶</button>
+        <button onclick="window.miniNext()" class="text-white/60 hover:text-amarea-cyan transition text-xl" title="Siguiente">⏭</button>
+        <div class="flex-1 min-w-0">
+          <p id="mini-title" class="text-sm font-display font-bold text-white truncate">—</p>
+          <p id="mini-artist" class="text-[10px] text-white/40 font-mono truncate">Selecciona un track</p>
+        </div>
+      </div>
     </section>
 
     <!-- PRODUCCION -->
