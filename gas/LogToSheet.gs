@@ -245,10 +245,11 @@ function getLatestUsers(rows) {
 
   function ensureUser(name, role, ts, email, password, perms) {
     if (!usersByName[name]) {
-      usersByName[name] = { username: name, role, date: ts, email: email || '', password: password || '', permissions: perms || {} };
+      usersByName[name] = { username: name, role, date: ts, email: email || '', password: password || '', permissions: perms || {}, deleted: false };
       users.push(usersByName[name]);
     } else {
       const e = usersByName[name];
+      e.deleted = false;
       if (role) e.role = role;
       if (ts) e.date = ts;
       if (email) e.email = email;

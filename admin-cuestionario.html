@@ -109,9 +109,13 @@
         if (!url || !API_TOKEN) { resolve(null); return; }
         const cb = 'amareaBriefs_' + Math.random().toString(36).slice(2, 9);
         const t = setTimeout(() => { delete window[cb]; resolve(null); }, 10000);
-        window[cb] = (res) => { clearTimeout(t); delete window[cb]; resolve(res); };
+        window[cb] = (res) => {
+          clearTimeout(t); delete window[cb];
+          if (res && res.error) console.error(`[AMAREA Admin Cuestionario] GAS error en view=${view}:`, res.error);
+          resolve(res);
+        };
         const s = document.createElement('script');
-        s.src = `${url}?callback=${cb}&view=briefs&token=${encodeURIComponent(API_TOKEN)}`;
+        s.src = `${url}?callback=${cb}&view=${view}&token=${encodeURIComponent(API_TOKEN)}`;
         s.onerror = () => { clearTimeout(t); delete window[cb]; resolve(null); };
         document.head.appendChild(s);
       });

@@ -66,7 +66,10 @@ function logToSheet(type, payload) {
     deviceId: getDeviceId(),
     payload
   });
-  fetch(url, { method: 'POST', body, mode: 'no-cors' }).catch(() => {});
+  fetch(url, { method: 'POST', body, headers: { 'Content-Type': 'application/json' }, mode: 'cors' })
+    .then(r => r.json().catch(() => ({ result: 'ok' })))
+    .then(j => { if (j && j.error) console.error('[AMAREA] GAS error:', j.error); })
+    .catch((err) => { console.error('[AMAREA] Fallo de red hacia GAS:', err); });
 }
 
 function track(type, payload) { logToSheet(type, payload); }
@@ -2219,7 +2222,11 @@ function fetchJSONP(view, params = '') {
     if (!url || !API_TOKEN) { resolve(null); return; }
     const cb = 'amareaJSONP_' + Math.random().toString(36).slice(2, 9);
     const t = setTimeout(() => { delete window[cb]; resolve(null); }, 8000);
-    window[cb] = (res) => { clearTimeout(t); delete window[cb]; resolve(res); };
+    window[cb] = (res) => {
+      clearTimeout(t); delete window[cb];
+      if (res && res.error) console.error(`[AMAREA] GAS error en view=${view}:`, res.error);
+      resolve(res);
+    };
     const s = document.createElement('script');
     s.src = `${url}?callback=${cb}&view=${view}&token=${encodeURIComponent(API_TOKEN)}${params ? '&' + params : ''}`;
     s.onerror = () => { clearTimeout(t); delete window[cb]; resolve(null); };
