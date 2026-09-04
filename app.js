@@ -2076,14 +2076,16 @@ function refreshCurrentUser() {
   if (!currentUser || !currentUser.username) return;
   const users = getUsers();
   const found = users.find(u => u.username === currentUser.username);
-  if (found) {
-    const changed = found.role !== currentUser.role || JSON.stringify(found.permissions || {}) !== JSON.stringify(currentUser.permissions || {});
-    if (changed) {
-      currentUser = { username: found.username, role: found.role, permissions: found.permissions || {} };
-      saveCurrent();
-      updateAuthUI();
-      if (hasPermission(currentUser.role, 'adminPanel', currentUser.permissions)) renderAdmin();
-    }
+  if (!found) {
+    logout();
+    return;
+  }
+  const changed = found.role !== currentUser.role || JSON.stringify(found.permissions || {}) !== JSON.stringify(currentUser.permissions || {});
+  if (changed) {
+    currentUser = { username: found.username, role: found.role, permissions: found.permissions || {} };
+    saveCurrent();
+    updateAuthUI();
+    if (hasPermission(currentUser.role, 'adminPanel', currentUser.permissions)) renderAdmin();
   }
 }
 
@@ -2181,25 +2183,18 @@ async function login(username, password) {
     return false;
   }
   let users = getUsers();
-  let found = users.find(u => u.username === username && u.password === password);
-  if (!found) {
-    const server = await fetchJSONP('users');
-    if (server && Array.isArray(server)) {
-      users = mergeServerUsers(server);
-      found = users.find(u => u.username === username && u.password === password);
-    }
+  const server = await fetchJSONP('users');
+  if (server && Array.isArray(server)) {
+    users = mergeServerUsers(server);
   }
-  if (found) {
-    const serverRole = await fetchUserRole(found.username);
-    const role = serverRole || found.role || 'invitado';
-    currentUser = { username: found.username, role, permissions: found.permissions || {} };
-    saveCurrent();
-    updateAuthUI();
-    logToSheet('login', { id: found.username, role });
-    closeAuth();
-    return true;
-  }
-  return false;
+  const found = users.find(u => u.username === username && u.password === password);
+  if (!found) return false;
+  currentUser = { username: found.username, role: found.role || 'invitado', permissions: found.permissions || {} };
+  saveCurrent();
+  updateAuthUI();
+  logToSheet('login', { id: found.username, role: currentUser.role });
+  closeAuth();
+  return true;
 }
 
 async function register(username, password) {
@@ -2892,6 +2887,8 @@ function initLang() {
   if (currentUser && hasPermission(currentUser.role, 'adminPanel', currentUser.permissions)) renderAdmin();
   await syncUsersFromServer();
   refreshCurrentUser();
+  setInterval(refreshCurrentUser, 10000);
+  window.addEventListener('focus', refreshCurrentUser);
   switchTab('inicio');
   trackPageview();
   window.miniPlay = togglePlay;

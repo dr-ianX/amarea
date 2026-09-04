@@ -99,7 +99,7 @@ const I18N = {
     productionSubtitle: 'Diseñamos experiencias con música, luz, video y espacio.',
     // common
     // sections
-    heroSub: 'LA NOCHE NOS UNE',
+    heroSub: 'CREANDO EXPERIENCIAS',
     heroDescription: 'Fiestas inmersivas, música electrónica y experiencias que no se explican: se sienten. Desde el desierto de Los Cabos para el mundo.',
     heroCtaEvents: 'Próximos eventos',
     heroCtaMusic: 'Escuchar mixes',
