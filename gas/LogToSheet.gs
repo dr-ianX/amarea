@@ -39,16 +39,8 @@ function payloadObject(data) {
   return data.payload;
 }
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-};
-
-function withCors(output) {
-  Object.entries(CORS_HEADERS).forEach(([k, v]) => output.setHeader(k, v));
-  return output;
-}
+// Google Apps Script ContentService no permite establecer encabezados CORS.
+// El frontend utiliza JSONP/script-tag como fallback, así que no se requieren.
 
 function rawPayload(r) {
   return r.length >= COLUMNS.length ? String(r[COLUMNS.length - 1] || '') : String(r[r.length - 1] || '');
@@ -108,9 +100,9 @@ function doPost(e) {
       const payload = payloadObject(data);
       if (!payload.confirm) throw new Error('confirm required');
       resetLog(sheet, timestamp, username);
-      return withCors(ContentService
+      return ContentService
         .createTextOutput(JSON.stringify({ result: 'ok', resetAt: timestamp }))
-        .setMimeType(ContentService.MimeType.JSON));
+        .setMimeType(ContentService.MimeType.JSON);
     }
 
     const payload = payloadObject(data);
@@ -130,19 +122,19 @@ function doPost(e) {
     row.push(extraStr);
     sheet.appendRow(row);
 
-    return withCors(ContentService
+    return ContentService
       .createTextOutput(JSON.stringify({ result: 'ok' }))
-      .setMimeType(ContentService.MimeType.JSON));
+      .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
-    return withCors(ContentService
+    return ContentService
       .createTextOutput(JSON.stringify({ result: 'error', error: String(err) }))
-      .setMimeType(ContentService.MimeType.JSON));
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
 function doOptions() {
-  return withCors(ContentService.createTextOutput('')
-    .setMimeType(ContentService.MimeType.JSON));
+  return ContentService.createTextOutput('')
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 function doGet(e) {
@@ -246,14 +238,14 @@ function doGet(e) {
     }
 
     const output = callback + '(' + json + ');';
-    return withCors(ContentService
+    return ContentService
       .createTextOutput(output)
-      .setMimeType(ContentService.MimeType.JAVASCRIPT));
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
   } catch (err) {
     const output = callback + '(' + JSON.stringify({ error: String(err) }) + ');';
-    return withCors(ContentService
+    return ContentService
       .createTextOutput(output)
-      .setMimeType(ContentService.MimeType.JAVASCRIPT));
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
 }
 
