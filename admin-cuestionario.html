@@ -107,6 +107,67 @@
 
     function getLocalBriefs() { return JSON.parse(localStorage.getItem(STORAGE_BRIEFS) || '[]'); }
 
+    function postToGAS(type, payload) {
+      const url = getGAS();
+      if (!url || !API_TOKEN) { console.error('[AMAREA Admin] Sin URL o token.'); return Promise.reject(new Error('sin URL o token')); }
+      const body = JSON.stringify({ token: API_TOKEN, type, username: current?.username || 'admin', payload });
+      return fetch(url, { method: 'POST', body, mode: 'no-cors' });
+    }
+
+    function deleteBrief(brief) {
+      postToGAS('delete_brief', { user: brief.user, date: brief.date })
+        .then(() => setTimeout(load, 1000))
+        .catch(() => alert('No se pudo eliminar el cuestionario.'));
+    }
+
+    function updateBrief(brief, container) {
+      const newAnswers = { __step: brief.step };
+      container.querySelectorAll('textarea[data-qid]').forEach(ta => {
+        newAnswers[ta.dataset.qid] = ta.value;
+      });
+      postToGAS('update_brief', {
+        user: brief.user,
+        oldDate: brief.date,
+        date: new Date().toISOString(),
+        answers: newAnswers,
+        step: brief.step,
+        draft: brief.draft
+      })
+        .then(() => setTimeout(load, 1000))
+        .catch(() => alert('No se pudo actualizar el cuestionario.'));
+    }
+
+    function renderBriefEdit(brief, container) {
+      container.innerHTML = '';
+      const form = document.createElement('div');
+      form.className = 'space-y-6';
+      CUESTIONARIO.forEach(sec => {
+        const section = document.createElement('div');
+        section.innerHTML = `<h3 class="text-lg font-display font-bold text-amarea-pink mb-4">${sec.title}</h3>`;
+        sec.questions.forEach(q => {
+          const val = (brief.answers || {})[q.id] || '';
+          const qdiv = document.createElement('div');
+          qdiv.className = 'mb-4';
+          qdiv.innerHTML = `
+            <label class="block text-sm text-white/80 font-medium mb-1">${q.id.replace('q', '')}. ${q.text}</label>
+            <textarea data-qid="${q.id}" rows="2" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-amarea-cyan outline-none" placeholder="Sin respuesta">${val.replace(/</g, '&lt;')}</textarea>
+          `;
+          section.appendChild(qdiv);
+        });
+        form.appendChild(section);
+      });
+      const actions = document.createElement('div');
+      actions.className = 'flex gap-3 border-t border-white/5 pt-4';
+      actions.innerHTML = `
+        <button class="save-edit px-4 py-2 rounded-xl border border-amarea-cyan text-amarea-cyan text-[10px] font-display font-bold uppercase tracking-widest hover:bg-amarea-cyan/10 transition">Guardar cambios</button>
+        <button class="cancel-edit px-4 py-2 rounded-xl border border-white/20 text-white/70 text-[10px] font-display font-bold uppercase tracking-widest hover:bg-white/10 transition">Cancelar</button>
+      `;
+      actions.querySelector('.save-edit').addEventListener('click', () => updateBrief(brief, container));
+      actions.querySelector('.cancel-edit').addEventListener('click', () => renderBriefDetails(brief, container));
+      form.appendChild(actions);
+      container.appendChild(form);
+    }
+
     function fetchJSONP(view) {
       return new Promise((resolve) => {
         const url = getGAS();
@@ -218,15 +279,17 @@
               <p class="text-[10px] text-white/30 font-mono uppercase tracking-widest mb-1">${new Date(b.date).toLocaleString('es-MX')} · ${b.user}</p>
               <p class="font-display font-bold text-white">${b.draft ? 'Borrador' : 'Cuestionario'}${b.draft ? ` · Sección ${(b.step || 0) + 1}` : ''} · ${answered} de ${totalQuestions} respuestas</p>
             </div>
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 flex-wrap justify-end">
               <span class="text-2xl font-display font-bold text-amarea-cyan">${percent}<span class="text-sm">%</span></span>
-              <button data-toggle="${i}" class="px-4 py-2 rounded-xl border border-amarea-cyan/30 text-amarea-cyan text-[10px] font-display font-bold uppercase tracking-widest hover:bg-amarea-cyan/10 transition">Ver respuestas</button>
+              <button data-toggle="${i}" class="px-3 py-2 rounded-xl border border-amarea-cyan/30 text-amarea-cyan text-[10px] font-display font-bold uppercase tracking-widest hover:bg-amarea-cyan/10 transition">Ver respuestas</button>
+              <button data-edit="${i}" class="px-3 py-2 rounded-xl border border-amarea-gold/30 text-amarea-gold text-[10px] font-display font-bold uppercase tracking-widest hover:bg-amarea-gold/10 transition">Editar</button>
+              <button data-delete="${i}" class="px-3 py-2 rounded-xl border border-amarea-fire/30 text-amarea-fire text-[10px] font-display font-bold uppercase tracking-widest hover:bg-amarea-fire/10 transition">Eliminar</button>
             </div>
           </div>
           <div class="w-full h-1 bg-white/5 rounded overflow-hidden mb-2">
             <div class="h-full bg-amarea-cyan" style="width: ${percent}%"></div>
           </div>
-          <div data-details="${i}" class="hidden mt-6 space-y-8 border-t border-white/5 pt-6"></div>
+          <div data-details="${i}" data-mode="view" class="hidden mt-6 space-y-8 border-t border-white/5 pt-6"></div>
         `;
         briefsContainer.appendChild(div);
       });
@@ -237,13 +300,36 @@
           const details = briefsContainer.querySelector(`[data-details="${i}"]`);
           if (!details) return;
           if (details.classList.contains('hidden')) {
+            details.dataset.mode = 'view';
             renderBriefDetails(briefs[i], details);
             details.classList.remove('hidden');
-            btn.textContent = 'Ocultar respuestas';
+            btn.textContent = 'Ocultar';
           } else {
             details.classList.add('hidden');
             btn.textContent = 'Ver respuestas';
           }
+        });
+      });
+
+      briefsContainer.querySelectorAll('[data-edit]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const i = btn.dataset.edit;
+          const details = briefsContainer.querySelector(`[data-details="${i}"]`);
+          if (!details) return;
+          details.dataset.mode = 'edit';
+          renderBriefEdit(briefs[i], details);
+          details.classList.remove('hidden');
+          const toggle = briefsContainer.querySelector(`[data-toggle="${i}"]`);
+          if (toggle) toggle.textContent = 'Ocultar';
+        });
+      });
+
+      briefsContainer.querySelectorAll('[data-delete]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const i = btn.dataset.delete;
+          const b = briefs[i];
+          if (!b) return;
+          if (confirm(`¿Eliminar las respuestas de ${b.user}?`)) deleteBrief(b);
         });
       });
     }

@@ -84,6 +84,41 @@ function resetLog(sheet, timestamp, username) {
   sheet.appendRow([timestamp, 'reset_all', username, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
 }
 
+function buildLogRow(timestamp, type, username, payload) {
+  const extra = {};
+  Object.keys(payload || {}).forEach(k => extra[k] = payload[k]);
+  const row = [timestamp, type, username];
+  COLUMNS.slice(3, -1).forEach(k => {
+    if (Object.prototype.hasOwnProperty.call(extra, k)) {
+      row.push(String(extra[k]));
+      delete extra[k];
+    } else {
+      row.push('');
+    }
+  });
+  row.push(JSON.stringify(extra).slice(0, 50000));
+  return row;
+}
+
+function deleteBriefRows(sheet, user, date, exceptType) {
+  const rows = sheet.getDataRange().getValues();
+  const toDelete = [];
+  rows.forEach((r, i) => {
+    if (i === 0) return;
+    const type = String(r[1] || '');
+    if (type !== 'cuestionario' && type !== 'brief_draft') return;
+    if (exceptType && type === exceptType) return;
+    const rowUser = getField(r, 3, 'id') || String(r[2] || '');
+    const rowDate = String(getField(r, 7, 'date') || '');
+    const payloadUser = (parseFallback(r) || {}).user || '';
+    const matchUser = rowUser === user || payloadUser === user;
+    const matchDate = !date || rowDate === String(date);
+    if (matchUser && matchDate) toDelete.push(i + 1);
+  });
+  toDelete.sort((a, b) => b - a).forEach(rowNum => sheet.deleteRow(rowNum));
+  return toDelete.length;
+}
+
 function doPost(e) {
   try {
     const body = e.postData ? e.postData.contents : '{}';
@@ -105,21 +140,34 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
-    const payload = payloadObject(data);
-    const extra = {};
-    Object.keys(payload).forEach(k => extra[k] = payload[k]);
+    if (type === 'delete_brief') {
+      const p = payloadObject(data);
+      const n = deleteBriefRows(sheet, p.user, p.date);
+      return ContentService
+        .createTextOutput(JSON.stringify({ result: 'ok', deleted: n }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
 
-    const row = [timestamp, type, username];
-    COLUMNS.slice(3, -1).forEach(k => {
-      if (Object.prototype.hasOwnProperty.call(extra, k)) {
-        row.push(String(extra[k]));
-        delete extra[k];
-      } else {
-        row.push('');
-      }
-    });
-    const extraStr = JSON.stringify(extra).slice(0, 50000);
-    row.push(extraStr);
+    if (type === 'update_brief') {
+      const p = payloadObject(data);
+      if (!p.user || !p.oldDate) throw new Error('user and oldDate required');
+      deleteBriefRows(sheet, p.user, p.oldDate);
+      const newType = p.draft ? 'brief_draft' : 'cuestionario';
+      const newPayload = {
+        user: p.user,
+        date: p.date || new Date().toISOString(),
+        answers: p.answers || {},
+        step: p.step || (p.answers || {}).__step,
+        draft: p.draft
+      };
+      sheet.appendRow(buildLogRow(timestamp, newType, p.user, newPayload));
+      return ContentService
+        .createTextOutput(JSON.stringify({ result: 'ok', updated: true }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    const payload = payloadObject(data);
+    const row = buildLogRow(timestamp, type, username, payload);
     sheet.appendRow(row);
 
     return ContentService

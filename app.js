@@ -2821,6 +2821,12 @@ function deleteAdminUser(username) {
   renderAdmin();
 }
 
+function deleteAdminBrief(brief) {
+  if (!confirm(`¿Eliminar cuestionario de ${brief.user}?`)) return;
+  logToSheet('delete_brief', { user: brief.user, date: brief.date });
+  setTimeout(loadAdminFromSheets, 1000);
+}
+
 function renderAdmin(briefs = null, users = null) {
   if (!briefs || !users) { loadAdminFromSheets(); return; }
   const briefsContainer = document.getElementById('admin-briefs');
@@ -2830,7 +2836,7 @@ function renderAdmin(briefs = null, users = null) {
 
   const totalUsers = users.length;
   const totalBriefs = briefs.length;
-  const totalAnswers = briefs.reduce((sum, b) => sum + Object.values(b.answers || {}).filter(a => (a || '').toString().trim()).length, 0);
+  const totalAnswers = briefs.reduce((sum, b) => sum + Object.entries(b.answers || {}).filter(([k, v]) => /^q\d+$/.test(k) && (v || '').toString().trim()).length, 0);
 
   if (stats) {
     stats.innerHTML = `
@@ -2962,8 +2968,14 @@ function renderAdmin(briefs = null, users = null) {
       if (hasAny) details.appendChild(group);
     });
     toggle.addEventListener('click', () => { details.classList.toggle('hidden'); toggle.textContent = details.classList.contains('hidden') ? viewText : hideText; });
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'text-xs text-amarea-fire hover:text-white transition font-display uppercase tracking-widest mt-2';
+    del.textContent = tr('deleteBrief', 'Eliminar cuestionario');
+    del.addEventListener('click', () => deleteAdminBrief(b));
     div.appendChild(header);
     div.appendChild(toggle);
+    div.appendChild(del);
     div.appendChild(details);
     briefsContainer.appendChild(div);
   });
