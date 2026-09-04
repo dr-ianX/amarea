@@ -66,10 +66,8 @@ function logToSheet(type, payload) {
     deviceId: getDeviceId(),
     payload
   });
-  fetch(url, { method: 'POST', body, headers: { 'Content-Type': 'application/json' }, mode: 'cors' })
-    .then(r => r.json().catch(() => ({ result: 'ok' })))
-    .then(j => { if (j && j.error) console.error('[AMAREA] GAS error:', j.error); })
-    .catch((err) => { console.error('[AMAREA] Fallo de red hacia GAS:', err); });
+  fetch(url, { method: 'POST', body, mode: 'no-cors' })
+    .catch(() => { console.warn('[AMAREA] No se pudo registrar el evento en GAS (red o CORS).'); });
 }
 
 function track(type, payload) { logToSheet(type, payload); }

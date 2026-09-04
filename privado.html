@@ -274,9 +274,10 @@
 
     function loadDashboard(url) {
       const script = document.createElement('script');
-      script.src = `${url}?callback=amareaRenderDashboard&token=${encodeURIComponent(API_TOKEN)}`;
+      script.src = `${url}?callback=amareaRenderDashboard&view=admin&token=${encodeURIComponent(API_TOKEN)}`;
       script.onerror = () => {
-        document.getElementById('rows').innerHTML = '<tr><td colspan="5" class="p-4 text-amarea-fire text-sm">No se pudo cargar el dashboard. Revisa la URL del Apps Script.</td></tr>';
+        const tbody = document.getElementById('rows');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-amarea-fire text-sm">No se pudo cargar el dashboard. Revisa la URL del Apps Script.</td></tr>';
       };
       document.body.appendChild(script);
       document.getElementById('sheet-link').href = '#';
@@ -314,9 +315,8 @@
       fetch(url, {
         method: 'POST',
         body: JSON.stringify({ token: API_TOKEN, type, username: 'admin', payload }),
-        headers: { 'Content-Type': 'application/json' },
-        mode: 'cors'
-      }).then(r => r.json().catch(() => ({ result: 'ok' }))).then(j => { if (j && j.error) console.error('[AMAREA Admin] GAS error:', j.error); }).catch((err) => { console.error('[AMAREA Admin] Fallo de red hacia GAS:', err); });
+        mode: 'no-cors'
+      }).catch(() => { console.warn('[AMAREA Admin] No se pudo enviar acción a GAS (red o CORS).'); });
       setTimeout(() => { if (typeof onDone === 'function') onDone(); }, 1200);
     }
 
@@ -515,10 +515,52 @@
 
     document.getElementById('prune-btn')?.addEventListener('click', pruneLog);
 
-    window.amareaRenderDashboard = function(rows) {
-      if (!Array.isArray(rows) || !rows.length) return;
-      rows.shift();
+    window.amareaRenderDashboard = function(res) {
       const tbody = document.getElementById('rows');
+      const stats = document.getElementById('stats');
+      if (!tbody) return;
+      if (res && res.error) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-amarea-fire text-sm">Error del servidor: ${String(res.error).replace(/</g, '&lt;')}</td></tr>`;
+        if (stats) stats.innerHTML = '';
+        return;
+      }
+
+      // Respuesta de view=admin: { users, briefs }
+      if (res && typeof res === 'object' && Array.isArray(res.users)) {
+        const { users = [], briefs = [] } = res;
+        tbody.innerHTML = '';
+        if (stats) {
+          stats.innerHTML = `
+            <div class="p-4 rounded-2xl border border-white/10 bg-white/[0.02]"><p class="text-[10px] font-mono uppercase tracking-widest text-white/40">Usuarios</p><p class="text-2xl font-display font-bold text-amarea-cyan">${users.length}</p></div>
+            <div class="p-4 rounded-2xl border border-white/10 bg-white/[0.02]"><p class="text-[10px] font-mono uppercase tracking-widest text-white/40">Cuestionarios</p><p class="text-2xl font-display font-bold text-amarea-pink">${briefs.length}</p></div>
+          `;
+        }
+        if (!users.length) {
+          tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-white/50 text-sm">No hay usuarios en el servidor.</td></tr>';
+          return;
+        }
+        users.forEach(u => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-white/[0.03]';
+          tr.innerHTML = `
+            <td class="p-4 text-white/50 font-mono text-xs">${u.date ? new Date(u.date).toLocaleString('es-MX') : '-'}</td>
+            <td class="p-4"><span class="text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded bg-white/5 text-amarea-cyan">${u.role || 'invitado'}</span></td>
+            <td class="p-4 text-white/80">${u.username}${u.email ? `<p class="text-[9px] text-white/30">${u.email}</p>` : ''}</td>
+            <td class="p-4 text-white/60 text-xs">${JSON.stringify(u.permissions || {}).slice(0, 80)}</td>
+            <td class="p-4 text-white/60 text-xs">${u.deleted ? 'Borrado' : 'Activo'}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+        return;
+      }
+
+      if (!Array.isArray(res) || !res.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-white/50 text-sm">Sin registros en el Log.</td></tr>';
+        if (stats) stats.innerHTML = '';
+        return;
+      }
+      const rows = res;
+      rows.shift();
       tbody.innerHTML = '';
 
       const counts = {};
@@ -565,17 +607,18 @@
       });
 
       document.getElementById('stat-total').textContent = rows.length;
-      const stats = document.getElementById('stats');
-      stats.innerHTML = `<div class="p-4 rounded-2xl border border-white/10 bg-white/[0.02]">
-        <p class="text-[10px] font-mono uppercase tracking-widest text-white/40">Total</p>
-        <p class="text-2xl font-display font-bold text-amarea-cyan">${rows.length}</p>
-      </div>`;
-      Object.entries(counts).sort((a, b) => b[1] - a[1]).forEach(([type, count]) => {
-        const div = document.createElement('div');
-        div.className = 'p-4 rounded-2xl border border-white/10 bg-white/[0.02]';
-        div.innerHTML = `<p class="text-[10px] font-mono uppercase tracking-widest text-white/40">${type}</p><p class="text-2xl font-display font-bold text-white">${count}</p>`;
-        stats.appendChild(div);
-      });
+      if (stats) {
+        stats.innerHTML = `<div class="p-4 rounded-2xl border border-white/10 bg-white/[0.02]">
+          <p class="text-[10px] font-mono uppercase tracking-widest text-white/40">Total</p>
+          <p class="text-2xl font-display font-bold text-amarea-cyan">${rows.length}</p>
+        </div>`;
+        Object.entries(counts).sort((a, b) => b[1] - a[1]).forEach(([type, count]) => {
+          const div = document.createElement('div');
+          div.className = 'p-4 rounded-2xl border border-white/10 bg-white/[0.02]';
+          div.innerHTML = `<p class="text-[10px] font-mono uppercase tracking-widest text-white/40">${type}</p><p class="text-2xl font-display font-bold text-white">${count}</p>`;
+          stats.appendChild(div);
+        });
+      }
     };
 
     document.getElementById('chat-list')?.addEventListener('click', (e) => {
