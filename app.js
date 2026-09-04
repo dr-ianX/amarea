@@ -2223,22 +2223,39 @@ function fetchJSONP(view, params = '') {
     const cb = 'amareaJSONP_' + Math.random().toString(36).slice(2, 9);
     const full = `${url}?callback=${cb}&view=${view}&token=${encodeURIComponent(API_TOKEN)}${params ? '&' + params : ''}`;
     const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), 10000);
+    const t = setTimeout(() => controller.abort(), 8000);
+
+    function cleanup() { delete window[cb]; }
+
+    function tryScript() {
+      const s = document.createElement('script');
+      window[cb] = (res) => { cleanup(); clearTimeout(st); resolve(res); };
+      const st = setTimeout(() => { document.head.removeChild(s); cleanup(); resolve(null); }, 8000);
+      s.src = full;
+      s.onerror = () => { document.head.removeChild(s); cleanup(); clearTimeout(st); resolve(null); };
+      document.head.appendChild(s);
+    }
 
     fetch(full, { method: 'GET', mode: 'cors', credentials: 'omit', signal: controller.signal })
       .then(r => r.text())
       .then(text => {
+        clearTimeout(t);
         const prefix = cb + '(';
         const suffix = ');';
         const trimmed = text.trim();
         if (trimmed.startsWith(prefix) && trimmed.endsWith(suffix)) {
           try { resolve(JSON.parse(trimmed.slice(prefix.length, -suffix.length))); return; } catch (e) {}
         }
-        console.error(`[AMAREA] GAS no devolvió JSONP para view=${view}:`, text.slice(0, 500));
-        resolve(null);
+        console.warn(`[AMAREA] GAS no devolvió JSONP por fetch para view=${view}. Probando script tag...`);
+        tryScript();
       })
-      .catch(err => { console.error(`[AMAREA] fetch error view=${view}:`, err); resolve(null); })
-      .finally(() => { clearTimeout(t); delete window[cb]; });
+      .catch(err => {
+        clearTimeout(t);
+        console.warn(`[AMAREA] fetch CORS falló para view=${view}. Probando script tag...`, err);
+        window.AMAREA_CORS_WARNING = true;
+        tryScript();
+      })
+      .finally(() => {});
   });
 }
 
