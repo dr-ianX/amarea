@@ -2288,6 +2288,13 @@ function refreshCurrentUser() {
 
 function seedAdmin() {
   // admin ya no se almacena en localStorage; se valida contra ADMIN_HASH
+  if (!ADMIN_USERNAME) return;
+  const users = getUsers();
+  const idx = users.findIndex(u => u.username === ADMIN_USERNAME);
+  const adminObj = { username: ADMIN_USERNAME, role: 'admin', password: '', date: new Date().toISOString(), permissions: {} };
+  if (idx >= 0) users[idx] = { ...users[idx], ...adminObj };
+  else users.push(adminObj);
+  setUsers(users);
 }
 
 function saveCurrent() {
@@ -2370,6 +2377,12 @@ async function login(username, password) {
   if (ADMIN_USERNAME && ADMIN_HASH && username === ADMIN_USERNAME) {
     const h = await sha256(password);
     if (h === ADMIN_HASH) {
+      const users = getUsers();
+      const idx = users.findIndex(u => u.username === ADMIN_USERNAME);
+      const adminObj = { username: ADMIN_USERNAME, role: 'admin', password: '', date: new Date().toISOString(), permissions: {} };
+      if (idx >= 0) users[idx] = { ...users[idx], ...adminObj };
+      else users.push(adminObj);
+      setUsers(users);
       currentUser = { username, role: 'admin' };
       saveCurrent();
       updateAuthUI();

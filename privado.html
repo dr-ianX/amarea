@@ -220,7 +220,7 @@
     let currentUrl = '';
 
     function clearLocalData() {
-      [STORAGE_USERS, STORAGE_CURRENT, STORAGE_BRIEFS, STORAGE_GAS, 'amarea_chat_v1', 'amarea_nick_v1', 'amarea_join_v1', 'amarea_draft_v1', 'amarea_rsvp_v1', 'amarea_content_v1', 'amarea_mixer_v1', 'amarea_device_v1'].forEach(k => localStorage.removeItem(k));
+      [STORAGE_USERS, STORAGE_CURRENT, STORAGE_BRIEFS, 'amarea_chat_v1', 'amarea_nick_v1', 'amarea_join_v1', 'amarea_draft_v1', 'amarea_rsvp_v1', 'amarea_content_v1', 'amarea_mixer_v1', 'amarea_device_v1'].forEach(k => localStorage.removeItem(k));
     }
 
     function fetchJSONP(view) {
@@ -251,11 +251,29 @@
       if (!localAt) localStorage.setItem(STORAGE_RESET, String(serverAt));
     }
 
-    function masterReset() {
+    async function masterReset() {
       if (!confirm('⚠️ ¿Borrar TODO el log, todos los usuarios, cuestionarios y forzar cierre de sesión en todos los dispositivos? Esta acción no se puede deshacer.')) return;
+      const started = Date.now();
       postAction('reset_all', { confirm: true });
-      clearLocalData();
-      setTimeout(() => { alert('Reset solicitado. Recarga la página en unos segundos.'); location.reload(); }, 1500);
+
+      const poll = async () => {
+        const res = await fetchJSONP('reset');
+        if (res && res.resetAt) {
+          const serverAt = new Date(res.resetAt).getTime();
+          if (serverAt > (parseInt(localStorage.getItem(STORAGE_RESET) || '0', 10) || 0)) {
+            clearLocalData();
+            localStorage.setItem(STORAGE_RESET, String(serverAt));
+            location.reload();
+            return;
+          }
+        }
+        if (Date.now() - started < 10000) {
+          setTimeout(poll, 1200);
+        } else {
+          alert('El servidor no confirmó el reset. Asegúrate de haber redeployado LogToSheet.gs con el código más reciente.');
+        }
+      };
+      setTimeout(poll, 1500);
     }
 
     function checkAdmin() {
@@ -286,6 +304,12 @@
       if (adminUsername && adminHash && username === adminUsername) {
         const h = await sha256(password);
         if (h === adminHash) {
+          const users = getLocalUsers();
+          const idx = users.findIndex(u => u.username === adminUsername);
+          const adminObj = { username: adminUsername, role: 'admin', password: '', date: new Date().toISOString(), permissions: {} };
+          if (idx >= 0) users[idx] = { ...users[idx], ...adminObj };
+          else users.push(adminObj);
+          setLocalUsers(users);
           currentUser = { username, role: 'admin' };
           localStorage.setItem(STORAGE_CURRENT, JSON.stringify(currentUser));
           return true;
