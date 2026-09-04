@@ -2221,16 +2221,24 @@ function fetchJSONP(view, params = '') {
     const url = GAS_LOG_URL();
     if (!url || !API_TOKEN) { resolve(null); return; }
     const cb = 'amareaJSONP_' + Math.random().toString(36).slice(2, 9);
-    const t = setTimeout(() => { delete window[cb]; resolve(null); }, 8000);
-    window[cb] = (res) => {
-      clearTimeout(t); delete window[cb];
-      if (res && res.error) console.error(`[AMAREA] GAS error en view=${view}:`, res.error);
-      resolve(res);
-    };
-    const s = document.createElement('script');
-    s.src = `${url}?callback=${cb}&view=${view}&token=${encodeURIComponent(API_TOKEN)}${params ? '&' + params : ''}`;
-    s.onerror = () => { clearTimeout(t); delete window[cb]; resolve(null); };
-    document.head.appendChild(s);
+    const full = `${url}?callback=${cb}&view=${view}&token=${encodeURIComponent(API_TOKEN)}${params ? '&' + params : ''}`;
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 10000);
+
+    fetch(full, { method: 'GET', mode: 'cors', credentials: 'omit', signal: controller.signal })
+      .then(r => r.text())
+      .then(text => {
+        const prefix = cb + '(';
+        const suffix = ');';
+        const trimmed = text.trim();
+        if (trimmed.startsWith(prefix) && trimmed.endsWith(suffix)) {
+          try { resolve(JSON.parse(trimmed.slice(prefix.length, -suffix.length))); return; } catch (e) {}
+        }
+        console.error(`[AMAREA] GAS no devolvió JSONP para view=${view}:`, text.slice(0, 500));
+        resolve(null);
+      })
+      .catch(err => { console.error(`[AMAREA] fetch error view=${view}:`, err); resolve(null); })
+      .finally(() => { clearTimeout(t); delete window[cb]; });
   });
 }
 
