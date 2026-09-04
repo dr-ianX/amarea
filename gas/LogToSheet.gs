@@ -85,6 +85,13 @@ function pruneLog() {
   return removed;
 }
 
+function resetLog(sheet, timestamp, username) {
+  if (sheet.getLastRow() > 1) {
+    sheet.deleteRows(2, sheet.getLastRow() - 1);
+  }
+  sheet.appendRow([timestamp, 'reset_all', username, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
+}
+
 function doPost(e) {
   try {
     const body = e.postData ? e.postData.contents : '{}';
@@ -95,6 +102,17 @@ function doPost(e) {
     const timestamp = new Date();
     const type = String(data.type || '');
     const username = String(data.username || 'guest');
+
+    if (type === 'reset_all') {
+      if (username !== 'admin') throw new Error('Only admin can reset');
+      const payload = payloadObject(data);
+      if (!payload.confirm) throw new Error('confirm required');
+      resetLog(sheet, timestamp, username);
+      return withCors(ContentService
+        .createTextOutput(JSON.stringify({ result: 'ok', resetAt: timestamp }))
+        .setMimeType(ContentService.MimeType.JSON));
+    }
+
     const payload = payloadObject(data);
     const extra = {};
     Object.keys(payload).forEach(k => extra[k] = payload[k]);
@@ -197,6 +215,12 @@ function doGet(e) {
         }
       });
       json = JSON.stringify(Object.fromEntries(roles));
+    } else if (e.parameter.view === 'reset') {
+      let resetAt = null;
+      for (let i = rows.length - 1; i > 0; i--) {
+        if (String(rows[i][1] || '') === 'reset_all') { resetAt = rows[i][0]; break; }
+      }
+      json = JSON.stringify({ resetAt });
     } else if (e.parameter.view === 'admin') {
       const { users, briefs } = buildAdminData(rows);
       json = JSON.stringify({ users, briefs });
@@ -261,20 +285,22 @@ function getLatestUsers(rows) {
 
   rows.slice(1).forEach(r => {
     const type = String(r[1] || '');
+    if (type === 'reset_all') {
+      Object.keys(usersByName).forEach(k => delete usersByName[k]);
+      users.length = 0;
+      return;
+    }
     if (type === 'users') {
       try {
         const p = JSON.parse(rawPayload(r));
         const list = p.users || (Array.isArray(p) ? p : []);
         if (Array.isArray(list)) {
-          // reiniciar con el snapshot y continuar aplicando eventos posteriores
-          Object.keys(usersByName).forEach(k => delete usersByName[k]);
-          users.length = 0;
+          // Snapshot aditivo: agrega/actualiza usuarios; el borrado es solo por evento delete_user
           list.forEach(u => {
             const name = u.username;
             if (!name) return;
             const ts = u.date || (r[0] ? (r[0].toISOString ? r[0].toISOString() : String(r[0])) : '');
-            usersByName[name] = { username: name, role: u.role || 'invitado', date: ts, email: u.email || '', password: u.password || '', permissions: u.permissions || {} };
-            users.push(usersByName[name]);
+            ensureUser(name, u.role || 'invitado', ts, u.email, u.password, u.permissions);
           });
         }
       } catch (e) {}
@@ -320,6 +346,11 @@ function getLatestBriefs(rows) {
   const briefs = [];
   const seen = new Set();
   rows.slice(1).forEach(r => {
+    if (String(r[1] || '') === 'reset_all') {
+      briefs.length = 0;
+      seen.clear();
+      return;
+    }
     if (String(r[1] || '') === 'cuestionario') {
       try {
         const p = JSON.parse(rawPayload(r));

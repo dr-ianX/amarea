@@ -169,6 +169,7 @@
           <h2 class="text-lg font-display font-bold text-white">Métricas</h2>
           <div class="flex items-center gap-4">
             <button id="prune-btn" class="text-[10px] font-display font-bold uppercase tracking-widest text-amarea-fire hover:text-white transition border border-amarea-fire/30 rounded px-3 py-1.5">Purgar &gt; 90 días</button>
+            <button id="reset-all-btn" class="text-[10px] font-display font-bold uppercase tracking-widest text-amarea-fire hover:text-white transition border border-amarea-fire/30 rounded px-3 py-1.5">Resetear todo</button>
             <a id="sheet-link" href="#" target="_blank" rel="noopener" class="text-xs text-amarea-cyan hover:text-white transition font-display uppercase tracking-widest">Abrir hoja de cálculo</a>
           </div>
         </div>
@@ -203,6 +204,8 @@
     const STORAGE_CURRENT = 'amarea_current_v1';
     const STORAGE_GAS = 'amarea_gas_url';
     const STORAGE_USERS = 'amarea_users_v1';
+    const STORAGE_BRIEFS = 'amarea_briefs_v1';
+    const STORAGE_RESET = 'amarea_reset_v1';
     const CONFIG = window.AMAREA_CONFIG || {};
     const DEFAULT_GAS_URL = CONFIG.GAS_URL || '';
     const API_TOKEN = CONFIG.API_TOKEN || '';
@@ -215,6 +218,45 @@
 
     let currentUser = JSON.parse(localStorage.getItem(STORAGE_CURRENT) || 'null');
     let currentUrl = '';
+
+    function clearLocalData() {
+      [STORAGE_USERS, STORAGE_CURRENT, STORAGE_BRIEFS, STORAGE_GAS, 'amarea_chat_v1', 'amarea_nick_v1', 'amarea_join_v1', 'amarea_draft_v1', 'amarea_rsvp_v1', 'amarea_content_v1', 'amarea_mixer_v1', 'amarea_device_v1'].forEach(k => localStorage.removeItem(k));
+    }
+
+    function fetchJSONP(view) {
+      return new Promise((resolve) => {
+        const url = DEFAULT_GAS_URL || localStorage.getItem(STORAGE_GAS) || '';
+        if (!url || !API_TOKEN) { resolve(null); return; }
+        const cb = 'amareaJSONP_' + Math.random().toString(36).slice(2, 9);
+        const t = setTimeout(() => { delete window[cb]; resolve(null); }, 8000);
+        window[cb] = (res) => { clearTimeout(t); delete window[cb]; resolve(res); };
+        const s = document.createElement('script');
+        s.src = `${url}?callback=${cb}&view=${view}&token=${encodeURIComponent(API_TOKEN)}`;
+        s.onerror = () => { clearTimeout(t); delete window[cb]; resolve(null); };
+        document.head.appendChild(s);
+      });
+    }
+
+    async function checkMasterReset() {
+      const res = await fetchJSONP('reset');
+      if (!res || !res.resetAt) { localStorage.removeItem(STORAGE_RESET); return; }
+      const serverAt = new Date(res.resetAt).getTime();
+      const localAt = parseInt(localStorage.getItem(STORAGE_RESET) || '0', 10) || 0;
+      if (serverAt > localAt) {
+        clearLocalData();
+        localStorage.setItem(STORAGE_RESET, String(serverAt));
+        location.reload();
+        return;
+      }
+      if (!localAt) localStorage.setItem(STORAGE_RESET, String(serverAt));
+    }
+
+    function masterReset() {
+      if (!confirm('⚠️ ¿Borrar TODO el log, todos los usuarios, cuestionarios y forzar cierre de sesión en todos los dispositivos? Esta acción no se puede deshacer.')) return;
+      postAction('reset_all', { confirm: true });
+      clearLocalData();
+      setTimeout(() => { alert('Reset solicitado. Recarga la página en unos segundos.'); location.reload(); }, 1500);
+    }
 
     function checkAdmin() {
       if (!currentUser || currentUser.role !== 'admin') {
@@ -715,7 +757,7 @@
       setLocalUsers(users);
       refreshCurrentUser();
       syncUsersToServer();
-      postAction('register', { id: username, role });
+      postAction('register', { id: username, role, password });
       alert(`Usuario ${username} creado con rol ${role}.`);
       document.getElementById('new-user').value = '';
       document.getElementById('new-pass').value = '';
@@ -726,8 +768,9 @@
     document.getElementById('content-save')?.addEventListener('click', saveContent);
     document.getElementById('broadcast-send')?.addEventListener('click', sendBroadcast);
     document.getElementById('create-user')?.addEventListener('click', createUser);
+    document.getElementById('reset-all-btn')?.addEventListener('click', masterReset);
 
-    checkAdmin();
+    (async () => { await checkMasterReset(); checkAdmin(); })();
   </script>
 </body>
 </html>

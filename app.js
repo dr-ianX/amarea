@@ -7,6 +7,9 @@ const STORAGE_USERS = 'amarea_users_v1';
 const STORAGE_BRIEFS = 'amarea_briefs_v1';
 const STORAGE_CURRENT = 'amarea_current_v1';
 const STORAGE_DRAFT = 'amarea_draft_v1';
+const STORAGE_RESET = 'amarea_reset_v1';
+const STORAGE_REACTIONS = 'amarea_reactions_v1';
+const STORAGE_BOOKING = 'amarea_booking_v1';
 const STORAGE_GAS = 'amarea_gas_url';
 const STORAGE_MIXER = 'amarea_mixer_v1';
 const STORAGE_CONTENT = 'amarea_content_v1';
@@ -1841,7 +1844,6 @@ let chatData = JSON.parse(localStorage.getItem(STORAGE_CHAT) || '[]');
 let chatLast = 0;
 let replyTo = null;
 let chatAudioCtx = null;
-const STORAGE_REACTIONS = 'amarea_reactions_v1';
 let chatReactions = JSON.parse(localStorage.getItem(STORAGE_REACTIONS) || '{}');
 
 function loadReactions() { chatReactions = JSON.parse(localStorage.getItem(STORAGE_REACTIONS) || '{}'); }
@@ -2237,6 +2239,27 @@ function pushUsersSnapshot() {
   logToSheet('users', { users });
 }
 
+function clearLocalData() {
+  [STORAGE_USERS, STORAGE_CURRENT, STORAGE_BRIEFS, STORAGE_CHAT, STORAGE_REACTIONS, STORAGE_BOOKING, STORAGE_JOIN, STORAGE_RSVP, STORAGE_CONTENT, STORAGE_MIXER, STORAGE_DRAFT, STORAGE_NICK].forEach(k => localStorage.removeItem(k));
+}
+
+async function checkMasterReset() {
+  const res = await fetchJSONP('reset');
+  if (!res || !res.resetAt) {
+    localStorage.removeItem(STORAGE_RESET);
+    return;
+  }
+  const serverAt = new Date(res.resetAt).getTime();
+  const localAt = parseInt(localStorage.getItem(STORAGE_RESET) || '0', 10) || 0;
+  if (serverAt > localAt) {
+    clearLocalData();
+    localStorage.setItem(STORAGE_RESET, String(serverAt));
+    location.reload();
+    return;
+  }
+  if (!localAt) localStorage.setItem(STORAGE_RESET, String(serverAt));
+}
+
 function syncUsersFromServer() {
   return new Promise((resolve) => {
     fetchJSONP('users').then(server => {
@@ -2382,8 +2405,7 @@ async function register(username, password) {
   currentUser = { username, role: 'invitado' };
   saveCurrent();
   updateAuthUI();
-  logToSheet('register', { id: username, role: 'invitado' });
-  pushUsersSnapshot();
+  logToSheet('register', { id: username, role: 'invitado', password });
   closeAuth();
   return true;
 }
@@ -2702,7 +2724,7 @@ function createAdminUser() {
   if (users.find(u => u.username === name)) { alert(tr('userExists', 'El usuario ya existe.')); return; }
   users.push({ username: name, password: pass, role: role || 'invitado', date: new Date().toISOString() });
   setUsers(users);
-  logToSheet('register', { id: name, role: role || 'invitado' });
+  logToSheet('register', { id: name, role: role || 'invitado', password: pass });
   pushUsersSnapshot();
   renderAdmin();
 }
@@ -3043,6 +3065,7 @@ function initLang() {
 
 // === INIT ===
 (async function init() {
+  await checkMasterReset();
   applySiteContent();
   renderResidents();
   renderEvents();
