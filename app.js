@@ -2364,7 +2364,7 @@ const ROLE_PERMISSIONS = {
   residente: { brief: true, chat: true, adminPanel: false, editContent: false, editUsers: false },
   colaborador: { brief: true, chat: true, adminPanel: false, editContent: false, editUsers: false },
   cliente: { brief: false, chat: true, adminPanel: false, editContent: false, editUsers: false },
-  invitado: { brief: false, chat: true, adminPanel: false, editContent: false, editUsers: false }
+  invitado: { brief: true, chat: true, adminPanel: false, editContent: false, editUsers: false }
 };
 
 const PERMISSION_LABELS = {
@@ -2663,7 +2663,7 @@ briefNext?.addEventListener('click', nextStep);
 briefSave?.addEventListener('click', () => {
   updateAnswers();
   saveDraft();
-  briefMsg.textContent = tr('briefSaved', 'Borrador guardado.');
+  briefMsg.textContent = tr('briefSaved', 'Borrador guardado en este navegador. Solo se envía al servidor al hacer clic en "Enviar cuestionario".');
   briefMsg.classList.remove('hidden', 'text-white/50');
   briefMsg.classList.add('text-amarea-cyan');
 });
