@@ -335,28 +335,29 @@ function getLatestUsers(rows) {
 }
 
 function getLatestBriefs(rows) {
-  const briefs = [];
-  const seen = new Set();
+  const byUser = {};
   rows.slice(1).forEach(r => {
     if (String(r[1] || '') === 'reset_all') {
-      briefs.length = 0;
-      seen.clear();
+      Object.keys(byUser).forEach(k => delete byUser[k]);
       return;
     }
-    if (String(r[1] || '') === 'cuestionario') {
+    const type = String(r[1] || '');
+    if (type === 'cuestionario' || type === 'brief_draft') {
       try {
         const p = JSON.parse(rawPayload(r));
         const answers = p.answers || p;
         const user = getField(r, 3, 'id') || p.user || '';
         const date = getField(r, 7, 'date') || p.date || (r[0] ? (r[0].toISOString ? r[0].toISOString() : String(r[0])) : '');
         if (user && answers && Object.keys(answers).length) {
-          const key = user + '|' + date;
-          if (seen.has(key)) return;
-          seen.add(key);
-          briefs.push({ user, date, answers });
+          const existing = byUser[user];
+          const ts = new Date(date || 0).getTime();
+          const existingTs = existing ? new Date(existing.date || 0).getTime() : 0;
+          if (!existing || ts > existingTs || (ts === existingTs && !existing.draft)) {
+            byUser[user] = { user, date, answers, draft: type === 'brief_draft', step: p.step || answers.__step };
+          }
         }
       } catch (e) {}
     }
   });
-  return briefs.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+  return Object.values(byUser).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 }

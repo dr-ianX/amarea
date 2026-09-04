@@ -58,7 +58,7 @@ async function sha256(input) {
 
 const GAS_LOG_URL = () => DEFAULT_GAS_URL || localStorage.getItem(STORAGE_GAS) || '';
 
-function logToSheet(type, payload) {
+function logToSheet(type, payload, keepalive = false) {
   const url = GAS_LOG_URL();
   if (!url) { console.warn('[AMAREA] AMAREA_GAS_URL vacío. No se puede loguear.'); return; }
   if (!API_TOKEN) { console.warn('[AMAREA] AMAREA_API_TOKEN vacío. No se puede loguear.'); return; }
@@ -69,7 +69,7 @@ function logToSheet(type, payload) {
     deviceId: getDeviceId(),
     payload
   });
-  fetch(url, { method: 'POST', body, mode: 'no-cors' })
+  fetch(url, { method: 'POST', body, mode: 'no-cors', keepalive })
     .catch(() => { console.warn('[AMAREA] No se pudo registrar el evento en GAS (red o CORS).'); });
 }
 
@@ -2537,6 +2537,7 @@ const briefMsg = document.getElementById('brief-msg');
 
 let currentStep = 0;
 let answers = {};
+let draftTimeout;
 
 function draftKey() { return STORAGE_DRAFT + '_' + (currentUser?.username || 'guest'); }
 
@@ -2548,8 +2549,20 @@ function loadDraft() {
   return {};
 }
 
-function saveDraft() {
+function pushDraftToServer() {
+  if (!currentUser || !canAccessBrief() || !GAS_LOG_URL() || !API_TOKEN) return;
+  logToSheet('brief_draft', { user: currentUser.username, date: new Date().toISOString(), answers, step: currentStep, draft: true }, true);
+}
+
+function saveDraft(immediate = false) {
   localStorage.setItem(draftKey(), JSON.stringify(answers));
+  if (!currentUser) return;
+  clearTimeout(draftTimeout);
+  if (immediate) {
+    pushDraftToServer();
+  } else {
+    draftTimeout = setTimeout(pushDraftToServer, 2500);
+  }
 }
 
 function updateAnswers() {
@@ -2662,8 +2675,8 @@ briefPrev?.addEventListener('click', prevStep);
 briefNext?.addEventListener('click', nextStep);
 briefSave?.addEventListener('click', () => {
   updateAnswers();
-  saveDraft();
-  briefMsg.textContent = tr('briefSaved', 'Borrador guardado en este navegador. Solo se envía al servidor al hacer clic en "Enviar cuestionario".');
+  saveDraft(true);
+  briefMsg.textContent = tr('briefSaved', 'Borrador guardado y sincronizado con el servidor. Recuerda hacer clic en "Enviar cuestionario" al finalizar.');
   briefMsg.classList.remove('hidden', 'text-white/50');
   briefMsg.classList.add('text-amarea-cyan');
 });
@@ -2905,17 +2918,18 @@ function renderAdmin(briefs = null, users = null) {
 
   briefsContainer.innerHTML = briefs.length ? '' : '<p class="text-white/30 text-sm" data-i18n="noBriefs">Sin cuestionarios aún.</p>';
   briefs.forEach((b, i) => {
-    const answered = Object.values(b.answers || {}).filter(a => (a || '').toString().trim()).length;
+    const answered = Object.entries(b.answers || {}).filter(([k, v]) => /^q\d+$/.test(k) && (v || '').toString().trim()).length;
     const percent = Math.round((answered / 161) * 100);
+    const label = b.draft ? 'Borrador' : 'Cuestionario';
     const div = document.createElement('div');
-    div.className = 'p-5 rounded-2xl border border-white/5 bg-white/[0.02] admin-brief-card';
+    div.className = `p-5 rounded-2xl border border-white/5 bg-white/[0.02] admin-brief-card ${b.draft ? 'border-amarea-gold/20' : ''}`;
     div.dataset.user = (b.user || '').toLowerCase();
     const header = document.createElement('div');
     header.innerHTML = `
       <div class="flex justify-between items-start mb-2">
         <div>
           <p class="text-[10px] text-white/30 font-mono uppercase tracking-widest mb-1">${new Date(b.date).toLocaleString('es-MX')} · ${b.user}</p>
-          <p class="font-display font-bold text-white mb-1">Cuestionario · ${answered} de 161 respondidas</p>
+          <p class="font-display font-bold text-white mb-1">${label}${b.draft ? ` · Sección ${(b.step || 0) + 1}` : ''} · ${answered} de 161 respondidas</p>
         </div>
         <span class="text-2xl font-display font-bold text-amarea-cyan">${percent}<span class="text-sm">%</span></span>
       </div>

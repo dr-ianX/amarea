@@ -152,15 +152,17 @@
     }
 
     function mergeBriefs(local, server) {
-      const map = new Map();
+      const byUser = {};
       [...local, ...(server || [])].forEach(b => {
-        const key = (b.user || '') + '|' + (b.date || '');
-        const existing = map.get(key);
-        if (!existing || Object.keys(b.answers || {}).length > Object.keys(existing.answers || {}).length) {
-          map.set(key, b);
+        const user = b.user || '';
+        const existing = byUser[user];
+        const ts = new Date(b.date || 0).getTime();
+        const existingTs = existing ? new Date(existing.date || 0).getTime() : 0;
+        if (!existing || ts > existingTs || (ts === existingTs && !existing.draft && b.draft)) {
+          byUser[user] = b;
         }
       });
-      return [...map.values()].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+      return Object.values(byUser).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
     }
 
     async function load() {
@@ -172,7 +174,7 @@
     }
 
     function countAnswered(answers) {
-      return Object.values(answers || {}).filter(a => (a || '').toString().trim()).length;
+      return Object.entries(answers || {}).filter(([k, v]) => /^q\d+$/.test(k) && (v || '').toString().trim()).length;
     }
 
     function render(briefs) {
@@ -208,13 +210,13 @@
         const answered = countAnswered(b.answers);
         const percent = Math.round((answered / totalQuestions) * 100);
         const div = document.createElement('div');
-        div.className = 'p-5 rounded-2xl border border-white/5 bg-white/[0.02] neon-box brief-card';
+        div.className = `p-5 rounded-2xl border border-white/5 bg-white/[0.02] neon-box brief-card ${b.draft ? 'border-amarea-gold/20' : ''}`;
         div.dataset.user = (b.user || '').toLowerCase();
         div.innerHTML = `
           <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
             <div>
               <p class="text-[10px] text-white/30 font-mono uppercase tracking-widest mb-1">${new Date(b.date).toLocaleString('es-MX')} · ${b.user}</p>
-              <p class="font-display font-bold text-white">Cuestionario · ${answered} de ${totalQuestions} respuestas</p>
+              <p class="font-display font-bold text-white">${b.draft ? 'Borrador' : 'Cuestionario'}${b.draft ? ` · Sección ${(b.step || 0) + 1}` : ''} · ${answered} de ${totalQuestions} respuestas</p>
             </div>
             <div class="flex items-center gap-4">
               <span class="text-2xl font-display font-bold text-amarea-cyan">${percent}<span class="text-sm">%</span></span>
