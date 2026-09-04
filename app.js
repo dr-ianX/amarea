@@ -2234,7 +2234,7 @@ function fetchJSONP(view, params = '') {
       window[cb] = (res) => { done(res); };
       const st = setTimeout(() => { console.error(`[AMAREA] script tag timeout para view=${view}: el servidor no devolvió JSONP a tiempo`); done(null); }, 5000);
       s.src = full;
-      s.onerror = () => { console.error(`[AMAREA] script tag falló para view=${view} (probablemente URL mal o Apps Script no desplegado)`); done(null); };
+      s.onerror = () => { console.error(`[AMAREA] script tag falló para view=${view} (URL mal, Apps Script no desplegado, o bloqueador de anuncios/Brave)`); done(null); };
       s.onload = () => {
         setTimeout(() => {
           if (!resolved) { console.error(`[AMAREA] script tag cargó pero no llamó a ${cb} para view=${view} (respuesta no es JSONP)`); done(null); }

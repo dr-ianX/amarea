@@ -120,7 +120,11 @@
         };
         const s = document.createElement('script');
         s.src = `${url}?callback=${cb}&view=${view}&token=${encodeURIComponent(API_TOKEN)}`;
-        s.onerror = () => { clearTimeout(t); delete window[cb]; resolve(null); };
+        s.onerror = () => {
+          clearTimeout(t); delete window[cb];
+          console.error('[AMAREA Admin Cuestionario] Script bloqueado. Si usas Brave, uBlock, AdBlock o similar, desactívalo para amarea.onrender.com y script.google.com.');
+          resolve(null);
+        };
         document.head.appendChild(s);
       });
     }
