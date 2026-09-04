@@ -212,6 +212,9 @@
     const DEFAULT_GAS_URL = CONFIG.GAS_URL || '';
     const API_TOKEN = CONFIG.API_TOKEN || '';
 
+    const gasUrlInput = document.getElementById('gas-url');
+    if (gasUrlInput) gasUrlInput.value = DEFAULT_GAS_URL || localStorage.getItem(STORAGE_GAS) || '';
+
     const loginView = document.getElementById('login-view');
     const panelView = document.getElementById('panel-view');
     const configView = document.getElementById('config-view');

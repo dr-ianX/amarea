@@ -18,7 +18,7 @@ const STORAGE_DEVICE = 'amarea_device_v1';
 const STORAGE_RSVP = 'amarea_rsvp_v1';
 const CONFIG = window.AMAREA_CONFIG || {};
 const API_TOKEN = CONFIG.API_TOKEN || '';
-const GAS_URL = CONFIG.GAS_URL || '';
+const DEFAULT_GAS_URL = CONFIG.GAS_URL || '';
 const ADMIN_USERNAME = CONFIG.ADMIN_USERNAME || '';
 const ADMIN_HASH = CONFIG.ADMIN_HASH || '';
 
@@ -56,7 +56,7 @@ async function sha256(input) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-const GAS_LOG_URL = () => GAS_URL || localStorage.getItem(STORAGE_GAS) || '';
+const GAS_LOG_URL = () => DEFAULT_GAS_URL || localStorage.getItem(STORAGE_GAS) || '';
 
 function logToSheet(type, payload) {
   const url = GAS_LOG_URL();

@@ -82,8 +82,12 @@
     const STORAGE_BRIEFS = 'amarea_briefs_v1';
     const STORAGE_GAS = 'amarea_gas_url';
     const CONFIG = window.AMAREA_CONFIG || {};
-    const API_TOKEN = CONFIG.API_TOKEN || '';
-    const GAS_URL = CONFIG.GAS_URL || '';
+    const DEFAULT_GAS_URL = CONFIG.GAS_URL || '';
+    const ADMIN_USERNAME = CONFIG.ADMIN_USERNAME || '';
+    const ADMIN_HASH = CONFIG.ADMIN_HASH || '';
+    let briefs = JSON.parse(localStorage.getItem(STORAGE_BRIEFS) || '[]');
+
+    function getGAS() { return DEFAULT_GAS_URL || localStorage.getItem(STORAGE_GAS) || ''; }
 
     const current = JSON.parse(localStorage.getItem(STORAGE_CURRENT) || 'null');
     if (!current || current.role !== 'admin') {
