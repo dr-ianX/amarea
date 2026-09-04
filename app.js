@@ -12,6 +12,7 @@ const STORAGE_MIXER = 'amarea_mixer_v1';
 const STORAGE_CONTENT = 'amarea_content_v1';
 const CHAT_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const STORAGE_DEVICE = 'amarea_device_v1';
+const STORAGE_RSVP = 'amarea_rsvp_v1';
 const CONFIG = window.AMAREA_CONFIG || {};
 const API_TOKEN = CONFIG.API_TOKEN || '';
 const GAS_URL = CONFIG.GAS_URL || '';
@@ -117,30 +118,30 @@ let residents = [...DEFAULT_RESIDENTS];
 const DEFAULT_EVENTS = [
   {
     title: 'AMAREA at CRANIA',
-    date: '2026-02-06T21:00:00',
+    date: '2025-10-25T21:00:00',
     location: 'CRANIA · San José del Cabo',
     status: 'Sold Out',
     tag: 'Dark disco · House'
   },
   {
-    title: 'AMARÉA at CRANIA',
-    date: '2026-06-13T21:00:00',
-    location: 'CRANIA · San José del Cabo',
-    status: 'Próximamente',
-    tag: 'Indie dance · Techno'
-  },
-  {
     title: 'AMAREA · Playa privada',
-    date: '2026-04-18T17:00:00',
+    date: '2025-12-12T17:00:00',
     location: 'San José del Cabo · BCS',
     status: 'Anunciado',
     tag: 'Sunset · Balearic'
   },
   {
-    title: 'AMAREA · Season Closing',
-    date: '2026-11-14T21:00:00',
+    title: 'AMARÉA at CRANIA',
+    date: '2026-02-14T21:00:00',
     location: 'CRANIA · San José del Cabo',
-    status: 'RSVP',
+    status: 'Próximamente',
+    tag: 'Indie dance · Techno'
+  },
+  {
+    title: 'AMAREA · Season Closing',
+    date: '2026-04-18T21:00:00',
+    location: 'CRANIA · San José del Cabo',
+    status: 'Sold Out',
     tag: 'Techno · Experiencia'
   }
 ];
@@ -320,38 +321,117 @@ function renderResidents() {
   }
 }
 
-// === EVENTS ===
+// === RSVP ===
+function getJSON(key) { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { return []; } }
+function setJSON(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
 function renderEvents() {
   const eventsList = document.getElementById('events-list');
   if (!eventsList) return;
   const now = new Date();
   eventsList.innerHTML = '';
-  events.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach((ev, i) => {
+
+  const rsvps = getJSON(STORAGE_RSVP);
+  const myEvents = new Set(rsvps.filter(r => r.deviceId === getDeviceId()).map(r => r.event));
+  const counts = {};
+  rsvps.forEach(r => { counts[r.event] = (counts[r.event] || 0) + 1; });
+
+  const upcoming = events.filter(ev => new Date(ev.date) >= now).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const past = events.filter(ev => new Date(ev.date) < now).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  // Next events box
+  const nextBox = document.createElement('div');
+  nextBox.className = 'rounded-2xl p-6 md:p-8 border border-amarea-cyan/20 bg-amarea-cyan/5 neon-box';
+  if (upcoming.length) {
+    const next = upcoming[0];
+    const d = new Date(next.date);
+    nextBox.innerHTML = `
+      <p class="text-[10px] font-mono uppercase tracking-widest text-amarea-cyan mb-2">Next event</p>
+      <h3 class="text-2xl md:text-3xl font-display font-bold text-white mb-1">${next.title}</h3>
+      <p class="text-white/50 font-mono text-sm">${d.toLocaleDateString('es-MX', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })} · ${d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</p>
+      <p class="text-white/40 text-sm mt-1">${next.location}</p>
+      <p class="text-white/60 text-sm mt-3">Hold your horses! We're getting something very special this time. Keep following this page.</p>
+    `;
+  } else {
+    nextBox.innerHTML = `
+      <p class="text-[10px] font-mono uppercase tracking-widest text-amarea-cyan mb-2">Next events</p>
+      <h3 class="text-2xl md:text-3xl font-display font-bold text-white mb-2">Hold your horses!</h3>
+      <p class="text-white/60 text-sm">We're getting something very special this time. Keep following this page.</p>
+    `;
+  }
+  eventsList.appendChild(nextBox);
+
+  // Upcoming events
+  upcoming.forEach(ev => {
     const d = new Date(ev.date);
-    const isPast = d < now;
     const dateStr = d.toLocaleDateString('es-MX', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
     const timeStr = d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
-
+    const count = counts[ev.title] || 0;
+    const confirmed = myEvents.has(ev.title);
     const div = document.createElement('div');
     div.className = 'event-card rounded-2xl p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-4';
     div.innerHTML = `
       <div class="flex-1">
         <div class="flex items-center gap-3 mb-2">
           <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded bg-white/5 text-white/60">${ev.tag}</span>
-          <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded ${isPast ? 'bg-white/10 text-white/40' : 'bg-amarea-pink/10 text-amarea-pink'}">${isPast ? 'Pasado' : ev.status}</span>
+          <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded bg-amarea-pink/10 text-amarea-pink">${ev.status}</span>
         </div>
         <h3 class="text-2xl md:text-3xl font-display font-bold text-white mb-1">${ev.title}</h3>
         <p class="text-white/50 font-mono text-sm">${dateStr} · ${timeStr}</p>
         <p class="text-white/40 text-sm mt-1">${ev.location}</p>
       </div>
-      <div class="flex gap-3">
-        ${!isPast ? `<a href="https://www.ticketfairy.com" target="_blank" rel="noopener" class="px-5 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest hover:border-amarea-cyan hover:text-amarea-cyan transition">Tickets</a>` : ''}
-        <button class="tab-cta px-5 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest hover:border-amarea-pink transition" data-tab="musica">Sets</button>
+      <div class="flex flex-col items-end gap-2">
+        <span class="text-xs text-white/40 font-mono">${count} interesados</span>
+        <button class="rsvp-btn px-5 py-2 rounded-xl border text-xs font-display font-bold uppercase tracking-widest transition ${confirmed ? 'border-amarea-gold text-amarea-gold opacity-60 cursor-default' : 'border-amarea-cyan/30 text-amarea-cyan hover:bg-amarea-cyan hover:text-black'}" data-event="${ev.title}" ${confirmed ? 'disabled' : ''}>${confirmed ? 'Confirmado' : 'Me interesa'}</button>
       </div>
     `;
-    div.querySelectorAll('.tab-cta').forEach(b => b.addEventListener('click', (e) => switchTab(e.target.dataset.tab)));
     eventsList.appendChild(div);
   });
+
+  // Past events
+  if (past.length) {
+    const pastHeading = document.createElement('h3');
+    pastHeading.className = 'text-2xl font-display font-bold text-white/40 mt-8 mb-4';
+    pastHeading.textContent = 'Ediciones pasadas';
+    eventsList.appendChild(pastHeading);
+    past.forEach(ev => {
+      const d = new Date(ev.date);
+      const dateStr = d.toLocaleDateString('es-MX', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+      const timeStr = d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+      const div = document.createElement('div');
+      div.className = 'event-card rounded-2xl p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-4 opacity-70';
+      div.innerHTML = `
+        <div class="flex-1">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded bg-white/5 text-white/60">${ev.tag}</span>
+            <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded bg-white/10 text-white/40">Pasado · ${ev.status}</span>
+          </div>
+          <h3 class="text-2xl md:text-3xl font-display font-bold text-white mb-1">${ev.title}</h3>
+          <p class="text-white/50 font-mono text-sm">${dateStr} · ${timeStr}</p>
+          <p class="text-white/40 text-sm mt-1">${ev.location}</p>
+        </div>
+        <div class="flex gap-3">
+          <button class="tab-cta px-5 py-2 rounded-xl border border-white/10 text-xs font-display font-bold uppercase tracking-widest hover:border-amarea-pink transition" data-tab="musica">Sets</button>
+        </div>
+      `;
+      div.querySelectorAll('.tab-cta').forEach(b => b.addEventListener('click', (e) => switchTab(e.target.dataset.tab)));
+      eventsList.appendChild(div);
+    });
+  }
+
+  // RSVP listeners
+  eventsList.querySelectorAll('.rsvp-btn').forEach(b => b.addEventListener('click', () => {
+    if (b.disabled) return;
+    const ev = b.dataset.event;
+    const data = { event: ev, deviceId: getDeviceId(), date: new Date().toISOString() };
+    setJSON(STORAGE_RSVP, [...getJSON(STORAGE_RSVP), data]);
+    logToSheet('rsvp', data);
+    b.textContent = 'Confirmado';
+    b.disabled = true;
+    b.classList.add('opacity-60', 'cursor-default', 'border-amarea-gold', 'text-amarea-gold');
+    b.classList.remove('border-amarea-cyan/30', 'text-amarea-cyan', 'hover:bg-amarea-cyan', 'hover:text-black');
+    renderEvents();
+  }));
 }
 
 // === CMS / CONTENT LOADER ===
@@ -1751,12 +1831,35 @@ const chatMessages = document.getElementById('chat-messages');
 const chatReply = document.getElementById('chat-reply');
 const chatReplyLabel = document.getElementById('chat-reply-label');
 const chatReplyCancel = document.getElementById('chat-reply-cancel');
+const chatEmoji = document.getElementById('chat-emoji');
+const chatZumbido = document.getElementById('chat-zumbido');
+const chatEmojiPanel = document.getElementById('chat-emoji-panel');
 
 let nickname = localStorage.getItem(STORAGE_NICK) || '';
 let chatData = JSON.parse(localStorage.getItem(STORAGE_CHAT) || '[]');
 let chatLast = 0;
 let replyTo = null;
 let chatAudioCtx = null;
+const STORAGE_REACTIONS = 'amarea_reactions_v1';
+let chatReactions = JSON.parse(localStorage.getItem(STORAGE_REACTIONS) || '{}');
+
+function loadReactions() { chatReactions = JSON.parse(localStorage.getItem(STORAGE_REACTIONS) || '{}'); }
+function saveReactions() { localStorage.setItem(STORAGE_REACTIONS, JSON.stringify(chatReactions)); }
+function getReactions(msgId) { return chatReactions[msgId] || {}; }
+function toggleReaction(msgId, emoji) {
+  const r = getReactions(msgId);
+  const by = r[emoji] || [];
+  if (by.includes(nickname)) {
+    r[emoji] = by.filter(a => a !== nickname);
+    if (!r[emoji].length) delete r[emoji];
+  } else {
+    r[emoji] = [...by, nickname];
+  }
+  chatReactions[msgId] = r;
+  saveReactions();
+  logToSheet('reaction', { msgId, emoji, author: nickname });
+  renderChat();
+}
 
 function playTone() {
   if (!chatAudioCtx) chatAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1823,6 +1926,13 @@ function startReply(id) {
   chatInput.focus();
 }
 
+function startDM(id) {
+  const msg = chatData.find(m => m.id === id);
+  if (!msg) return;
+  chatInput.value = `@${msg.author} `;
+  chatInput.focus();
+}
+
 function cancelReply() {
   replyTo = null;
   chatReply.classList.add('hidden');
@@ -1835,50 +1945,84 @@ function renderChat() {
   chatMessages.innerHTML = '';
   chatData.forEach((msg, idx) => {
     const isOwn = msg.author === nickname;
+    const isDM = !!msg.to;
+    const isVisible = !isDM || msg.to === nickname || isOwn;
+    if (!isVisible) return;
     const div = document.createElement('div');
-    div.className = `chat-msg ${isOwn ? 'own' : 'other'}`;
+    div.className = `chat-msg ${isOwn ? 'own' : 'other'} ${isDM ? 'chat-dm' : ''} ${msg.type === 'zumbido' ? 'chat-zumbido' : ''}`;
     const hue = hashColor(msg.author);
     const initial = escapeHTML(msg.author.slice(0, 1).toUpperCase());
     const replyHTML = msg.replyTo ? (() => {
       const r = chatData.find(m => m.id === msg.replyTo);
       return r ? `<p class="text-[10px] text-white/30 mb-1 border-l-2 pl-2" style="border-color:hsl(${hashColor(r.author)},80%,60%)">↩ ${escapeHTML(r.author)}: ${escapeHTML(r.text)}</p>` : '';
     })() : '';
+    const dmLabel = isDM ? `<span class="text-[10px] text-amarea-pink ml-2">✉️ privado</span>` : '';
     const deleteBtn = isOwn ? `<button class="chat-del" data-del="${msg.id}" title="Borrar">×</button>` : '';
     const replyBtn = `<button class="chat-reply" data-reply="${msg.id}" title="Responder">↩</button>`;
+    const dmBtn = `<button class="chat-dm" data-dm="${msg.id}" title="Mensaje privado">✉️</button>`;
     const time = new Date(msg.date).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    const reactions = getReactions(msg.id);
+    const reactionHTML = Object.entries(reactions).filter(([, a]) => a.length).map(([emoji, a]) => `<button class="reaction-btn text-[10px] px-1.5 py-0.5 rounded border border-white/10 ${a.includes(nickname) ? 'bg-amarea-cyan/20 border-amarea-cyan/30' : 'bg-white/[0.03]'}" data-emoji="${emoji}" data-msg="${msg.id}">${emoji} ${a.length}</button>`).join('');
+    const reactionBar = `
+      <div class="flex flex-wrap gap-1 mt-2 items-center">
+        ${reactionHTML}
+        <button class="reaction-add text-[10px] px-1.5 py-0.5 rounded border border-white/10 text-white/40 hover:text-amarea-pink hover:border-amarea-pink" data-msg="${msg.id}" title="Reaccionar">+</button>
+      </div>
+      <div class="reaction-picker hidden flex-wrap gap-1 mt-1" data-msg="${msg.id}">
+        <button class="reaction-emoji text-sm p-1 hover:bg-white/10 rounded" data-emoji="❤️" data-msg="${msg.id}">❤️</button>
+        <button class="reaction-emoji text-sm p-1 hover:bg-white/10 rounded" data-emoji="👍" data-msg="${msg.id}">👍</button>
+        <button class="reaction-emoji text-sm p-1 hover:bg-white/10 rounded" data-emoji="😂" data-msg="${msg.id}">😂</button>
+        <button class="reaction-emoji text-sm p-1 hover:bg-white/10 rounded" data-emoji="🔥" data-msg="${msg.id}">🔥</button>
+      </div>
+    `;
     div.innerHTML = `
       <div class="chat-meta">
         <span class="chat-avatar" style="background:hsl(${hue},80%,45%)">${initial}</span>
         <span class="chat-author" style="color:hsl(${hue},80%,70%)">${escapeHTML(msg.author)}</span>
+        ${dmLabel}
         <span class="chat-time">${time}</span>
-        <span class="chat-actions">${replyBtn}${deleteBtn}</span>
+        <span class="chat-actions">${replyBtn}${dmBtn}${deleteBtn}</span>
       </div>
       ${replyHTML}
-      <p class="chat-text">${escapeHTML(msg.text)}</p>
+      <p class="chat-text">${msg.type === 'zumbido' ? '<span class="text-amarea-cyan text-lg">🔊 Zumbido</span>' : escapeHTML(msg.text)}</p>
+      ${reactionBar}
     `;
     chatMessages.appendChild(div);
   });
 
   chatMessages.querySelectorAll('.chat-reply').forEach(b => b.addEventListener('click', (e) => startReply(e.target.dataset.reply)));
+  chatMessages.querySelectorAll('.chat-dm').forEach(b => b.addEventListener('click', (e) => startDM(e.target.dataset.dm)));
   chatMessages.querySelectorAll('.chat-del').forEach(b => b.addEventListener('click', (e) => deleteMessage(e.target.dataset.del)));
+  chatMessages.querySelectorAll('.reaction-btn').forEach(b => b.addEventListener('click', () => toggleReaction(b.dataset.msg, b.dataset.emoji)));
+  chatMessages.querySelectorAll('.reaction-add').forEach(b => b.addEventListener('click', () => {
+    const picker = chatMessages.querySelector(`.reaction-picker[data-msg="${b.dataset.msg}"]`);
+    if (picker) picker.classList.toggle('hidden');
+  }));
+  chatMessages.querySelectorAll('.reaction-emoji').forEach(b => b.addEventListener('click', () => toggleReaction(b.dataset.msg, b.dataset.emoji)));
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-function addMessage(text) {
-  if (!nickname || !text.trim()) return;
+function addMessage(rawText) {
+  if (!nickname || !rawText.trim()) return;
   if (blockedIds.has(getDeviceId())) {
     chatInput.disabled = true;
     chatSend.disabled = true;
     chatInput.placeholder = tr('chatBlocked', 'Usuario bloqueado.');
     return;
   }
+  const dmMatch = rawText.trim().match(/^@(\S+)\s+(.+)$/s);
+  const to = dmMatch ? dmMatch[1] : '';
+  const text = dmMatch ? dmMatch[2].trim() : rawText.trim();
+  const type = text.toLowerCase() === 'zumbido' ? 'zumbido' : 'text';
   const msg = {
     id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
     author: nickname,
     deviceId: getDeviceId(),
-    text: text.trim(),
+    text,
+    type,
     date: new Date().toISOString(),
-    replyTo: replyTo || undefined
+    replyTo: replyTo || undefined,
+    ...(to ? { to } : {})
   };
   chatData.push(msg);
   if (chatData.length > 200) chatData = chatData.slice(-200);
@@ -1920,6 +2064,31 @@ chatInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     addMessage(chatInput.value);
     chatInput.value = '';
+  }
+});
+
+chatEmoji?.addEventListener('click', () => chatEmojiPanel?.classList.toggle('hidden'));
+chatEmojiPanel?.querySelectorAll('.emoji-btn').forEach(b => b.addEventListener('click', () => {
+  chatInput.value += b.textContent;
+  chatEmojiPanel.classList.add('hidden');
+  chatInput.focus();
+}));
+
+chatZumbido?.addEventListener('click', () => {
+  addMessage('zumbido');
+  if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+  if (chatAudioCtx) {
+    const osc = chatAudioCtx.createOscillator();
+    const gain = chatAudioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(110, chatAudioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(440, chatAudioCtx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.3, chatAudioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, chatAudioCtx.currentTime + 0.6);
+    osc.connect(gain);
+    gain.connect(chatAudioCtx.destination);
+    osc.start();
+    osc.stop(chatAudioCtx.currentTime + 0.6);
   }
 });
 

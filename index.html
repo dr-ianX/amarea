@@ -527,11 +527,26 @@
           <span id="chat-reply-label" class="truncate max-w-[200px]"></span>
           <button id="chat-reply-cancel" class="text-white/40 hover:text-white ml-auto">×</button>
         </div>
-        <div class="flex gap-3">
+        <div class="flex gap-3 flex-wrap items-center">
+          <button id="chat-emoji" type="button" class="px-3 py-3 rounded-xl border border-white/10 text-white/60 hover:border-amarea-pink hover:text-amarea-pink transition text-sm" title="Emojis">😊</button>
+          <button id="chat-zumbido" type="button" class="px-3 py-3 rounded-xl border border-white/10 text-white/60 hover:border-amarea-cyan hover:text-amarea-cyan transition text-sm" title="Zumbido">🔊</button>
           <input id="chat-input" type="text" placeholder="Escribe un mensaje..." maxlength="240" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-cyan outline-none" disabled data-i18n-placeholder="chatPlaceholder">
           <button id="chat-send" class="px-6 py-3 rounded-xl bg-amarea-cyan/10 text-amarea-cyan font-display font-bold uppercase tracking-widest text-xs hover:bg-amarea-cyan hover:text-black transition" disabled data-i18n="chatSend">Enviar</button>
         </div>
+        <div id="chat-emoji-panel" class="hidden flex flex-wrap gap-1 mt-2 p-2 rounded-xl border border-white/5 bg-white/[0.02]">
+          <button class="emoji-btn text-lg p-1 hover:bg-white/10 rounded">❤️</button>
+          <button class="emoji-btn text-lg p-1 hover:bg-white/10 rounded">👍</button>
+          <button class="emoji-btn text-lg p-1 hover:bg-white/10 rounded">😂</button>
+          <button class="emoji-btn text-lg p-1 hover:bg-white/10 rounded">🔥</button>
+          <button class="emoji-btn text-lg p-1 hover:bg-white/10 rounded">🎧</button>
+          <button class="emoji-btn text-lg p-1 hover:bg-white/10 rounded">✨</button>
+          <button class="emoji-btn text-lg p-1 hover:bg-white/10 rounded">🌴</button>
+          <button class="emoji-btn text-lg p-1 hover:bg-white/10 rounded">🍸</button>
+          <button class="emoji-btn text-lg p-1 hover:bg-white/10 rounded">🪩</button>
+          <button class="emoji-btn text-lg p-1 hover:bg-white/10 rounded">🌙</button>
+        </div>
         <p class="text-[10px] text-white/20 text-right mt-2 uppercase tracking-widest" data-i18n="chatTtl">Mensajes vivos: 90 días</p>
+        <p class="text-[10px] text-white/20 mt-1">DM: <span class="text-amarea-cyan">@usuario mensaje</span></p>
       </div>
 
       <!-- Mini reproductor -->
@@ -555,15 +570,8 @@
       <div id="prod-metrics" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12"></div>
 
       <div class="grid md:grid-cols-2 gap-8 mb-12">
-        <!-- RSVP -->
-        <div class="rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 md:p-8 neon-box">
-          <h3 class="text-2xl font-display font-bold mb-4">RSVP · Próximas ediciones</h3>
-          <p class="text-white/40 text-sm mb-4">Marca los eventos que te interesan. Son conteos anónimos.</p>
-          <div id="produccion-rsvp-list" class="space-y-4"></div>
-        </div>
-
-        <!-- Perfil anónimo -->
-        <div class="rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 md:p-8 neon-box">
+      <!-- Perfil anónimo -->
+      <div class="rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 md:p-8 neon-box">
           <h3 class="text-2xl font-display font-bold mb-4">Tu perfil anónimo</h3>
           <form id="prod-profile-form" class="space-y-3">
             <input name="name" type="text" placeholder="Nickname" maxlength="20" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-cyan outline-none">
@@ -606,23 +614,12 @@
           <p id="prod-resident-msg" class="hidden text-amarea-cyan text-xs mt-3"></p>
         </div>
 
-        <!-- Contacto -->
+        <!-- Cotizador -->
         <div class="rounded-3xl border border-white/5 bg-amarea-ink/60 backdrop-blur-xl p-6 md:p-8 neon-box">
-          <h3 class="text-2xl font-display font-bold mb-4">Escribir a producción</h3>
-          <form id="prod-contact-form" class="space-y-3">
-            <input name="name" type="text" placeholder="Nombre / alias" required maxlength="30" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-gold outline-none">
-            <input name="email" type="email" placeholder="Correo" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-gold outline-none">
-            <select name="type" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-gold outline-none text-white">
-              <option value="general">General</option>
-              <option value="booking">Booking</option>
-              <option value="prensa">Prensa</option>
-              <option value="colaboracion">Colaboración</option>
-              <option value="voluntario">Voluntario</option>
-            </select>
-            <textarea name="message" rows="3" placeholder="Mensaje" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-amarea-gold outline-none"></textarea>
-            <button type="submit" class="w-full py-3 rounded-xl bg-amarea-gold text-black font-display font-bold uppercase tracking-widest text-xs hover:bg-white transition">Enviar</button>
-          </form>
-          <p id="prod-contact-msg" class="hidden text-amarea-cyan text-xs mt-3"></p>
+          <h3 class="text-2xl font-display font-bold mb-4">Cotiza tu experiencia AMAREA</h3>
+          <p class="text-white/50 text-sm mb-4">Arma tu fiesta, paquete, DJ, luces, barco o bar. Montos de referencia.</p>
+          <div id="booking-wizard" class="space-y-4"></div>
+          <p id="booking-msg" class="hidden text-amarea-cyan text-xs mt-3"></p>
         </div>
 
         <!-- Sala de prensa + tienda -->
