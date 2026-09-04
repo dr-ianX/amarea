@@ -2229,10 +2229,17 @@ function fetchJSONP(view, params = '') {
 
     function tryScript() {
       const s = document.createElement('script');
-      window[cb] = (res) => { cleanup(); clearTimeout(st); resolve(res); };
-      const st = setTimeout(() => { document.head.removeChild(s); cleanup(); resolve(null); }, 8000);
+      let resolved = false;
+      function done(res) { if (resolved) return; resolved = true; cleanup(); clearTimeout(st); try { document.head.removeChild(s); } catch (e) {} resolve(res); }
+      window[cb] = (res) => { done(res); };
+      const st = setTimeout(() => { console.error(`[AMAREA] script tag timeout para view=${view}: el servidor no devolvió JSONP a tiempo`); done(null); }, 5000);
       s.src = full;
-      s.onerror = () => { document.head.removeChild(s); cleanup(); clearTimeout(st); resolve(null); };
+      s.onerror = () => { console.error(`[AMAREA] script tag falló para view=${view} (probablemente URL mal o Apps Script no desplegado)`); done(null); };
+      s.onload = () => {
+        setTimeout(() => {
+          if (!resolved) { console.error(`[AMAREA] script tag cargó pero no llamó a ${cb} para view=${view} (respuesta no es JSONP)`); done(null); }
+        }, 50);
+      };
       document.head.appendChild(s);
     }
 

@@ -83,6 +83,7 @@
     const STORAGE_GAS = 'amarea_gas_url';
     const CONFIG = window.AMAREA_CONFIG || {};
     const DEFAULT_GAS_URL = CONFIG.GAS_URL || '';
+    const API_TOKEN = CONFIG.API_TOKEN || '';
     const ADMIN_USERNAME = CONFIG.ADMIN_USERNAME || '';
     const ADMIN_HASH = CONFIG.ADMIN_HASH || '';
     let briefs = JSON.parse(localStorage.getItem(STORAGE_BRIEFS) || '[]');
@@ -104,7 +105,6 @@
 
     let allBriefs = [];
 
-    function getGAS() { return GAS_URL || localStorage.getItem(STORAGE_GAS) || ''; }
     function getLocalBriefs() { return JSON.parse(localStorage.getItem(STORAGE_BRIEFS) || '[]'); }
 
     function fetchJSONP(view) {
