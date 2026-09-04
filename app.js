@@ -2222,47 +2222,44 @@ function fetchJSONP(view, params = '') {
     if (!url || !API_TOKEN) { resolve(null); return; }
     const cb = 'amareaJSONP_' + Math.random().toString(36).slice(2, 9);
     const full = `${url}?callback=${cb}&view=${view}&token=${encodeURIComponent(API_TOKEN)}${params ? '&' + params : ''}`;
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), 8000);
+    let resolved = false;
+    const t = setTimeout(() => {
+      if (resolved) return;
+      resolved = true;
+      delete window[cb];
+      console.error(`[AMAREA] Timeout esperando view=${view}.`);
+      resolve(null);
+    }, 15000);
 
-    function cleanup() { delete window[cb]; }
+    window[cb] = (res) => {
+      if (resolved) { delete window[cb]; return; }
+      resolved = true;
+      clearTimeout(t);
+      delete window[cb];
+      if (res && res.error) console.error(`[AMAREA] GAS error en view=${view}:`, res.error);
+      resolve(res);
+    };
 
-    function tryScript() {
-      const s = document.createElement('script');
-      let resolved = false;
-      function done(res) { if (resolved) return; resolved = true; cleanup(); clearTimeout(st); try { document.head.removeChild(s); } catch (e) {} resolve(res); }
-      window[cb] = (res) => { done(res); };
-      const st = setTimeout(() => { console.error(`[AMAREA] script tag timeout para view=${view}: el servidor no devolvió JSONP a tiempo`); done(null); }, 5000);
-      s.src = full;
-      s.onerror = () => { console.error(`[AMAREA] script tag falló para view=${view} (URL mal, Apps Script no desplegado, o bloqueador de anuncios/Brave)`); done(null); };
-      s.onload = () => {
-        setTimeout(() => {
-          if (!resolved) { console.error(`[AMAREA] script tag cargó pero no llamó a ${cb} para view=${view} (respuesta no es JSONP)`); done(null); }
-        }, 50);
-      };
-      document.head.appendChild(s);
-    }
-
-    fetch(full, { method: 'GET', mode: 'cors', credentials: 'omit', signal: controller.signal })
-      .then(r => r.text())
-      .then(text => {
-        clearTimeout(t);
-        const prefix = cb + '(';
-        const suffix = ');';
-        const trimmed = text.trim();
-        if (trimmed.startsWith(prefix) && trimmed.endsWith(suffix)) {
-          try { resolve(JSON.parse(trimmed.slice(prefix.length, -suffix.length))); return; } catch (e) {}
+    const s = document.createElement('script');
+    s.src = full;
+    s.onerror = () => {
+      if (resolved) return;
+      resolved = true;
+      clearTimeout(t);
+      console.error(`[AMAREA] Script bloqueado o URL inválida para view=${view}. Si usas Brave, uBlock o AdBlock, desactívalo.`);
+      resolve(null);
+    };
+    s.onload = () => {
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(t);
+          console.error(`[AMAREA] Script cargó pero no devolvió JSONP para view=${view}.`);
+          resolve(null);
         }
-        console.warn(`[AMAREA] GAS no devolvió JSONP por fetch para view=${view}. Probando script tag...`);
-        tryScript();
-      })
-      .catch(err => {
-        clearTimeout(t);
-        console.warn(`[AMAREA] fetch CORS falló para view=${view}. Probando script tag...`, err);
-        window.AMAREA_CORS_WARNING = true;
-        tryScript();
-      })
-      .finally(() => {});
+      }, 50);
+    };
+    document.head.appendChild(s);
   });
 }
 
